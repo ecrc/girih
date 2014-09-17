@@ -181,7 +181,7 @@ void set_centered_source(Parameters *p) {
 
 unsigned long get_mwf_size(Parameters *p, int t_dim){
   unsigned long diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
-  lnx = p->ldomain_shape[0];
+  lnx = (p->stencil_ctx.bs_x < p->ldomain_shape[0] ? p->stencil_ctx.bs_x : p->ldomain_shape[0]);
   t_order = KernelList[p->target_kernel].time_order;
   diam_width = (t_dim+1)*2*NHALO;
   int nwf = p->stencil_ctx.num_wf;
