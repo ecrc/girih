@@ -35,7 +35,7 @@ the executable "mwd_kernels" and the object files. DP build creates "build_dp"
 directory and SP build creates "build" directory.
 
 
-##### Usage
+#### Usage
 The list of available parameters can be printed by passing the argument --help.
 To see all available stencil operators and optimization techniques, pass the 
 argument --list.
