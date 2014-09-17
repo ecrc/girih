@@ -1,0 +1,110 @@
+void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
+    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
+    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, stencil_CTX stencil_ctx, int mtid) {
+
+  double t_start;
+  int i, j, k, t, zi, kt, yb, ye, tid, not_done, gtid, thb, the, q, r;
+  int nny =shape[1];
+  int nnx =shape[0];
+  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  int nwf = stencil_ctx.num_wf;
+  int time_blk = t_dim*2+1; //temporal block size
+  int tgs = stencil_ctx.thread_group_size;
+  int th_nwf = nwf/tgs;
+
+  // 25-point const. coeff specific
+  FLOAT_PRECISION two=2.0;
+
+#pragma omp parallel private(zi, kt, yb, ye, t, q, r, thb, the, tid, gtid, i, j, k, not_done) shared(tgs, nwf, th_nwf, zb, ze, yb_r, ye_r, mtid, xb, xe, time_blk, t_dim, b_inc, e_inc, t_start) num_threads(stencil_ctx.thread_group_size)
+  {
+    
+
+    tid = 0;
+    gtid = 0;
+#if defined(_OPENMP)
+    tid = omp_get_thread_num();
+    gtid = tid + mtid * tgs;
+#endif
+    not_done = 1;
+    zi = zb;
+    kt = zb;
+    t = 0;
+    yb = yb_r;
+    ye = ye_r;
+    thb = th_nwf*tid;
+    the = th_nwf*(tid+1);
+
+    while(not_done) {
+
+//if(t==0)  
+//if(tid==1) 
+//printf("[%d, %d]t:%d yb_r:%d, ye_r:%d yb:%d ye:%d thb:%d the:%d nwf:%d zi:%d kt:%d \n", 
+//                    gtid, tid, t, yb_r, ye_r, yb, ye, thb, the, nwf, zi, kt);
+
+        if((t)%2 == 1){
+          for(k=kt+thb; k<kt+the; k++){
+            for(j=yb; j<ye; j++) {
+#pragma simd
+              for(i=xb; i<xe; i++) {
+                FUNC_BODY(U,V)
+              }
+            }
+          }
+        }else{
+          for(k=kt+thb; k<kt+the; k++){
+            for(j=yb; j<ye; j++) {
+#pragma simd
+              for(i=xb; i<xe; i++) {
+                FUNC_BODY(V,U)
+              }
+            }
+          }
+        }
+//      }
+
+        if(t+1 < time_blk){
+          if(t< t_dim){ // inverted trapezoid (or lower half of the diamond)
+            yb -= b_inc;
+            ye += e_inc;
+          }else{ // trapezoid  (or upper half of the diamond)
+            yb += b_inc;
+            ye -= e_inc;
+          }
+          kt -= NHALO;
+          t++;
+        } else {
+//printf("\n");
+          t = 0;
+          yb = yb_r;
+          ye = ye_r;
+
+          zi+=nwf;
+          kt = zi;
+          if(zi >= ze) not_done = 0;
+        }
+
+      // reassign the wavefronts to cores if fraction of MW remains
+      if( ((ze-zi) < nwf) & (t == 0)){ 
+        q = (int)((ze-zi)/tgs);
+        r = (ze-zi)%tgs;
+        if(tid < r) {
+          thb = tid * (q+1);
+          the = thb + (q+1);
+        }else {
+          thb = r * (q+1) + (tid - r) * q;
+          the =thb + q;
+        }
+//if(not_done == 1) printf("[%d]  q:%d r:%d thb:%d the:%d rem:%d\n", tid, q, r, thb, the, ze-zi);
+      }
+
+      t_start = MPI_Wtime();
+#pragma omp barrier
+      stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
+    } // z loop
+
+    
+  } // parallel region
+
+//printf("\n");
+}
