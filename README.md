@@ -101,3 +101,7 @@ for performance measurements and verification regression tests.
         Most of the remaining scripts are used to run experiments at systems 
         with job scheduler (for example, Shaheen at KAUST). These scripts should 
 	be executed from the root directory of the project
+
+
+
+For questions and inquiries please contact tareq.m.malas@gmail.com
