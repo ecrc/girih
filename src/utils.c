@@ -41,7 +41,7 @@ void param_default(Parameters *p) {
   // diamond method
   p->t_dim = -1;
 //  p->nb_diamond_chunk=1;
-  p->halo_concat = 0;
+  p->halo_concat = 1;
 
   p->cache_size = 8192;
 
@@ -1326,8 +1326,8 @@ void print_help(Parameters *p){
         "  --alignment <integer>\n"
         "       Specify the memory alignment value (in bytes) of the\n"
         "       allocated domain arrays\n"
-        "  --disable-source-point\n"
-        "       disables the source point update in the solution domain\n"
+//        "  --disable-source-point\n"
+//        "       disables the source point update in the solution domain\n"
 
         "\nDisplay options:\n"
         "  --verbose <bool>\n"
@@ -1338,10 +1338,10 @@ void print_help(Parameters *p){
         "\nSpecialized arguments:\n"
         "  --t-dim <integer>    (specific to the Diamond methods)\n"
         "       Specifies the value of unrolling in time\n"
-        "  --z-mpi-contig <bool>    (Specific to standard methods: 0-3)\n"
+        "  --z-mpi-contig <bool>    (Specific to standard methods: 0-1)\n"
         "       Uses contiguous MPI datatype in the z direction of the MPI\n"
         "       topology at the standard methods\n"
-        "  --halo-concatenate <integer>    (specific to methods: 1, 2 ,6 ,7 ,and 9)\n"
+        "  --halo-concatenate <integer>  (experimental feature)\n"
         "       Explicitly concatenate halo information before send and unpack them\n"
         "       at receiving end using multi-threading.\n"
         "       (Works for decomposition across X and Y only)\n"
