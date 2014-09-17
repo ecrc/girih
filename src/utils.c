@@ -36,7 +36,7 @@ void param_default(Parameters *p) {
   p->verbose = 1;
   p->debug = 0;
   p->source_point_enabled = 0;
-  p->array_padding = 0;
+  p->array_padding = 1;
 
   // diamond method
   p->t_dim = -1;
