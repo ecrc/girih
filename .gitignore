@@ -1,9 +1,10 @@
 tmp/*
 build/*
 build_dp/*
+results/*
 scripts/verification/*pyc
 scripts/*.pyc
+scripts/sisc/*.pyc
 /src/.~
-results/.
 src/.cproject
 src/.project
