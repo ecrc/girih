@@ -94,6 +94,7 @@ const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2)
 // context information passed to the stencil kernel
 typedef struct{
   int bs_y; // for spatial blocking in Y at the standard methods
+  int bs_x; // for spatial blocking in X at MWD
   int thread_group_size;
 
   // for separate stride-1 functions
@@ -152,7 +153,7 @@ typedef struct{
 
   // Holds the value of cache blocking across Y axis
   stencil_CTX stencil_ctx;
-//  int bs_y;
+
   // to enable/disable source point update
   int source_point_enabled;
 

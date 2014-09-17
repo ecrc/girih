@@ -58,6 +58,8 @@ void param_default(Parameters *p) {
 
   p->stencil_ctx.enable_likwid_m = 1;
 
+  p->stencil_ctx.bs_x = 1e6;
+
   // Topology parameters
   p->t.is_periodic[0]=0;
   p->t.is_periodic[1]=0;
@@ -496,11 +498,23 @@ void intra_diamond_info_init(Parameters *p){
           exit(1);
         }
 
+
+
       // check for thread assignment validity
       if(p->stencil_ctx.thread_group_size > p->num_threads){
         if(p->mpi_rank ==0){
           printf("###WARNING: Requested thread group size is larger the total available threads \n");
         }
+      }
+    }
+
+    // check for block size in X validity
+    if(p->stencil_ctx.bs_x%NHALO != 0) {
+      if(p->mpi_rank ==0){
+        fprintf(stderr, "###ERROR: Block size in in X must be multiples of the stencil radius\n");
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Finalize();
+        exit(1);
       }
     }
 
@@ -846,6 +860,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->array_padding = a.array_padding;
 
   b->stencil_ctx.bs_y = a.stencil_ctx.bs_y;
+  b->stencil_ctx.bs_x = a.stencil_ctx.bs_x;
   b->stencil_ctx.thread_group_size = a.stencil_ctx.thread_group_size;
   b->stencil_ctx.target_kernel = a.stencil_ctx.target_kernel;
   b->stencil_ctx.ref_stride = a.stencil_ctx.ref_stride;
@@ -1219,6 +1234,7 @@ void print_param(Parameters p) {
     printf("Block size in Y: %d\n", p.stencil_ctx.bs_y);
     break;
   case 2: // dynamic scheduling intra diamond methods
+    printf("Block size in X: %d\n", p.stencil_ctx.bs_x);
     printf("Enable wavefronts: %d\n", p.wavefront!=0);
     if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", mwd_algorithm);
     printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*NHALO);
@@ -1353,6 +1369,9 @@ void print_help(Parameters *p){
         "       Indicate whether to use wavefront in the tile. 1 for yes and 0 for no (default 1)\n"
         "  --num-wavefronts <int>\n"
         "       Set the number of wavefronts updated per wavefront iteration (default 1)\n"
+        "  --bsx <int>\n"
+        "       Set block size in X for MWD (default 1e6)\n"
+
 
 //        "  --target-parallel-wavefront <integer>\n"
 //        "       Indicate specify multi-threaded wavefront parallelization strategy (specific to ts 9)\n"
@@ -1397,6 +1416,7 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"wavefront", 1, 0, 0},
         {"num-wavefronts", 1, 0, 0},
         {"pad-array", 0, 0, 0},
+        {"bsx", 1, 0, 0},
 //        {"target-parallel-wavefront", 1, 0, 0},
         {0, 0, 0, 0}
     };
@@ -1434,6 +1454,7 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "wavefront") == 0) p->wavefront = atoi(optarg)!=0;
       else if(strcmp(long_options[option_index].name, "num-wavefronts") == 0) p->stencil_ctx.num_wf = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "pad-array") == 0) p->array_padding = 1;
+      else if(strcmp(long_options[option_index].name, "bsx") == 0) p->stencil_ctx.bs_x = atoi(optarg);
 //      else if(strcmp(long_options[option_index].name, "target-parallel-wavefront") == 0) p->target_parallel_wavefront = atoi(optarg);
      break;
 

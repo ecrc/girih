@@ -2,7 +2,7 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, stencil_CTX stencil_ctx, int mtid) {
 
-  int i, j, k, t, yb, ye, zi, kt;
+  int i, j, k, t, yb, ye, zi, kt, ib, ie, ib_r, ie_r, bs_x;
   int nny =shape[1];
   int nnx =shape[0];
   unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
@@ -14,46 +14,58 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
   FLOAT_PRECISION two=2.0;
   
   if (zb+nwf >= ze) nwf = ze-zb;
-  for(zi=zb; zi<ze; zi+=nwf) {
-    if(zi+nwf >= ze) nwf = ze-zi;
-    yb = yb_r;
-    ye = ye_r;
-    kt = zi;
-    for(t=0; t< time_blk; t++){
-      if((t)%2 == 1){
+  bs_x = stencil_ctx.bs_x;
+  for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
+    ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
+    ib = ib_r;
+    ie = ie_r;
+//printf("bs_x:%d  xb:%d  xe:%d  ib:%d  ie:%d\n", bs_x, xb, xe, ib, ie);
+    for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop
+      if(zi+nwf >= ze) nwf = ze-zi;
+      yb = yb_r;
+      ye = ye_r;
+      kt = zi;
+      for(t=0; t< time_blk; t++){
+        if((t)%2 == 1){
 
-        for(k=kt; k<nwf+kt; k++){
-          for(j=yb; j<ye; j++) {
-#pragma simd
-            for(i=xb; i<xe; i++) {
-              FUNC_BODY(U,V)
+          for(k=kt; k<nwf+kt; k++){
+            for(j=yb; j<ye; j++) {
+  #pragma simd
+              for(i=ib; i<ie; i++) {
+                FUNC_BODY(U,V)
+              }
             }
           }
-        }
 
-      }else{
+        }else{
 
-        for(k=kt; k<nwf+kt; k++){
-          for(j=yb; j<ye; j++) {
-#pragma simd
-            for(i=xb; i<xe; i++) {
-              FUNC_BODY(V,U)
+          for(k=kt; k<nwf+kt; k++){
+            for(j=yb; j<ye; j++) {
+  #pragma simd
+              for(i=ib; i<ie; i++) {
+                FUNC_BODY(V,U)
+              }
             }
           }
+
         }
 
-      }
+        // Update block size in Y
+        if(t< t_dim){ // inverted trapezoid (or lower half of the diamond)
+          yb -= b_inc;
+          ye += e_inc;
+        }else{ // trapezoid  (or upper half of the diamond)
+          yb += b_inc;
+          ye -= e_inc;
+        }
 
-      if(t< t_dim){ // inverted trapezoid (or lower half of the diamond)
-        yb -= b_inc;
-        ye += e_inc;
-      }else{ // trapezoid  (or upper half of the diamond)
-        yb += b_inc;
-        ye -= e_inc;
-      }
+        // Update block size in X
+        if (ib != xb) ib-=NHALO; 
+        if (ie != xe) ie-=NHALO;
 
-      kt -= NHALO;
-    }
+        kt -= NHALO;
 
-  }
+      } // time loop
+    } // wavefront loop
+  } // blocking in x
 }
