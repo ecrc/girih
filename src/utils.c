@@ -181,11 +181,14 @@ void set_centered_source(Parameters *p) {
 
 unsigned long get_mwf_size(Parameters *p, int t_dim){
   unsigned long diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
-  lnx = (p->stencil_ctx.bs_x < p->ldomain_shape[0] ? p->stencil_ctx.bs_x : p->ldomain_shape[0]);
+
   t_order = KernelList[p->target_kernel].time_order;
   diam_width = (t_dim+1)*2*NHALO;
   int nwf = p->stencil_ctx.num_wf;
   diam_height = t_dim*2*NHALO + nwf;
+
+  int bsl = p->stencil_ctx.bs_x + t_dim*NHALO;
+  lnx = (bsl < p->ldomain_shape[0] ? bsl : p->ldomain_shape[0]);
 
   wf_updates = (t_dim+1)*(t_dim+1)*2 * NHALO; // Y-T projection
   wf_elements = (wf_updates - diam_width) * NHALO + diam_width + diam_width*(nwf-1);
