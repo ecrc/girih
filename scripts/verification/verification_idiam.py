@@ -3,56 +3,48 @@
 def verification_idiam(k):
     from verification_utils import run_verification
 
-    wf = 1
+    dim_list = [[16, 128,  128,1, 8, 1],
+                [32, 480,  128,5, 8, 2],
+                [64, 480,  128,5, 32, 2]]
+    npx =1
+    npy =1
+    npz =1
 
-    if k == 9:
-        dim_list = [[16, 128,  128,1],
+
+    print "Verifying different values of cache blocking in X"
+    for th in range(2,21,2):
+        for nlx, nly, nlz, t, bs_x, tgs in dim_list:
+            for kernel, R in [(1,1), (4,4)]:
+                nx = nlx*npx
+                ny = nly*npy
+                nz = nlz*npz
+                if th <= nly/((t+1)*2*R): # enough concurrency in the wavefront for the provided threads
+                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  num_threads=th, tgs=tgs, nwf=tgs, bs_x=bs_x)
+
+
+
+    print "Verifying different multi-core wavefront threads/tile_size combinations"
+    dim_list = [[16, 128,  128,1],
                     [16, 480,  128,5],
                     [16, 640,  128,7]]
-        npx =1
-        npy =1
-        npz =1
+    tgs=1
+    for th in range(1,20):
+        for nlx, nly, nlz, t in dim_list:
+            for kernel in [1]:
+                nx = nlx*npx
+                ny = nly*npy
+                nz = nlz*npz
+                if th <= nly/((t+1)*2): # enough concurrency in the wavefront for the provided threads
+                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  num_threads=th, tgs=tgs, nwf=tgs)
 
-        print "Verifying multi-wavefronts"
-        for nwf in range(1,10):
-            for nlx, nly, nlz, t in [[16, 480,  128,5]]:
-                for kernel in [0,1,2,3,4,5]:
-                    nx = nlx*npx
-                    ny = nly*npy
-                    nz = nlz*npz
-                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, wavefronts=wf, tgs=1, fuse_wf=1, nwf=nwf)
-
-
-        print "Verifying fused wavefronts"
-        for th in range(1,8):
-            for nlx, nly, nlz, t in dim_list:
-                for kernel in [0,1,2,3,4,5]:
-                    nx = nlx*npx
-                    ny = nly*npy
-                    nz = nlz*npz
-                    if th <= nly/((t+1)*2): # enough concurrency in the wavefront for the provided threads
-                        run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, wavefronts=wf, num_threads=th, tgs=th, fuse_wf=1)
-       
-
-        print "Verifying different multi-core wavefront threads/tile_size combinations"
-        tgs = 1
-        for th in range(1,16):
-            for nlx, nly, nlz, t in dim_list:
-                for kernel in [1]:
-                    nx = nlx*npx
-                    ny = nly*npy
-                    nz = nlz*npz
-                    if th <= nly/((t+1)*2): # enough concurrency in the wavefront for the provided threads
-                        run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, wavefronts=wf, num_threads=th, tgs=tgs)
-
-        for th, tgs in [(16, 16), (16, 8), (16, 4), (16, 2), (8,8), (8,4), (8,2)]:
-            for nlx, nly, nlz, t in dim_list:
-                for kernel in [1]:
-                    nx = nlx*npx
-                    ny = nly*npy
-                    nz = nlz*npz
-                  #  if th < (t+1)**2: # enough concurrency in the wavefront for the provided threads
-                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, wavefronts=wf, num_threads=th, tgs=tgs)
+    for th, tgs in [(16, 16), (16, 8), (16, 4), (16, 2), (8,8), (8,4), (8,2)]:
+        for nlx, nly, nlz, t in dim_list:
+            for kernel in [1]:
+                nx = nlx*npx
+                ny = nly*npy
+                nz = nlz*npz
+              #  if th < (t+1)**2: # enough concurrency in the wavefront for the provided threads
+                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  num_threads=th, tgs=tgs, nwf=tgs)
 
 
 
@@ -74,7 +66,7 @@ def verification_idiam(k):
                 nz = nlz*npz
                 np = npx*npy*npz
                 tgs = max(1, min(8,16/np))
-                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, wavefronts=wf, tgs=tgs)
+                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  tgs=tgs, nwf=tgs)
 
 
     print "Verifying temporal blocks with increasing size"
@@ -93,8 +85,8 @@ def verification_idiam(k):
                 ny = nly*npy
                 nz = nlz*npz
                 np = npx*npy*npz
-                tgs = max(1, min(8,16/np))
-                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, wavefronts=wf, tgs=tgs)
+                tgs = max(1, min(10,20/np))
+                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  tgs=tgs, nwf=tgs)
 
 
     print "Verifying double precision + halo concatenation combinations"
@@ -110,8 +102,8 @@ def verification_idiam(k):
                 ny = nly*npy
                 nz = nlz*npz
                 np = npx*npy*npz
-                tgs = max(1, min(8,16/np))
-                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, dp=1, concat=1, wavefronts=wf, tgs=tgs)
+                tgs = max(1, min(10/20/np))
+                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, dp=1, concat=1,  tgs=tgs, nwf=tgs)
 
 
     print "Verifying double precision combinations"
@@ -122,8 +114,8 @@ def verification_idiam(k):
                 ny = nly*npy
                 nz = nlz*npz
                 np = npx*npy*npz
-                tgs = max(1, min(8,16/np))
-                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, dp=1, wavefronts=wf, tgs=tgs)
+                tgs = max(1, min(10/20/np))
+                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, dp=1,  tgs=tgs, nwf=tgs)
 
 
 
@@ -135,8 +127,8 @@ def verification_idiam(k):
                 ny = nly*npy
                 nz = nlz*npz
                 np = npx*npy*npz
-                tgs = max(1, min(8,16/np))
-                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, concat=1, wavefronts=wf, tgs=tgs)
+                tgs = max(1, min(10,20/np))
+                run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel, concat=1,  tgs=tgs, nwf=tgs)
 
 
 #    # verify the blocking in Y at large XY plains
