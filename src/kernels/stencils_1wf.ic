@@ -17,13 +17,14 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
   bs_x = stencil_ctx.bs_x;
   for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
     ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
-    ib = ib_r;
-    ie = ie_r;
-//printf("bs_x:%d  xb:%d  xe:%d  ib:%d  ie:%d\n", bs_x, xb, xe, ib, ie);
+    //printf("bs_x:%d  xb:%d  xe:%d  ib:%d  ie:%d\n", bs_x, xb, xe, ib, ie);
     for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop
       if(zi+nwf >= ze) nwf = ze-zi;
       yb = yb_r;
       ye = ye_r;
+      ib = ib_r;
+      ie = ie_r;
+
       kt = zi;
       for(t=0; t< time_blk; t++){
         if((t)%2 == 1){
