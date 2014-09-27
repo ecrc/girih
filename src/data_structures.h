@@ -84,13 +84,16 @@ typedef struct{
 }mpi_topology;
 
 typedef struct{
-  int nnx, nny, nnz, xb, xe;
+  int nnx, nny, nnz, xb, xe, j, k;
   unsigned long ln_domain;
 }CLU_CTX;
 
-#define STRIDE1_SIG (const CLU_CTX clu_ctx, const int j, const int k,\
+#define CLU_SIG (const CLU_CTX clu_ctx,\
 const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
 const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2)
+
+typedef void (*clu_func_t)CLU_SIG;
+
 // context information passed to the stencil kernel
 typedef struct{
   int bs_y; // for spatial blocking in Y at the standard methods
@@ -98,7 +101,7 @@ typedef struct{
   int thread_group_size;
 
   // for separate stride-1 functions
-  void (*ref_stride) STRIDE1_SIG;
+  clu_func_t clu_func;
 
   int num_wf; // number of wavefront updats per iteration
   // wavefront profiling
@@ -116,16 +119,18 @@ typedef struct{
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid)
 
+typedef void (*spt_blk_func_t)KERNEL_SIG;
+typedef void (*mwd_func_t)KERNEL_MWD_SIG;
+
 struct Stencil {
   const char *name;
   int r;
   int time_order;
   enum Stencil_Shapes shape;
   enum Stencil_Coefficients coeff;
-  void (*spt_blk_func)KERNEL_SIG;
-  void (*stat_sched_func)KERNEL_SIG;
-  void (*mwd_func)KERNEL_MWD_SIG;
-//  void (*mwd_func)KERNEL_MWD_SIG;
+  spt_blk_func_t spt_blk_func;
+  spt_blk_func_t stat_sched_func;
+  mwd_func_t mwd_func;
 };
 
 struct StencilInfo {
@@ -135,9 +140,6 @@ struct StencilInfo {
   enum Stencil_Shapes shape;
   enum Stencil_Coefficients coeff;
 };
-
-typedef void (*spt_blk_func_t)KERNEL_SIG;
-typedef void (*mwd_func_t)KERNEL_MWD_SIG;
 
 
 // context information

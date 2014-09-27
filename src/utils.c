@@ -425,46 +425,31 @@ void auto_tune_diam_nwf(Parameters *op){
 
 void set_kernels(Parameters *p){
 
-  // set MWD diamond kernels
-  // all wavefront kernels
-  #if USE_SPLIT_STRIDE // separate central line update MWD kernel
-    p->mwd_func = iso_ref_all_wf_split;
-  #else
-    #if USE_FIXED_EXE == 1 // MWD with fixed execution multi-wavefront kernels
-      p->mwd_func = femwd_func_list[p->target_kernel];
-      #else // standard MWD kernels
-      if (p->target_ts == 2){
-        if(p->num_threads == 1){ //1WD use implementation
-          p->stencil.mwd_func = swd_func_list[p->target_kernel];
-        }
-        else {
-          p->stencil.mwd_func = mwd_func_list[p->target_kernel];
-        }
-      }
-    #endif
-  #endif
+#if USE_SPLIT_STRIDE // separate central line update
+  p->stencil.spt_blk_func = iso_ref_split; // Note keeping the stat. sched. same
 
-#if USE_SPLIT_STRIDE
-// naive cases with split function call to the 1-stride
-extern void iso_ref_split KERNEL_SIG;
-  p->stencil.spt_blk_func = iso_ref_split;
-  // set central line updates kernels
-  switch(p->target_kernel){
-  case 0:
-   p->stencil_ctx.ref_stride = &iso_ref_8space_2time_stride;
-   break;
-  case 1:
-   p->stencil_ctx.ref_stride = &iso_ref_2space_1time_stride;
-   break;
-  case 2:
-   p->stencil_ctx.ref_stride = &iso_ref_2space_1time_var_stride;
-   break;
-  case 3:
-   p->stencil_ctx.ref_stride = &iso_ref_2space_1time_var_axsym_stride;
-   break;
+  if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
+    p->stencil.mwd_func = swd_iso_ref_split;
+  } else {
+    p->stencil.mwd_func = mwd_iso_ref_split;
   }
+
+  // set central line updates kernels
+  p->stencil_ctx.clu_func = clu_func_list[p->target_kernel];
+
 #else
   p->stencil.spt_blk_func = spt_blk_func_list[p->target_kernel];
+
+  #if USE_FIXED_EXE == 1 // MWD with fixed execution multi-wavefront kernels
+    p->stencil.mwd_func = femwd_func_list[p->target_kernel];
+  #else // standard MWD kernels
+    if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
+      p->stencil.mwd_func = swd_func_list[p->target_kernel];
+    }
+    else {
+      p->stencil.mwd_func = mwd_func_list[p->target_kernel];
+    }
+  #endif
 #endif
 
   p->stencil.name = stencil_info_list[p->target_kernel].name;
@@ -905,7 +890,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->stencil_ctx.bs_y = a.stencil_ctx.bs_y;
   b->stencil_ctx.bs_x = a.stencil_ctx.bs_x;
   b->stencil_ctx.thread_group_size = a.stencil_ctx.thread_group_size;
-  b->stencil_ctx.ref_stride = a.stencil_ctx.ref_stride;
+  b->stencil_ctx.clu_func = a.stencil_ctx.clu_func;
   b->stencil_ctx.num_wf = a.stencil_ctx.num_wf;
 
   
@@ -1276,7 +1261,7 @@ void print_param(Parameters p) {
   printf("Verify:   %d\n", p.verify);
   printf("Source point enabled: %d\n", p.source_point_enabled);
   printf("Time unroll:   %d\n", p.t_dim);
-  printf("Using separate call to 1-stride loop: %d\n", USE_SPLIT_STRIDE);
+  printf("Using separate call to central line update: %d\n", USE_SPLIT_STRIDE);
   printf("Halo concatenation: %d\n", p.halo_concat);
   // Print kernel specific parameters
   switch(p.target_ts){

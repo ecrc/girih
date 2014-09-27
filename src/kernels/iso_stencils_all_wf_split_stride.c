@@ -31,17 +31,20 @@ void iso_ref_all_wf_split( const int shape[3], const int xb, const int yb_r, con
         ye = ye_m - t*e_inc;
       }
       k = zi - t*(NHALO+1);
+      clu_ctx.k = k;
 
       if((t)%2 == 1){
 
         for(j=yb; j<ye; j++) {
-          stencil_ctx.ref_stride(clu_ctx, j, k, coef, u, v, roc2);
+          clu_ctx.j = j;
+          stencil_ctx.clu_func(clu_ctx, coef, u, v, roc2);
         }
 
       }else{
 
         for(j=yb; j<ye; j++) {
-          stencil_ctx.ref_stride(clu_ctx, j, k, coef, v, u, roc2);
+          clu_ctx.j = j;
+          stencil_ctx.clu_func(clu_ctx, coef, v, u, roc2);
         }
       }
     }
