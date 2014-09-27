@@ -9,11 +9,11 @@
 void check_merr(int e) {
   switch(e){
     case 22: // EINVAL
-//      printf("alignment error\n");
+      printf("alignment error\n");
     break;
 
     case 12: //ENOMEM
-//      printf("no sufficient memory\n");
+      printf("no sufficient memory\n");
     break;
   }
 
@@ -28,7 +28,7 @@ void param_default(Parameters *p) {
   p->alignment = 16;
   p->target_ts = 0; //Naive TS
   p->target_kernel = 0; //Basic ISO stencil kernel
-  NHALO = stencil_info_list[p->target_kernel].stencil_radius;
+  NHALO = stencil_info_list[p->target_kernel].r;
   p->n_tests = 3;
   p->nt = 100;
   p->verify = 0;
@@ -127,21 +127,21 @@ void arrays_allocate(Parameters *p) {
 
   // allocate the size of the coefficients matrix according to the stencil type
   unsigned long coef_size;
-  switch(p->stencil.stencil_coeff){
+  switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
     coef_size = 10;
     break;
 
   case VARIABLE_COEFFICIENT:
-    coef_size = p->ln_domain*(1 + p->stencil.stencil_radius);
+    coef_size = p->ln_domain*(1 + p->stencil.r);
     break;
 
   case VARIABLE_COEFFICIENT_AXSYM:
-    coef_size = p->ln_domain*(1 + 3*p->stencil.stencil_radius);
+    coef_size = p->ln_domain*(1 + 3*p->stencil.r);
     break;
 
   case VARIABLE_COEFFICIENT_NOSYM:
-    coef_size = p->ln_domain*(1 + 6*p->stencil.stencil_radius);
+    coef_size = p->ln_domain*(1 + 6*p->stencil.r);
     break;
 
   default:
@@ -193,7 +193,7 @@ unsigned long get_mwf_size(Parameters *p, int t_dim){
   wf_updates = (t_dim+1)*(t_dim+1)*2 * NHALO; // Y-T projection
   wf_elements = (wf_updates - diam_width) * NHALO + diam_width + diam_width*(nwf-1);
 
-  switch(p->stencil.stencil_coeff){
+  switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
     total_points = ( (t_order+1)             *wf_elements + (diam_width + diam_height )*2*NHALO) * lnx * sizeof(FLOAT_PRECISION);
     break;
@@ -433,7 +433,14 @@ void set_kernels(Parameters *p){
     #if USE_FIXED_EXE == 1 // MWD with fixed execution multi-wavefront kernels
       p->mwd_func = femwd_func_list[p->target_kernel];
       #else // standard MWD kernels
-      p->mwd_func = mwd_func_list[p->target_kernel];
+      if (p->target_ts == 2){
+        if(p->num_threads == 1){ //1WD use implementation
+          p->stencil.mwd_func = swd_func_list[p->target_kernel];
+        }
+        else {
+          p->stencil.mwd_func = mwd_func_list[p->target_kernel];
+        }
+      }
     #endif
   #endif
 
@@ -461,21 +468,12 @@ extern void iso_ref_split KERNEL_SIG;
 #endif
 
   p->stencil.name = stencil_info_list[p->target_kernel].name;
-  p->stencil.stencil_coeff = stencil_info_list[p->target_kernel].stencil_coeff;
-  p->stencil.stencil_radius = stencil_info_list[p->target_kernel].stencil_radius;
+  p->stencil.coeff = stencil_info_list[p->target_kernel].coeff;
+  p->stencil.r = stencil_info_list[p->target_kernel].r;
   p->stencil.time_order = stencil_info_list[p->target_kernel].time_order;
-  p->stencil.stencil_shape = stencil_info_list[p->target_kernel].stencil_shape;
+  p->stencil.shape = stencil_info_list[p->target_kernel].shape;
   p->stencil.stat_sched_func = stat_sched_func_list[p->target_kernel];
 
-
-  if (p->target_ts == 2){
-    if(p->num_threads == 1){ //1WD use implementation
-      p->stencil.mwd_func = swd_func_list[p->target_kernel];
-    }
-    else {
-      p->stencil.mwd_func = mwd_func_list[p->target_kernel];
-    }
-  }
 }
 
 void standard_info_init(Parameters *p){
@@ -716,11 +714,11 @@ void init(Parameters *p) {
   int q, r, i;
 
   set_kernels(p);
-  NHALO = p->stencil.stencil_radius;
+  NHALO = p->stencil.r;
   p->n_stencils = p->stencil_shape[0] * p->stencil_shape[1] * p->stencil_shape[2];
 
 
-  if(p->stencil.stencil_radius > 10){
+  if(p->stencil.r > 10){
     if(p->mpi_rank == 0) fprintf(stderr,"ERROR: Stencil operators with radius greater than 10 are not supported\n");
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
@@ -821,14 +819,14 @@ void init(Parameters *p) {
 void init_coeff(Parameters * p) {
   int i, k, ax;
 
-  switch(p->stencil.stencil_coeff){
+  switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
     for(i=0;i<NHALO+1;i++)
         p->coef[i] = p->g_coef[i];
     break;
 
   case VARIABLE_COEFFICIENT:
-    for(k=0; k <= p->stencil.stencil_radius; k++){
+    for(k=0; k <= p->stencil.r; k++){
       for(i=0; i<p->ln_domain; i++){
         p->coef[i + k*p->ln_domain] = p->g_coef[k];
       }
@@ -840,7 +838,7 @@ void init_coeff(Parameters * p) {
     for(i=0; i<p->ln_domain; i++){
       p->coef[i] = p->g_coef[0];
     }
-    for(k=0; k < p->stencil.stencil_radius; k++){
+    for(k=0; k < p->stencil.r; k++){
       for(ax=0; ax<3; ax++){
         for(i=0; i<p->ln_domain; i++){
           p->coef[i + p->ln_domain + 3*k*p->ln_domain + ax*p->ln_domain] = p->g_coef[k+1];
@@ -854,7 +852,7 @@ void init_coeff(Parameters * p) {
     for(i=0; i<p->ln_domain; i++){
       p->coef[i] = p->g_coef[0];
     }
-    for(k=0; k < p->stencil.stencil_radius; k++){
+    for(k=0; k < p->stencil.r; k++){
       for(ax=0; ax<3; ax++){
         for(i=0; i<p->ln_domain; i++){
           p->coef[i + p->ln_domain + 6*k*p->ln_domain +  2*ax   *p->ln_domain] = p->g_coef[k+1];
@@ -952,10 +950,10 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->t.cart_comm = a.t.cart_comm;
 
   b->stencil.name = a.stencil.name;
-  b->stencil.stencil_radius = a.stencil.stencil_radius;
+  b->stencil.r = a.stencil.r;
   b->stencil.time_order = a.stencil.time_order;
-  b->stencil.stencil_shape = a.stencil.stencil_shape;
-  b->stencil.stencil_coeff = a.stencil.stencil_coeff;
+  b->stencil.shape = a.stencil.shape;
+  b->stencil.coeff = a.stencil.coeff;
   b->stencil.spt_blk_func  = a.stencil.spt_blk_func;
   b->stencil.stat_sched_func = a.stencil.stat_sched_func;
   b->stencil.mwd_func = a.stencil.mwd_func;
@@ -1238,7 +1236,7 @@ void print_param(Parameters p) {
 
   diam_height = (p.t_dim*2)*NHALO + p.stencil_ctx.num_wf;
 
-  switch (p.stencil.stencil_coeff){
+  switch (p.stencil.coeff){
   case CONSTANT_COEFFICIENT:
     coeff_type = "constant";
     break;
@@ -1268,7 +1266,7 @@ void print_param(Parameters p) {
   printf("******************************************************\n");
   printf("Time stepper name: %s\n", TSList[p.target_ts].name);
   printf("Stencil Kernel name: %s\n", p.stencil.name);
-  printf("Stencil Kernel semi-bandwidth: %d\n", p.stencil.stencil_radius);
+  printf("Stencil Kernel semi-bandwidth: %d\n", p.stencil.r);
   printf("Stencil Kernel coefficients: %s\n", coeff_type);
   printf("Precision: %s\n", precision);
   printf("Global domain    size:%lu    nx:%d    ny:%d    nz:%d\n", p.n_stencils, p.stencil_shape[0],p.stencil_shape[1],p.stencil_shape[2]);
@@ -1326,7 +1324,7 @@ void list_kernels(Parameters *p){
     printf("\nAvailable stencil kernels:\n");
     i = 0;
     while(1){
-      switch (stencil_info_list[i].stencil_coeff){
+      switch (stencil_info_list[i].coeff){
       case CONSTANT_COEFFICIENT:
         coeff_type = "constant";
         break;
@@ -1342,7 +1340,7 @@ void list_kernels(Parameters *p){
       }
       if (stencil_info_list[i].name == 0) break;
       printf("%02d  stencil_op:%s  time-order:%d  radius:%d  coeff:%s\n",
-          i, stencil_info_list[i].name, stencil_info_list[i].time_order, stencil_info_list[i].stencil_radius,coeff_type);
+          i, stencil_info_list[i].name, stencil_info_list[i].time_order, stencil_info_list[i].r,coeff_type);
       i++;
     }
   }

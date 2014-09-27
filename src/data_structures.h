@@ -116,12 +116,12 @@ typedef struct{
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, stencil_CTX stencil_ctx, int mtid)
 
-struct Kernel {
+struct Stencil {
   const char *name;
-  int stencil_radius;
+  int r;
   int time_order;
-  enum Stencil_Shapes stencil_shape;
-  enum Stencil_Coefficients stencil_coeff;
+  enum Stencil_Shapes shape;
+  enum Stencil_Coefficients coeff;
   void (*spt_blk_func)KERNEL_SIG;
   void (*stat_sched_func)KERNEL_SIG;
   void (*mwd_func)KERNEL_MWD_SIG;
@@ -130,10 +130,10 @@ struct Kernel {
 
 struct StencilInfo {
   const char *name;
-  int stencil_radius;
+  int r;
   int time_order;
-  enum Stencil_Shapes stencil_shape;
-  enum Stencil_Coefficients stencil_coeff;
+  enum Stencil_Shapes shape;
+  enum Stencil_Coefficients coeff;
 };
 
 typedef void (*spt_blk_func_t)KERNEL_SIG;
@@ -183,8 +183,7 @@ typedef struct{
   mpi_topology t;
   Profile prof;
 
-  void (*mwd_func)KERNEL_MWD_SIG;
-  struct Kernel stencil;
+  struct Stencil stencil;
 
   // list of coefficients to be used in stencil operators
   FLOAT_PRECISION g_coef[11];
