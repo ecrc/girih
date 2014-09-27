@@ -84,11 +84,11 @@ typedef struct{
 }mpi_topology;
 
 typedef struct{
-  int nnx, nny, nnz, xb, xe, j, k;
+  int nnx, nny, nnz;
   unsigned long ln_domain;
 }CLU_CTX;
 
-#define CLU_SIG (const CLU_CTX clu_ctx,\
+#define CLU_SIG (const CLU_CTX clu_ctx, const int xb, const int xe, const int j, const int k, \
 const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
 const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2)
 

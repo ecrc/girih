@@ -11,12 +11,12 @@ void iso_ref_clu_8space_2time CLU_SIG{
   int i;
   FLOAT_PRECISION two=2.0;
   FLOAT_PRECISION lap;
-  FLOAT_PRECISION * restrict u_s    =    &u[(clu_ctx.j + clu_ctx.k*clu_ctx.nny)*clu_ctx.nnx];
-  const FLOAT_PRECISION * restrict v_s    =    &v[(clu_ctx.j + clu_ctx.k*clu_ctx.nny)*clu_ctx.nnx];
-  const FLOAT_PRECISION * restrict roc2_s = &roc2[(clu_ctx.j + clu_ctx.k*clu_ctx.nny)*clu_ctx.nnx];
+  FLOAT_PRECISION * restrict u_s    =    &u[(j + k*clu_ctx.nny)*clu_ctx.nnx];
+  const FLOAT_PRECISION * restrict v_s    =    &v[(j + k*clu_ctx.nny)*clu_ctx.nnx];
+  const FLOAT_PRECISION * restrict roc2_s = &roc2[(j + k*clu_ctx.nny)*clu_ctx.nnx];
 
 #pragma simd
-  for(i=clu_ctx.xb; i<clu_ctx.xe; i++) {
+  for(i=xb; i<xe; i++) {
 
     lap=coef[0]*V(i,0,0)                    // MOVE THE MUL OUT
     +coef[1]*(V(i+1,0  ,0  )+V(i-1,0  ,0  ))
@@ -41,11 +41,11 @@ void iso_ref_clu_8space_2time CLU_SIG{
 void iso_ref_clu_2space_1time CLU_SIG{
 
   int i;
-  FLOAT_PRECISION * restrict u_s       = &u[(clu_ctx.j + clu_ctx.k*clu_ctx.nny)*clu_ctx.nnx];
-  const FLOAT_PRECISION * restrict v_s = &v[(clu_ctx.j + clu_ctx.k*clu_ctx.nny)*clu_ctx.nnx];
+  FLOAT_PRECISION * restrict u_s       = &u[(j + k*clu_ctx.nny)*clu_ctx.nnx];
+  const FLOAT_PRECISION * restrict v_s = &v[(j + k*clu_ctx.nny)*clu_ctx.nnx];
 
 #pragma simd
-  for(i=clu_ctx.xb; i<clu_ctx.xe; i++) {
+  for(i=xb; i<xe; i++) {
     U(i) = coef[0]*V(i,0,0)
           +coef[1]*(V(i+1,0  ,0  )+V(i-1,0  ,0  ))
           +coef[1]*(V(i  , +1,0  )+V(i  , -1,0  ))
@@ -59,13 +59,13 @@ void iso_ref_clu_2space_1time_var CLU_SIG{
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;
-  int stride_start = clu_ctx.j*clu_ctx.nnx + clu_ctx.k*nxny;
+  int stride_start = j*clu_ctx.nnx + k*nxny;
   FLOAT_PRECISION * restrict u_s       = &u[stride_start];
   const FLOAT_PRECISION * restrict v_s = &v[stride_start];
   const FLOAT_PRECISION * restrict coef0_s = &coef[stride_start];
   const FLOAT_PRECISION * restrict coef1_s = &coef[stride_start + clu_ctx.ln_domain];
 #pragma simd
-  for(i=clu_ctx.xb; i<clu_ctx.xe; i++) {
+  for(i=xb; i<xe; i++) {
     U(i) = coef0_s[i]*V(i,0,0)
           +coef1_s[i]*(V(i+1,0  ,0  )+V(i-1,0  ,0  ))
           +coef1_s[i]*(V(i  , +1,0  )+V(i  , -1,0  ))
@@ -78,7 +78,7 @@ void iso_ref_clu_2space_1time_var_axsym CLU_SIG{
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;
-  int stride_start = clu_ctx.j*clu_ctx.nnx + clu_ctx.k*nxny;
+  int stride_start = j*clu_ctx.nnx + k*nxny;
   FLOAT_PRECISION * restrict u_s       = &u[stride_start];
   const FLOAT_PRECISION * restrict v_s = &v[stride_start];
   const FLOAT_PRECISION * restrict coef0_s = &coef[stride_start];
@@ -86,7 +86,7 @@ void iso_ref_clu_2space_1time_var_axsym CLU_SIG{
   const FLOAT_PRECISION * restrict coef2_s = &coef[stride_start + clu_ctx.ln_domain*2];
   const FLOAT_PRECISION * restrict coef3_s = &coef[stride_start + clu_ctx.ln_domain*3];
 #pragma simd
-  for(i=clu_ctx.xb; i<clu_ctx.xe; i++) {
+  for(i=xb; i<xe; i++) {
     U(i) = coef0_s[i]*V(i,0,0)
           +coef1_s[i]*(V(i+1,0  ,0  )+V(i-1,0  ,0  ))
           +coef2_s[i]*(V(i  , +1,0  )+V(i  , -1,0  ))
@@ -99,7 +99,7 @@ void iso_ref_clu_8space_1time_var_axsym CLU_SIG{
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;
-  int stride_start = clu_ctx.j*clu_ctx.nnx + clu_ctx.k*nxny;
+  int stride_start = j*clu_ctx.nnx + k*nxny;
   FLOAT_PRECISION * restrict u_s       = &u[stride_start];
   const FLOAT_PRECISION * restrict v_s = &v[stride_start];
   const FLOAT_PRECISION * restrict coef0_s = &coef[stride_start];
@@ -117,7 +117,7 @@ void iso_ref_clu_8space_1time_var_axsym CLU_SIG{
   const FLOAT_PRECISION * restrict coef12_s= &coef[stride_start + clu_ctx.ln_domain*12];
 
 #pragma simd
-  for(i=clu_ctx.xb; i<clu_ctx.xe; i++) {
+  for(i=xb; i<xe; i++) {
     U(i) = coef0_s[i]*V(i,0,0)
           +coef1_s[i]*(V(i+1,0  ,0  )+V(i-1,0  ,0  ))
           +coef2_s[i]*(V(i  , +1,0  )+V(i  , -1,0  ))
@@ -141,7 +141,7 @@ void iso_ref_clu_2space_1time_var_nosym CLU_SIG{
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;
-  int stride_start = clu_ctx.j*clu_ctx.nnx + clu_ctx.k*nxny;
+  int stride_start = j*clu_ctx.nnx + k*nxny;
   FLOAT_PRECISION * restrict u_s       = &u[stride_start];
   const FLOAT_PRECISION * restrict v_s = &v[stride_start];
   const FLOAT_PRECISION * restrict coef0_s = &coef[stride_start];
@@ -152,7 +152,7 @@ void iso_ref_clu_2space_1time_var_nosym CLU_SIG{
   const FLOAT_PRECISION * restrict coef5_s = &coef[stride_start + clu_ctx.ln_domain*5];
   const FLOAT_PRECISION * restrict coef6_s = &coef[stride_start + clu_ctx.ln_domain*6];
 #pragma simd
-  for(i=clu_ctx.xb; i<clu_ctx.xe; i++) {
+  for(i=xb; i<xe; i++) {
     U(i) = coef0_s[i]*V(i  ,0 ,0 )
           +coef1_s[i]*V(i-1,0 ,0 )
           +coef2_s[i]*V(i+1,0 ,0 )

@@ -10,8 +10,6 @@ void iso_ref_split( const int shape[3], const int xb, const int yb, const int zb
   clu_ctx.nnx = shape[0];
   clu_ctx.nny = shape[1];
   clu_ctx.nnz = shape[2];
-  clu_ctx.xb = xb;
-  clu_ctx.xe = xe;
   clu_ctx.ln_domain = shape[0]*shape[1]*shape[2];
 
   for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
@@ -22,9 +20,7 @@ void iso_ref_split( const int shape[3], const int xb, const int yb, const int zb
 #pragma omp for private(k,j) schedule(static,1)
       for(k=zb; k<ze; k++) {
         for(j=jb; j<je; j++) {
-          clu_ctx.j = j;
-          clu_ctx.k = k;
-          stencil_ctx.clu_func(clu_ctx, coef, u, v, roc2);
+          stencil_ctx.clu_func(clu_ctx, xb, xe, j, k, coef, u, v, roc2);
         }
       }
     }
@@ -67,24 +63,16 @@ void swd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const 
         if((t)%2 == 1){
 
           for(k=kt; k<nwf+kt; k++){
-            clu_ctx.k = k;
             for(j=yb; j<ye; j++) {
-              clu_ctx.j = j;
-              clu_ctx.xb = ib;
-              clu_ctx.xe = ie;
-              stencil_ctx.clu_func(clu_ctx, coef, u, v, roc2);
+              stencil_ctx.clu_func(clu_ctx, ib, ie, j, k, coef, u, v, roc2);
             }
           }
 
         }else{
 
           for(k=kt; k<nwf+kt; k++){
-            clu_ctx.k = k;
             for(j=yb; j<ye; j++) {
-              clu_ctx.j = j;
-              clu_ctx.xb = ib;
-              clu_ctx.xe = ie;
-              stencil_ctx.clu_func(clu_ctx, coef, v, u, roc2);
+              stencil_ctx.clu_func(clu_ctx, ib, ie, j, k, coef, v, u, roc2);
             }
           }
 
@@ -166,22 +154,14 @@ void mwd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const 
 
           if((t)%2 == 1){
             for(k=kt+thb; k<kt+the; k++){
-              clu_ctx.k = k;
               for(j=yb; j<ye; j++) {
-                clu_ctx.j = j;
-                clu_ctx.xb = ib;
-                clu_ctx.xe = ie;
-                stencil_ctx.clu_func(clu_ctx, coef, u, v, roc2);
+                stencil_ctx.clu_func(clu_ctx, ib, ie, j, k, coef, u, v, roc2);
               }
             }
           }else{
             for(k=kt+thb; k<kt+the; k++){
-              clu_ctx.k = k;
               for(j=yb; j<ye; j++) {
-                clu_ctx.j = j;
-                clu_ctx.xb = ib;
-                clu_ctx.xe = ie;
-                stencil_ctx.clu_func(clu_ctx, coef, v, u, roc2);
+                stencil_ctx.clu_func(clu_ctx, ib, ie, j, k, coef, v, u, roc2);
               }
             }
           }
