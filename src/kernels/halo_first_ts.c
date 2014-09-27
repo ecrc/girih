@@ -201,24 +201,24 @@ void halo_first_ts(Parameters *p) {
   int x,y;
 
   // sides shapes and boundaries
-  send_b[0][0]= NHALO; send_e[0][0]= p->lstencil_shape[0];
-  send_b[0][1]= NHALO; send_e[0][1]= NHALO;
-  send_b[0][2]= NHALO; send_e[0][2]= NHALO;
-  send_b[1][0]= NHALO; send_e[1][0]= NHALO;
-  send_b[1][1]= NHALO; send_e[1][1]= p->ldomain_shape[1]-2*NHALO;
-  send_b[1][2]= NHALO; send_e[1][2]= NHALO;
-  send_b[2][0]= NHALO; send_e[2][0]= NHALO;
-  send_b[2][1]= NHALO; send_e[2][1]= NHALO;
-  send_b[2][2]= NHALO; send_e[2][2]= p->ldomain_shape[2]-2*NHALO;
-  shape[0][0]= NHALO;
-  shape[0][1]= p->ldomain_shape[1]-2*NHALO;
-  shape[0][2]= p->ldomain_shape[2]-2*NHALO;
+  send_b[0][0]= p->stencil.r; send_e[0][0]= p->lstencil_shape[0];
+  send_b[0][1]= p->stencil.r; send_e[0][1]= p->stencil.r;
+  send_b[0][2]= p->stencil.r; send_e[0][2]= p->stencil.r;
+  send_b[1][0]= p->stencil.r; send_e[1][0]= p->stencil.r;
+  send_b[1][1]= p->stencil.r; send_e[1][1]= p->ldomain_shape[1]-2*p->stencil.r;
+  send_b[1][2]= p->stencil.r; send_e[1][2]= p->stencil.r;
+  send_b[2][0]= p->stencil.r; send_e[2][0]= p->stencil.r;
+  send_b[2][1]= p->stencil.r; send_e[2][1]= p->stencil.r;
+  send_b[2][2]= p->stencil.r; send_e[2][2]= p->ldomain_shape[2]-2*p->stencil.r;
+  shape[0][0]= p->stencil.r;
+  shape[0][1]= p->ldomain_shape[1]-2*p->stencil.r;
+  shape[0][2]= p->ldomain_shape[2]-2*p->stencil.r;
   shape[1][0]= p->lstencil_shape[0];
-  shape[1][1]= NHALO;
-  shape[1][2]= p->ldomain_shape[2]-2*NHALO;
+  shape[1][1]= p->stencil.r;
+  shape[1][2]= p->ldomain_shape[2]-2*p->stencil.r;
   shape[2][0]= p->lstencil_shape[0];
-  shape[2][1]= p->ldomain_shape[1]-2*NHALO;
-  shape[2][2]= NHALO;
+  shape[2][1]= p->ldomain_shape[1]-2*p->stencil.r;
+  shape[2][2]= p->stencil.r;
 
   // compute the coordinates of the sides computations
   for(x=0; x<3; x++){
@@ -234,11 +234,11 @@ void halo_first_ts(Parameters *p) {
     for(y=0; y<3; y++){
       if(p->t.shape[y]>1){
         if(y>x){ // domain dimension > topology dimension
-          start_b[x][y] += NHALO;
-          start_e[x][y] -= NHALO;
+          start_b[x][y] += p->stencil.r;
+          start_e[x][y] -= p->stencil.r;
 
-          finish_b[x][y] += NHALO;
-          finish_e[x][y] -= NHALO;
+          finish_b[x][y] += p->stencil.r;
+          finish_e[x][y] -= p->stencil.r;
         }
       }
     }
@@ -250,17 +250,17 @@ void halo_first_ts(Parameters *p) {
       middle_b[x] = start_e[x][x];
       middle_e[x] = finish_b[x][x];
     } else {
-      middle_b[x] = NHALO;
-      middle_e[x] = p->lstencil_shape[x] + NHALO;
+      middle_b[x] = p->stencil.r;
+      middle_e[x] = p->lstencil_shape[x] + p->stencil.r;
     }
   }
 
   // locate the source point
   int side_source=0, middle_source=0;
   if(p->has_source==1) {
-    if( (p->lsource_pt[0] <  2*NHALO) || (p->lsource_pt[0] >= p->lstencil_shape[0]) ||
-        (p->lsource_pt[1] <  2*NHALO) || (p->lsource_pt[1] >= p->ldomain_shape[1]- 2*NHALO) ||
-        (p->lsource_pt[2] <  2*NHALO) || (p->lsource_pt[2] >= p->ldomain_shape[2]- 2*NHALO) )
+    if( (p->lsource_pt[0] <  2*p->stencil.r) || (p->lsource_pt[0] >= p->lstencil_shape[0]) ||
+        (p->lsource_pt[1] <  2*p->stencil.r) || (p->lsource_pt[1] >= p->ldomain_shape[1]- 2*p->stencil.r) ||
+        (p->lsource_pt[2] <  2*p->stencil.r) || (p->lsource_pt[2] >= p->ldomain_shape[2]- 2*p->stencil.r) )
       side_source=1;
     else
       middle_source=1;

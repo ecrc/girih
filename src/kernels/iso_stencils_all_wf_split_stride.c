@@ -3,7 +3,7 @@
 // ISO stencil
 void iso_ref_all_wf_split( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, stencil_CTX stencil_ctx, int mtid) {
+    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
   int j, k, t, yb, ye, zi, yb_r2;
 
   int yb_m, ye_m;

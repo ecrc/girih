@@ -97,18 +97,18 @@ void mpi_topology_init(Parameters *p) {
 
 void standard_mpi_halo_init(Parameters *p){
   if (p->t.shape[0] > 1) {
-    p->h[0].shape[0]= NHALO;
-    p->h[0].shape[1]= p->ldomain_shape[1]-2*NHALO;
-    p->h[0].shape[2]= p->ldomain_shape[2]-2*NHALO;
+    p->h[0].shape[0]= p->stencil.r;
+    p->h[0].shape[1]= p->ldomain_shape[1]-2*p->stencil.r;
+    p->h[0].shape[2]= p->ldomain_shape[2]-2*p->stencil.r;
 
     // Y and Z direction have fixed Halo beginning across X
-    p->h[0].recv_b[0]= 0;     p->h[0].recv_e[0]= p->lstencil_shape[0]+NHALO;
-    p->h[0].recv_b[1]= NHALO; p->h[0].recv_e[1]= NHALO;
-    p->h[0].recv_b[2]= NHALO; p->h[0].recv_e[2]= NHALO;
+    p->h[0].recv_b[0]= 0;     p->h[0].recv_e[0]= p->lstencil_shape[0]+p->stencil.r;
+    p->h[0].recv_b[1]= p->stencil.r; p->h[0].recv_e[1]= p->stencil.r;
+    p->h[0].recv_b[2]= p->stencil.r; p->h[0].recv_e[2]= p->stencil.r;
 
-    p->h[0].send_b[0]= NHALO; p->h[0].send_e[0]= p->lstencil_shape[0];
-    p->h[0].send_b[1]= NHALO; p->h[0].send_e[1]= NHALO;
-    p->h[0].send_b[2]= NHALO; p->h[0].send_e[2]= NHALO;
+    p->h[0].send_b[0]= p->stencil.r; p->h[0].send_e[0]= p->lstencil_shape[0];
+    p->h[0].send_b[1]= p->stencil.r; p->h[0].send_e[1]= p->stencil.r;
+    p->h[0].send_b[2]= p->stencil.r; p->h[0].send_e[2]= p->stencil.r;
 
     ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[0].recv_hb)); CHKERR(ierr);
     ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].recv_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[0].recv_he)); CHKERR(ierr);
@@ -125,17 +125,17 @@ void standard_mpi_halo_init(Parameters *p){
 
   if (p->t.shape[1] > 1) {
     p->h[1].shape[0]= p->lstencil_shape[0];
-    p->h[1].shape[1]= NHALO;
-    p->h[1].shape[2]= p->ldomain_shape[2]-2*NHALO;
+    p->h[1].shape[1]= p->stencil.r;
+    p->h[1].shape[2]= p->ldomain_shape[2]-2*p->stencil.r;
 
     // X and Z direction have fixed Halo beginning across Y
-    p->h[1].recv_b[0]= NHALO; p->h[1].recv_e[0]= NHALO;
-    p->h[1].recv_b[1]= 0;     p->h[1].recv_e[1]= p->ldomain_shape[1]-NHALO;
-    p->h[1].recv_b[2]= NHALO; p->h[1].recv_e[2]= NHALO;
+    p->h[1].recv_b[0]= p->stencil.r; p->h[1].recv_e[0]= p->stencil.r;
+    p->h[1].recv_b[1]= 0;     p->h[1].recv_e[1]= p->ldomain_shape[1]-p->stencil.r;
+    p->h[1].recv_b[2]= p->stencil.r; p->h[1].recv_e[2]= p->stencil.r;
 
-    p->h[1].send_b[0]= NHALO; p->h[1].send_e[0]= NHALO;
-    p->h[1].send_b[1]= NHALO; p->h[1].send_e[1]= p->ldomain_shape[1]-2*NHALO;
-    p->h[1].send_b[2]= NHALO; p->h[1].send_e[2]= NHALO;
+    p->h[1].send_b[0]= p->stencil.r; p->h[1].send_e[0]= p->stencil.r;
+    p->h[1].send_b[1]= p->stencil.r; p->h[1].send_e[1]= p->ldomain_shape[1]-2*p->stencil.r;
+    p->h[1].send_b[2]= p->stencil.r; p->h[1].send_e[2]= p->stencil.r;
 
     ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[1].recv_hb)); CHKERR(ierr);
     ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].recv_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[1].recv_he)); CHKERR(ierr);
@@ -160,16 +160,16 @@ void standard_mpi_halo_init(Parameters *p){
       p->h[2].shape[1]= p->lstencil_shape[1];
     }
 
-    p->h[2].shape[2]= NHALO;
+    p->h[2].shape[2]= p->stencil.r;
 
-    p->h[2].recv_b[0]= NHALO;
-    p->h[2].recv_b[1]= NHALO;
+    p->h[2].recv_b[0]= p->stencil.r;
+    p->h[2].recv_b[1]= p->stencil.r;
 
     xy_plain = p->ldomain_shape[0] * p->ldomain_shape[1];
     p->h[2].recv_b[2] = 0;
-    p->h[2].send_b[2] = xy_plain * NHALO;
-    p->h[2].send_e[2] = xy_plain * (p->ldomain_shape[2]-2*NHALO);
-    p->h[2].recv_e[2] = xy_plain * (p->ldomain_shape[2]-NHALO);
+    p->h[2].send_b[2] = xy_plain * p->stencil.r;
+    p->h[2].send_e[2] = xy_plain * (p->ldomain_shape[2]-2*p->stencil.r);
+    p->h[2].recv_e[2] = xy_plain * (p->ldomain_shape[2]-p->stencil.r);
 
     if(p->h[2].is_contiguous == 0){
       ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[2].shape, p->h[2].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[2].halo)); CHKERR(ierr);
@@ -187,26 +187,26 @@ void intra_diamond_mpi_halo_init(Parameters *p) {
 
   // Halo data types for the buffer u
   p->hu[1].shape[0]= p->lstencil_shape[0];
-  p->hu[1].shape[1]= NHALO * (p->t_dim+1);
+  p->hu[1].shape[1]= p->stencil.r * (p->t_dim+1);
   p->hu[1].shape[2]= p->lstencil_shape[2];
   p->hu[1].size = p->hu[1].shape[0] * p->hu[1].shape[1] * p->hu[1].shape[2];
 
   // X and Z directions have fixed Halo beginning across Y
-  p->hu[1].recv_b[0]= NHALO;
-  p->hu[1].recv_b[1]= NHALO; // NOTE: shifted by halo size
-  p->hu[1].recv_b[2]= NHALO;
+  p->hu[1].recv_b[0]= p->stencil.r;
+  p->hu[1].recv_b[1]= p->stencil.r; // NOTE: shifted by halo size
+  p->hu[1].recv_b[2]= p->stencil.r;
 
-  p->hu[1].recv_e[0]= NHALO;
-  p->hu[1].recv_e[1]= p->ldomain_shape[1] - NHALO*(p->t_dim +2);
-  p->hu[1].recv_e[2]= NHALO;
+  p->hu[1].recv_e[0]= p->stencil.r;
+  p->hu[1].recv_e[1]= p->ldomain_shape[1] - p->stencil.r*(p->t_dim +2);
+  p->hu[1].recv_e[2]= p->stencil.r;
 
-  p->hu[1].send_b[0]= NHALO;
-  p->hu[1].send_b[1]= NHALO;
-  p->hu[1].send_b[2]= NHALO;
+  p->hu[1].send_b[0]= p->stencil.r;
+  p->hu[1].send_b[1]= p->stencil.r;
+  p->hu[1].send_b[2]= p->stencil.r;
 
-  p->hu[1].send_e[0]= NHALO;
-  p->hu[1].send_e[1]= p->ldomain_shape[1] - NHALO*(p->t_dim +2);
-  p->hu[1].send_e[2]= NHALO;
+  p->hu[1].send_e[0]= p->stencil.r;
+  p->hu[1].send_e[1]= p->ldomain_shape[1] - p->stencil.r*(p->t_dim +2);
+  p->hu[1].send_e[2]= p->stencil.r;
 
   if(p->debug ==1){
     MPI_Barrier(MPI_COMM_WORLD);
@@ -254,13 +254,13 @@ void intra_diamond_mpi_halo_init(Parameters *p) {
   p->hv[1].recv_b[1]= 0;
 
   copyv(p->hu[1].recv_e, p->hv[1].recv_e, 3);
-  p->hv[1].recv_e[1]= p->ldomain_shape[1] - NHALO*(p->t_dim + 1);
+  p->hv[1].recv_e[1]= p->ldomain_shape[1] - p->stencil.r*(p->t_dim + 1);
 
   copyv(p->hu[1].send_b, p->hv[1].send_b, 3);
-  p->hv[1].send_b[1]= 2*NHALO;
+  p->hv[1].send_b[1]= 2*p->stencil.r;
 
   copyv(p->hu[1].send_e, p->hv[1].send_e, 3);
-  p->hv[1].send_e[1]= p->ldomain_shape[1] - NHALO*(p->t_dim +3);
+  p->hv[1].send_e[1]= p->ldomain_shape[1] - p->stencil.r*(p->t_dim +3);
 
   p->hv[1].size = p->hu[1].size;
 

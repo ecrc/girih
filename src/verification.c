@@ -54,9 +54,9 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
 
   FLOAT_PRECISION * restrict u, * restrict v, * restrict roc2, * restrict coef;
   int it, i, j , k, ax;
-  int nnx = p.stencil_shape[0]+2*NHALO;
-  int nny = p.stencil_shape[1]+2*NHALO;
-  int nnz = p.stencil_shape[2]+2*NHALO;
+  int nnx = p.stencil_shape[0]+2*p.stencil.r;
+  int nny = p.stencil_shape[1]+2*p.stencil.r;
+  int nnz = p.stencil_shape[2]+2*p.stencil.r;
   unsigned long n_domain = nnx*nny*nnz;
 
   male = posix_memalign((void **)&(u),    p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
@@ -74,7 +74,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
   case CONSTANT_COEFFICIENT:
     coef_size = 11;
     male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male);
-    for(i=0;i<NHALO+1;i++) coef[i] = p.g_coef[i];
+    for(i=0;i<p.stencil.r+1;i++) coef[i] = p.g_coef[i];
 
     // select the stencil type
     switch(p.stencil.r){
@@ -191,9 +191,9 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
       roc2[i]= 0.0;
   }
   FLOAT_PRECISION r;
-  for(k=NHALO; k<p.stencil_shape[2]+NHALO; k++){
-    for(j=NHALO; j<p.stencil_shape[1]+NHALO; j++){
-      for(i=NHALO; i<p.stencil_shape[0]+NHALO; i++){
+  for(k=p.stencil.r; k<p.stencil_shape[2]+p.stencil.r; k++){
+    for(j=p.stencil.r; j<p.stencil_shape[1]+p.stencil.r; j++){
+      for(i=p.stencil.r; i<p.stencil_shape[0]+p.stencil.r; i++){
         r = 1.0/3 * (1.0*i/p.stencil_shape[0] + 1.0*j/p.stencil_shape[1]  + 1.0*k/p.stencil_shape[2]);
         U(i, j, k)    = r*1.845703;
         V(i, j, k)    = r*1.845703;
@@ -224,10 +224,10 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
     std_kernel(domain_shape, coef, v, u, roc2);
   }
 //  print_3Darray("u"   , u, nnx, nny, nnz, 0);
-//  u[(NHALO+1)*(nnx * nny + nny + 1)] += 100.1;
+//  u[(p.stencil.r+1)*(nnx * nny + nny + 1)] += 100.1;
 
   // compare results
-  compare_results(u, target_domain, p.alignment, p.stencil_shape[0], p.stencil_shape[1], p.stencil_shape[2]);
+  compare_results(u, target_domain, p.alignment, p.stencil_shape[0], p.stencil_shape[1], p.stencil_shape[2], p.stencil.r);
 
   free(u);
   free(v);
@@ -403,7 +403,7 @@ void std_kernel_2space_1time_var_nosym( const int shape[3],
 
 }
 
-void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz){
+void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO){
   int nnx=nx+2*NHALO, nny=ny+2*NHALO, nnz=nz+2*NHALO;
   unsigned long n_domain = nnx*nny*nnz;
   int i, j, k, male;
@@ -496,8 +496,8 @@ FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp){
     for(i=0; i<vp.stencil_shape[2]; i++) {
       for(j=0; j<vp.stencil_shape[1]; j++) {
         for(k=0; k<vp.stencil_shape[0]; k++) {
-          ind = ((i+NHALO)*vp.ldomain_shape[1] +
-              (j+NHALO)) * vp.ldomain_shape[0] + (k+NHALO);
+          ind = ((i+vp.stencil.r)*vp.ldomain_shape[1] +
+              (j+vp.stencil.r)) * vp.ldomain_shape[0] + (k+vp.stencil.r);
           sind = (i*vp.stencil_shape[1] + j) * vp.stencil_shape[0] + k;
           aggr_domain[sind] = vp.U1[ind];
         }
@@ -517,7 +517,7 @@ void aggregate_MPI_subdomains(Parameters vp, FLOAT_PRECISION * restrict aggr_dom
   MPI_Status wait_stat;
   int stencil_starts[3];
   int subdomain_info[6];
-  stencil_starts[0] = stencil_starts[1] = stencil_starts[2] = NHALO;
+  stencil_starts[0] = stencil_starts[1] = stencil_starts[2] = vp.stencil.r;
   ierr= MPI_Type_create_subarray(3, vp.ldomain_shape, vp.lstencil_shape,
      stencil_starts, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &stencil_type); CHKERR(ierr);
   ierr = MPI_Type_commit(&stencil_type); CHKERR(ierr);

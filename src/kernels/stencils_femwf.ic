@@ -1,6 +1,6 @@
 void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, stencil_CTX stencil_ctx, int mtid) {
+    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
 
   double t_start;
   int i, j, k, t, zi, kt, yb, ye, tid, not_done, gtid;

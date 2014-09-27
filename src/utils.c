@@ -28,7 +28,7 @@ void param_default(Parameters *p) {
   p->alignment = 16;
   p->target_ts = 0; //Naive TS
   p->target_kernel = 0; //Basic ISO stencil kernel
-  NHALO = stencil_info_list[p->target_kernel].r;
+  p->stencil.r = stencil_info_list[p->target_kernel].r;
   p->n_tests = 3;
   p->nt = 100;
   p->verify = 0;
@@ -174,40 +174,40 @@ void arrays_free(Parameters *p) {
 }
 
 void set_centered_source(Parameters *p) {
-  p->source_pt[0] = (p->stencil_shape[0]+2*NHALO)/2 -1;
-  p->source_pt[1] = (p->stencil_shape[1]+2*NHALO)/2 -1;
-  p->source_pt[2] = (p->stencil_shape[2]+2*NHALO)/2 -1;
+  p->source_pt[0] = (p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+  p->source_pt[1] = (p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+  p->source_pt[2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
 }
 
 unsigned long get_mwf_size(Parameters *p, int t_dim){
   unsigned long diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
 
   t_order = p->stencil.time_order;
-  diam_width = (t_dim+1)*2*NHALO;
+  diam_width = (t_dim+1)*2*p->stencil.r;
   int nwf = p->stencil_ctx.num_wf;
-  diam_height = t_dim*2*NHALO + nwf;
+  diam_height = t_dim*2*p->stencil.r + nwf;
 
-  int bsl = p->stencil_ctx.bs_x + t_dim*NHALO;
+  int bsl = p->stencil_ctx.bs_x + t_dim*p->stencil.r;
   lnx = (bsl < p->ldomain_shape[0] ? bsl : p->ldomain_shape[0]);
 
-  wf_updates = (t_dim+1)*(t_dim+1)*2 * NHALO; // Y-T projection
-  wf_elements = (wf_updates - diam_width) * NHALO + diam_width + diam_width*(nwf-1);
+  wf_updates = (t_dim+1)*(t_dim+1)*2 * p->stencil.r; // Y-T projection
+  wf_elements = (wf_updates - diam_width) * p->stencil.r + diam_width + diam_width*(nwf-1);
 
   switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
-    total_points = ( (t_order+1)             *wf_elements + (diam_width + diam_height )*2*NHALO) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1)             *wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
     break;
 
   case VARIABLE_COEFFICIENT:
-    total_points = ( (t_order+1 + (1+NHALO) )*wf_elements + (diam_width + diam_height )*2*NHALO) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1 + (1+p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
     break;
 
   case VARIABLE_COEFFICIENT_AXSYM:
-    total_points = ( (t_order+1 + (1+3*NHALO) )*wf_elements + (diam_width + diam_height )*2*NHALO) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1 + (1+3*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
     break;
 
   case VARIABLE_COEFFICIENT_NOSYM:
-    total_points = ( (t_order+1 + (1+6*NHALO) )*wf_elements + (diam_width + diam_height )*2*NHALO) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1 + (1+6*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
     break;
 
   default:
@@ -266,10 +266,10 @@ void auto_tune_diam_nwf(Parameters *op){
 
   // find max possible diamond width and allocate memory accordingly
   max_t_dim = -1;
-  for(i=tp.stencil_shape[1]/NHALO; i>=4; i-=4){
+  for(i=tp.stencil_shape[1]/tp.stencil.r; i>=4; i-=4){
     lt_dim = i/2 - 1;
-    diam_width = i*NHALO;
-    diam_height = lt_dim*2*NHALO+1 + tp.stencil_ctx.num_wf-1;
+    diam_width = i*tp.stencil.r;
+    diam_height = lt_dim*2*tp.stencil.r+1 + tp.stencil_ctx.num_wf-1;
 
     wf_size = get_mwf_size(&tp, lt_dim);
     cache_size_cond = wf_size*ntg < (unsigned long) (MAX_CACHE_SIZE*1024);
@@ -283,7 +283,7 @@ void auto_tune_diam_nwf(Parameters *op){
     if( (int_diam_cond == 1) && (wf_len_cond == 1) && (cuncurrency_cond == 1)  && (cache_size_cond == 1) ){ // consider limitation in z and concurrency
       tp.t_dim = lt_dim;
       max_t_dim = lt_dim;
-//      tp.stencil_shape[1] = i*NHALO;
+//      tp.stencil_shape[1] = i*tp.stencil.r;
       break;
     }
   }
@@ -293,7 +293,7 @@ void auto_tune_diam_nwf(Parameters *op){
     return;
   }
 
-  printf("[AUTO TUNE] max. diamond width: %d\n", (max_t_dim+1)*2*NHALO);
+  printf("[AUTO TUNE] max. diamond width: %d\n", (max_t_dim+1)*2*tp.stencil.r);
 
   // initialize the data of the tuning experiments
   init(&tp);
@@ -318,7 +318,7 @@ void auto_tune_diam_nwf(Parameters *op){
   prev_t_dim = 0;
   for(i=4; i<=(max_t_dim+1)*2; i+=4){ // loop over diamond sizes
     tp.t_dim = i/2 - 1;
-    diam_width = i*NHALO;
+    diam_width = i*tp.stencil.r;
     wf_size = get_mwf_size(&tp, tp.t_dim);
     diam_concurrency = tp.stencil_shape[1]/diam_width;
 
@@ -329,16 +329,16 @@ void auto_tune_diam_nwf(Parameters *op){
 //        i, diam_width, cuncurrency_cond, cache_size_cond, int_diam_cond, wf_len_cond, wf_size*ntg/1024);
 
     if( (int_diam_cond == 1) && (cuncurrency_cond == 1) && (cache_size_cond == 1) ){ // check diamond size validity
-      printf("[AUTO TUNE] Diamond width:%02d  [wavefronts #: pefromance (MLUPS/s)]\n", (tp.t_dim+1)*2*NHALO);
+      printf("[AUTO TUNE] Diamond width:%02d  [wavefronts #: pefromance (MLUPS/s)]\n", (tp.t_dim+1)*2*tp.stencil.r);
       // loop over increasing number of wavefronts per update
       prev_nwf_perf = -1;
       tp.stencil_ctx.num_wf = tgs; // start with smallest possible number of updates
-      tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*NHALO;
+      tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
       while(1){
         wf_size = get_mwf_size(&tp, tp.t_dim);
         cache_size_cond = wf_size*ntg > (unsigned long) (tp.cache_size*1024);
-        diam_height = tp.t_dim*2*NHALO+1 +tp.stencil_ctx.num_wf-1;
+        diam_height = tp.t_dim*2*tp.stencil.r+1 +tp.stencil_ctx.num_wf-1;
         wf_len_cond = diam_height <= tp.stencil_shape[2];
 
         if( (wf_len_cond==1) && (cache_size_cond == 1) ){
@@ -394,7 +394,7 @@ void auto_tune_diam_nwf(Parameters *op){
   int prev_bs_x;
   if (tp.stencil_ctx.bs_x > tp.stencil_shape[0]/tp.t.shape[0]){//no blocking set by user
     tp.stencil_ctx.bs_x = tp.stencil_shape[0]/tp.t.shape[0];
-    printf("[AUTO TUNE]     Diamond width:%02d, wavefronts #:%d  [Blk. in X: pefromance (MLUPS/s)]\n", (tp.t_dim+1)*2*NHALO, tp.stencil_ctx.num_wf);
+    printf("[AUTO TUNE]     Diamond width:%02d, wavefronts #:%d  [Blk. in X: pefromance (MLUPS/s)]\n", (tp.t_dim+1)*2*tp.stencil.r, tp.stencil_ctx.num_wf);
     printf("[AUTO TUNE]          [%03d: ", tp.stencil_ctx.bs_x);  
     prev_nwf_perf = run_tuning_test(&tp);
     while(1){
@@ -480,7 +480,7 @@ void standard_info_init(Parameters *p){
   int i, in_dimension=0;
   // count the topology dimensions containing the source point
   for(i=0; i<3; i++)
-    if(((p->source_pt[i]-NHALO) >= p->gb[i]) && ((p->source_pt[i]-NHALO) <= p->ge[i])) in_dimension++;
+    if(((p->source_pt[i]-p->stencil.r) >= p->gb[i]) && ((p->source_pt[i]-p->stencil.r) <= p->ge[i])) in_dimension++;
 
   if(in_dimension == 3){
     p->has_source=1;
@@ -522,7 +522,7 @@ void intra_diamond_info_init(Parameters *p){
     p->wf_blk_size = get_mwf_size(p, p->t_dim);
 
 
-    diam_width = (p->t_dim+1) * 2 * NHALO;
+    diam_width = (p->t_dim+1) * 2 * p->stencil.r;
     diam_concurrency = (p->stencil_shape[1]/p->t.shape[1]) / diam_width;
 
     if (p->stencil_ctx.thread_group_size ==-1) { // setup default thread group information
@@ -553,7 +553,7 @@ void intra_diamond_info_init(Parameters *p){
     }
 
     // check for block size in X validity
-    if(p->stencil_ctx.bs_x%NHALO != 0) {
+    if(p->stencil_ctx.bs_x%p->stencil.r != 0) {
       if(p->mpi_rank ==0){
         fprintf(stderr, "###ERROR: Block size in in X must be multiples of the stencil radius\n");
         MPI_Barrier(MPI_COMM_WORLD);
@@ -574,7 +574,7 @@ void intra_diamond_info_init(Parameters *p){
 
     // Check for size validity in the direction of the wavefront
     if( (p->wavefront == 1) && (p->stencil_ctx.thread_group_size == 1) ){ // single-thread group
-      min_z = (p->t_dim*2)*NHALO+1;
+      min_z = (p->t_dim*2)*p->stencil.r+1;
       if(p->stencil_shape[2] < min_z){
         if(p->mpi_rank ==0) fprintf(stderr,"ERROR: The single core wavefront requires a minimum size of %d at the Z direction in the current configurations\n", min_z);
         MPI_Barrier(MPI_COMM_WORLD);
@@ -606,7 +606,7 @@ void intra_diamond_info_init(Parameters *p){
     // Check for size validity in the direction of the wavefront
     if( (p->wavefront != 0) && (p->stencil_ctx.thread_group_size != 1) ){ // multi-thread group
 
-      min_z = (p->t_dim*2)*NHALO+1 + p->stencil_ctx.num_wf -1;
+      min_z = (p->t_dim*2)*p->stencil.r+1 + p->stencil_ctx.num_wf -1;
       if(p->stencil_shape[2] < min_z){
         if(p->mpi_rank ==0) fprintf(stderr,"ERROR: The multi-core wavefront requires a minimum size of %d at the Z direction in the current configurations\n", min_z);
 
@@ -629,7 +629,7 @@ void intra_diamond_info_init(Parameters *p){
     
     // number of Stencil updates in the prologue and epilogue (trapezoid and inverted trapezoid)
 //    p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((diam_width*diam_width)/4 - (diam_width/2));
-    p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*NHALO;
+    p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
 
     if(p->source_point_enabled == 1){
       p->source_point_enabled = 0;
@@ -672,7 +672,7 @@ void intra_diamond_info_init(Parameters *p){
 
   // count the topology dimensions containing the source point
   for(i=0; i<3; i++)
-    if(((p->source_pt[i]-NHALO) >= p->gb[i]) && ((p->source_pt[i]-NHALO) <= p->ge[i])) in_dimension++;
+    if(((p->source_pt[i]-p->stencil.r) >= p->gb[i]) && ((p->source_pt[i]-p->stencil.r) <= p->ge[i])) in_dimension++;
 
   if(in_dimension == 3){
     p->has_source=1;
@@ -685,26 +685,26 @@ void intra_diamond_info_init(Parameters *p){
   // Update problem size information
   int t_dim = p->t_dim;
   if(p->t.shape[1] > 1)
-    p->ldomain_shape[1] += (t_dim+1)*NHALO;
+    p->ldomain_shape[1] += (t_dim+1)*p->stencil.r;
 
   p->is_last = 0;
   if(p->t.rank_coords[1] == (p->t.shape[1]-1)) {
     p->is_last = 1;
     if(p->t.shape[1] > 1)
-      p->ldomain_shape[1] += 2*NHALO; //consider the interior boundary layers in the last MPI rank
-//      if(p->lsource_pt[1] >= p->lstencil_shape[1]+NHALO) p->lsource_pt[1] += 2*NHALO; // consider the interior boundary region
+      p->ldomain_shape[1] += 2*p->stencil.r; //consider the interior boundary layers in the last MPI rank
+//      if(p->lsource_pt[1] >= p->lstencil_shape[1]+p->stencil.r) p->lsource_pt[1] += 2*p->stencil.r; // consider the interior boundary region
   }
 
-  if (p->lstencil_shape[1] < NHALO*(t_dim+1)*2){
+  if (p->lstencil_shape[1] < p->stencil.r*(t_dim+1)*2){
     fprintf(stderr,"ERROR: Intra-diamond method requires the sub-domain size to fit at least one diamond: %d elements in Y [stencil_radius*2*(time_unrolls+1)]. Given %d elements\n"
-        ,NHALO*(t_dim+1)*2, p->lstencil_shape[1]);
+        ,p->stencil.r*(t_dim+1)*2, p->lstencil_shape[1]);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     exit(1);
   }
-  if (floor(p->lstencil_shape[1] / (NHALO*(t_dim+1)*2.0)) != p->lstencil_shape[1] / (NHALO*(t_dim+1)*2.0)){
+  if (floor(p->lstencil_shape[1] / (p->stencil.r*(t_dim+1)*2.0)) != p->lstencil_shape[1] / (p->stencil.r*(t_dim+1)*2.0)){
     if (p->mpi_rank ==0) fprintf(stderr,"ERROR: Intra-diamond method requires the sub-domain size to be multiples of the diamond width: %d elements [stencil_radius*2*(time_unrolls+1)]\n"
-        ,NHALO*(t_dim+1)*2);
+        ,p->stencil.r*(t_dim+1)*2);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     exit(1);
@@ -714,7 +714,6 @@ void init(Parameters *p) {
   int q, r, i;
 
   set_kernels(p);
-  NHALO = p->stencil.r;
   p->n_stencils = p->stencil_shape[0] * p->stencil_shape[1] * p->stencil_shape[2];
 
 
@@ -754,17 +753,17 @@ void init(Parameters *p) {
 
   int padding_comp, padding_size = 0;
   if (p->array_padding == 1) {
-    padding_comp = (p->lstencil_shape[0]+2*NHALO)%p->alignment;
+    padding_comp = (p->lstencil_shape[0]+2*p->stencil.r)%p->alignment;
     if (padding_comp != 0) padding_size = p->alignment - padding_comp;
   }
-  p->ldomain_shape[0] = p->lstencil_shape[0]+2*NHALO + padding_size;
-  p->ldomain_shape[1] = p->lstencil_shape[1]+2*NHALO;
-  p->ldomain_shape[2] = p->lstencil_shape[2]+2*NHALO;
+  p->ldomain_shape[0] = p->lstencil_shape[0]+2*p->stencil.r + padding_size;
+  p->ldomain_shape[1] = p->lstencil_shape[1]+2*p->stencil.r;
+  p->ldomain_shape[2] = p->lstencil_shape[2]+2*p->stencil.r;
 
   // calculate the block size in Y to satisfy the layer condition at the spatially blocked code
   if (p->cache_size >0){
     int num_thread_groups = (int) ceil(1.0*p->num_threads / p->stencil_ctx.thread_group_size);
-    p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*NHALO)))*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
+    p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
   } else {
     p->stencil_ctx.bs_y = 1000000; // make the block larger than the domain
   }
@@ -801,7 +800,7 @@ void init(Parameters *p) {
         printf("  Local domain Shape: (%03d,%03d,%03d)\n", p->ldomain_shape[0], p->ldomain_shape[1], p->ldomain_shape[2]); fflush(stdout);
         printf("  Local begin:        (%03d,%03d,%03d)\n", p->gb[0], p->gb[1], p->gb[2]); fflush(stdout);
         printf("  Local end:          (%03d,%03d,%03d)\n", p->ge[0], p->ge[1], p->ge[2]); fflush(stdout);
-        printf("  Local source point: (%03d,%03d,%03d)\n", p->lsource_pt[0]-NHALO, p->lsource_pt[1]-NHALO, p->lsource_pt[2]-NHALO); fflush(stdout);
+        printf("  Local source point: (%03d,%03d,%03d)\n", p->lsource_pt[0]-p->stencil.r, p->lsource_pt[1]-p->stencil.r, p->lsource_pt[2]-p->stencil.r); fflush(stdout);
 
         printf("\n"); fflush(stdout);
       }
@@ -821,7 +820,7 @@ void init_coeff(Parameters * p) {
 
   switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
-    for(i=0;i<NHALO+1;i++)
+    for(i=0;i<p->stencil.r+1;i++)
         p->coef[i] = p->g_coef[i];
     break;
 
@@ -977,15 +976,15 @@ void domain_data_fill(Parameters * p){
   xb = 0;
   yb = 0;
   zb = 0;
-  xe = p->lstencil_shape[0]+2*NHALO;
-  ye = p->lstencil_shape[1]+2*NHALO;
-  ze = p->lstencil_shape[2]+2*NHALO;
-  if(p->t.rank_coords[0] == 0) xb += NHALO;
-  if(p->t.rank_coords[1] == 0) yb += NHALO;
-  if(p->t.rank_coords[2] == 0) zb += NHALO;
-  if(p->t.rank_coords[0] == p->t.shape[0]-1) xe -= NHALO;
-  if(p->t.rank_coords[1] == p->t.shape[1]-1) ye -= NHALO;
-  if(p->t.rank_coords[2] == p->t.shape[2]-1) ze -= NHALO;
+  xe = p->lstencil_shape[0]+2*p->stencil.r;
+  ye = p->lstencil_shape[1]+2*p->stencil.r;
+  ze = p->lstencil_shape[2]+2*p->stencil.r;
+  if(p->t.rank_coords[0] == 0) xb += p->stencil.r;
+  if(p->t.rank_coords[1] == 0) yb += p->stencil.r;
+  if(p->t.rank_coords[2] == 0) zb += p->stencil.r;
+  if(p->t.rank_coords[0] == p->t.shape[0]-1) xe -= p->stencil.r;
+  if(p->t.rank_coords[1] == p->t.shape[1]-1) ye -= p->stencil.r;
+  if(p->t.rank_coords[2] == p->t.shape[2]-1) ze -= p->stencil.r;
   // fill the local stencil subdomain according to the global location and pad the boundary with zeroes
   for(k=zb; k<ze; k++){
     for(j=yb; j<ye; j++){
@@ -1008,12 +1007,12 @@ void domain_data_fill(Parameters * p){
   if( (p->target_ts == 2) && (p->stencil.time_order == 2) && p->mpi_size > 1){
     // last process extends to the beginning of the domain
     if(p->t.rank_coords[1] == p->t.shape[1]-1) {
-      yb = ye + 2*NHALO;
-      ye = yb + (p->t_dim+1+1)*NHALO;
-      gb_1 = -yb+NHALO;
+      yb = ye + 2*p->stencil.r;
+      ye = yb + (p->t_dim+1+1)*p->stencil.r;
+      gb_1 = -yb+p->stencil.r;
     } else {
       yb = ye;
-      ye += (p->t_dim+1)*NHALO;
+      ye += (p->t_dim+1)*p->stencil.r;
       gb_1 = p->gb[1];
     }
     for(k=zb; k<ze; k++){
@@ -1046,8 +1045,8 @@ void domain_data_fill(Parameters * p){
   if(p->t.rank_coords[0] == p->t.shape[0]-1){
     for(k=0; k<p->ldomain_shape[2]; k++){
       for(j=0; j<p->ldomain_shape[1]; j++){
-        pU1(p->lstencil_shape[0]+2*NHALO-1, j, k) += BOUNDARY_SRC_VAL;
-        pU2(p->lstencil_shape[0]+2*NHALO-1, j, k) += BOUNDARY_SRC_VAL;
+        pU1(p->lstencil_shape[0]+2*p->stencil.r-1, j, k) += BOUNDARY_SRC_VAL;
+        pU2(p->lstencil_shape[0]+2*p->stencil.r-1, j, k) += BOUNDARY_SRC_VAL;
       }
     }
   }
@@ -1231,10 +1230,10 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
 void print_param(Parameters p) {
 
   char *coeff_type, *precision, *mwd_algorithm;
-  int wf_halo = NHALO;
+  int wf_halo = p.stencil.r;
   int diam_height;
 
-  diam_height = (p.t_dim*2)*NHALO + p.stencil_ctx.num_wf;
+  diam_height = (p.t_dim*2)*p.stencil.r + p.stencil_ctx.num_wf;
 
   switch (p.stencil.coeff){
   case CONSTANT_COEFFICIENT:
@@ -1290,11 +1289,11 @@ void print_param(Parameters p) {
     printf("Block size in X: %d\n", p.stencil_ctx.bs_x);
     printf("Enable wavefronts: %d\n", p.wavefront!=0);
     if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", mwd_algorithm);
-    printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*NHALO);
+    printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*p.stencil.r);
     printf("Wavefront width:  %d\n", diam_height);
     printf("Cache block size/wf (kiB): %lu\n", p.wf_blk_size/1024);
     printf("Total cache block size (kiB): %lu\n", (p.num_threads/p.stencil_ctx.thread_group_size) * p.wf_blk_size/1024);
-    printf("Next larger cache block size/wf (kiB): %lu (diam_width=%d)\n", p.wf_larger_blk_size/1024, (p.larger_t_dim+1)*2*NHALO);
+    printf("Next larger cache block size/wf (kiB): %lu (diam_width=%d)\n", p.wf_larger_blk_size/1024, (p.larger_t_dim+1)*2*p.stencil.r);
     printf("Intra-diamond prologue/epilogue MStencils: %lu\n", p.idiamond_pro_epi_logue_updates/(1000*1000));
     printf("Multi-wavefront updates: %d\n", p.stencil_ctx.num_wf);
     printf("Thread group size: %d\n", p.stencil_ctx.thread_group_size);

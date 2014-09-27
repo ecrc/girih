@@ -13,7 +13,7 @@ void verify(Parameters *);
 void aggregate_MPI_subdomains(Parameters vp, FLOAT_PRECISION * restrict aggr_array);
 void verification_printing(Parameters vp);
 FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp);
-void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz);
+void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO);
 void verify_serial_generic(FLOAT_PRECISION * , Parameters);
 
 void std_kernel_8space_2time( const int shape[3],
