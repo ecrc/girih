@@ -62,7 +62,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
   male = posix_memalign((void **)&(u),    p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
   male = posix_memalign((void **)&(v),    p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
 
-  if(KernelList[p.target_kernel].time_order == 2)
+  if(p.stencil.time_order == 2)
     male = posix_memalign((void **)&(roc2), p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
 
 
@@ -70,14 +70,14 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
   // initialize the coefficients
   // select the desired stencil operator function
   unsigned long coef_size;
-  switch(KernelList[p.target_kernel].stencil_coeff){
+  switch(p.stencil.stencil_coeff){
   case CONSTANT_COEFFICIENT:
     coef_size = 11;
     male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male);
     for(i=0;i<NHALO+1;i++) coef[i] = p.g_coef[i];
 
     // select the stencil type
-    switch(KernelList[p.target_kernel].stencil_radius){
+    switch(p.stencil.stencil_radius){
     case 1:
       std_kernel = &std_kernel_2space_1time;
       break;
@@ -93,15 +93,15 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
 
 
   case VARIABLE_COEFFICIENT:
-    coef_size = n_domain*(1 + KernelList[p.target_kernel].stencil_radius);
+    coef_size = n_domain*(1 + p.stencil.stencil_radius);
     male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male);
-    for(k=0; k <= KernelList[p.target_kernel].stencil_radius; k++){
+    for(k=0; k <= p.stencil.stencil_radius; k++){
       for(i=0; i<n_domain; i++){
         coef[i + k*n_domain] = p.g_coef[k];
       }
     }
     // select the stencil type
-    switch(KernelList[p.target_kernel].stencil_radius){
+    switch(p.stencil.stencil_radius){
     case 1:
       std_kernel = &std_kernel_2space_1time_var;
       break;
@@ -114,14 +114,14 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
 
 
   case VARIABLE_COEFFICIENT_AXSYM:
-    coef_size = n_domain*(1 + 3*KernelList[p.target_kernel].stencil_radius);
+    coef_size = n_domain*(1 + 3*p.stencil.stencil_radius);
     male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male);
 
     // central point coeff
     for(i=0; i<n_domain; i++){
       coef[i] = p.g_coef[0];
     }
-    for(k=0; k < KernelList[p.target_kernel].stencil_radius; k++){
+    for(k=0; k < p.stencil.stencil_radius; k++){
       for(ax=0; ax<3; ax++){
         for(i=0; i<n_domain; i++){
           coef[i + n_domain + 3*k*n_domain + ax*n_domain] = p.g_coef[k+1];
@@ -130,7 +130,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
     }
 
     // select the stencil type
-    switch(KernelList[p.target_kernel].stencil_radius){
+    switch(p.stencil.stencil_radius){
     case 1:
       std_kernel = &std_kernel_2space_1time_var_axsym;
       break;
@@ -146,14 +146,14 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
 
 
     case VARIABLE_COEFFICIENT_NOSYM:
-      coef_size = n_domain*(1 + 6*KernelList[p.target_kernel].stencil_radius);
+      coef_size = n_domain*(1 + 6*p.stencil.stencil_radius);
       male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male);
 
       // central point coeff
       for(i=0; i<n_domain; i++){
         coef[i] = p.g_coef[0];
       }
-      for(k=0; k < KernelList[p.target_kernel].stencil_radius; k++){
+      for(k=0; k < p.stencil.stencil_radius; k++){
         for(ax=0; ax<3; ax++){
           for(i=0; i<n_domain; i++){
             coef[i + n_domain + 6*k*n_domain +  2*ax   *n_domain] = p.g_coef[k+1];
@@ -163,7 +163,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
       }
 
       // select the stencil type
-      switch(KernelList[p.target_kernel].stencil_radius){
+      switch(p.stencil.stencil_radius){
       case 1:
         std_kernel = &std_kernel_2space_1time_var_nosym;
         break;
@@ -187,7 +187,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
   for(i=0; i<n_domain;i++){
     u[i] = 0.0;
     v[i] = 0.0;
-    if(KernelList[p.target_kernel].time_order == 2)
+    if(p.stencil.time_order == 2)
       roc2[i]= 0.0;
   }
   FLOAT_PRECISION r;
@@ -198,7 +198,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
         U(i, j, k)    = r*1.845703;
         V(i, j, k)    = r*1.845703;
 
-        if(KernelList[p.target_kernel].time_order == 2)
+        if(p.stencil.time_order == 2)
           ROC2(i, j, k) = r*1.845703;
       }
     }
@@ -232,7 +232,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
   free(u);
   free(v);
 
-  if(KernelList[p.target_kernel].time_order == 2)
+  if(p.stencil.time_order == 2)
     free(roc2);
 }
 
@@ -446,7 +446,7 @@ void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict targ
 void verification_printing(Parameters vp){
   char *coeff_type, *precision, *concat;
   if(vp.mpi_rank==0) {
-    switch (KernelList[vp.target_kernel].stencil_coeff){
+    switch (vp.stencil.stencil_coeff){
     case CONSTANT_COEFFICIENT:
       coeff_type = "const    ";
       break;
@@ -464,9 +464,9 @@ void verification_printing(Parameters vp){
     concat = ((vp.halo_concat==0)?"no-concat":"   concat");
     printf("#ts:%s stencil:%s|R:%d|T:%d|%s nt:%03d thrd:%d prec.:%s %s"
         " dom:(%d,%03d,%03d) top:(%d,%d,%d) ",
-        TSList[vp.target_ts].name, KernelList[vp.target_kernel].name,
-        KernelList[vp.target_kernel].stencil_radius,
-        KernelList[vp.target_kernel].time_order, coeff_type,
+        TSList[vp.target_ts].name, vp.stencil.name,
+        vp.stencil.stencil_radius,
+        vp.stencil.time_order, coeff_type,
         vp.nt, vp.num_threads, precision, concat,
         vp.lstencil_shape[0], vp.lstencil_shape[1], vp.lstencil_shape[2],
         vp.t.shape[0], vp.t.shape[1], vp.t.shape[2]);

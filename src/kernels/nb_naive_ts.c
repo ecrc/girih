@@ -9,7 +9,6 @@
 #define U1(i,j,k)         (p->U1[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 #define U2(i,j,k)         (p->U2[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 
-extern struct Kernel KernelList[];
 extern void sub_array_copy(const FLOAT_PRECISION * restrict src_buf, FLOAT_PRECISION * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs);
 
 static inline void exchange_halo_srtided_asynch(Parameters *p, FLOAT_PRECISION * restrict u) {
@@ -169,13 +168,13 @@ void naive_nonblocking_ts(Parameters *p) {
   double t1,t2,t3,t4,t5;
   for(it=0; it<p->nt; it+=2){
     t1 = MPI_Wtime();
-    KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, NHALO, NHALO, p->lstencil_shape[0]+NHALO, p->ldomain_shape[1]-NHALO, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+    p->stencil.spt_blk_func(p->ldomain_shape, NHALO, NHALO, NHALO, p->lstencil_shape[0]+NHALO, p->ldomain_shape[1]-NHALO, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
     if( (p->has_source==1) && (p->source_point_enabled==1)) U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it];
     t2 = MPI_Wtime();
     exchange_halo_asynch(p, p->U1, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);
 
     t3 = MPI_Wtime();
-    KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, NHALO, NHALO, p->lstencil_shape[0]+NHALO, p->ldomain_shape[1]-NHALO, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+    p->stencil.spt_blk_func(p->ldomain_shape, NHALO, NHALO, NHALO, p->lstencil_shape[0]+NHALO, p->ldomain_shape[1]-NHALO, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
     if( (p->has_source==1) && (p->source_point_enabled==1)) U2(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+1];
     t4 = MPI_Wtime();
     exchange_halo_asynch(p, p->U2, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);

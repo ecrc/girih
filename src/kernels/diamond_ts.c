@@ -27,8 +27,6 @@ MPI_Request wait_req_send_l[2], wait_req_recv_l[2], wait_req_send_r[2], wait_req
 
 
 
-extern struct Kernel KernelList[];
-
 void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
   int t;
   // use all the threads in the initialization of the time stepper
@@ -36,10 +34,10 @@ void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
   p->stencil_ctx.thread_group_size = p->num_threads;
   for(t=0; t<p->t_dim+1; t++){
     if(t%2 == 0){
-      KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
 //      if(p->main_source_state[state] == 1) U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
     }else{
-      KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
 //      if(p->main_source_state[state] == 1) U2(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
     }
     yb += NHALO;
@@ -59,10 +57,10 @@ void intra_diamond_inv_trapzd_comp(Parameters *p, int it, int yb, int ye){
   for(t=0; t<t_dim+1; t++){
 //    printf("[%03d] inverted trapzd: state:%02d zb:%02d ze:%02d t:%03d\n", p->mpi_rank, state, zb, ze, t);
     if(it%2 == 0){
-      KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
 //      if(p->main_source_state[state] == 1) U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
     }else{
-      KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
 //      if(p->main_source_state[state] == 1) U2(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
     }
     yb -= NHALO;
@@ -78,9 +76,9 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int it, int b_inc, int e_
 
   for(t=0; t< (p->t_dim+1)*2-1; t++){
     if(it%2 == 0){
-      KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
     }else{
-      KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, NHALO, p->lstencil_shape[0]+NHALO, ye, p->ldomain_shape[2]-NHALO, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
     }
 
     if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -118,9 +116,9 @@ void intra_diamond_1wf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
     {
       ze = NHALO*(tb-t);
       if(t%2 == 1){
-        KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+        p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
       }else{
-        KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+        p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
       }
 
       if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -143,7 +141,7 @@ void intra_diamond_1wf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
   ze = p->ldomain_shape[2]-NHALO;
 
   // compute the multi-wavefront steps
-  KernelList[p->target_kernel].swd_func(p->ldomain_shape, NHALO, yb, zb,
+  p->stencil.mwd_func(p->ldomain_shape, NHALO, yb, zb,
       p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil_ctx, 0);
   t3 = MPI_Wtime();
 
@@ -157,9 +155,9 @@ void intra_diamond_1wf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
     {
       zb = p->ldomain_shape[2]-NHALO - t*NHALO;
       if(t%2 == 1){
-        KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+        p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
       }else{
-        KernelList[p->target_kernel].spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+        p->stencil.spt_blk_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
       }
 
       if((t)< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -198,9 +196,9 @@ void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, in
     {
       ze = NHALO*(tb-t);
       if(t%2 == 1){
-        KernelList[p->target_kernel].stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+        p->stencil.stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
       }else{
-        KernelList[p->target_kernel].stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+        p->stencil.stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
       }
 
       if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -224,9 +222,9 @@ void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, in
 //  ze -= (ze-zb)%p->stencil_ctx.num_wf;
 
   // compute the multi-wavefront steps
-//  KernelList[p->target_kernel].mwd_func(p->ldomain_shape, NHALO, yb, zb,
+//  p->stencil.mwd_func(p->ldomain_shape, NHALO, yb, zb,
 //      p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil_ctx);
-  p->mwd_func(p->ldomain_shape, NHALO, yb, zb,
+  p->stencil.mwd_func(p->ldomain_shape, NHALO, yb, zb,
         p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil_ctx, tid);
 
 //  tnwf = p->stencil_ctx.num_wf;
@@ -235,7 +233,7 @@ void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, in
   // compute the remainders of the multi-wavefront steps
 //  zb = ze;
 //  ze = p->ldomain_shape[2]-NHALO;
-//  KernelList[p->target_kernel].swd_func(p->ldomain_shape, NHALO, yb, zb,
+//  p->stencil.swd_func(p->ldomain_shape, NHALO, yb, zb,
 //      p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil_ctx);
 //  p->stencil_ctx.num_wf = tnwf;
   t3 = MPI_Wtime();
@@ -250,9 +248,9 @@ void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, in
     {
       zb = p->ldomain_shape[2]-NHALO - t*NHALO;
       if(t%2 == 1){
-        KernelList[p->target_kernel].stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+        p->stencil.stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
       }else{
-        KernelList[p->target_kernel].stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+        p->stencil.stat_sched_func(p->ldomain_shape, NHALO, yb, zb, p->lstencil_shape[0]+NHALO, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
       }
 
       if((t)< p->t_dim){ // inverted trapezoid (or lower half of the diamond)

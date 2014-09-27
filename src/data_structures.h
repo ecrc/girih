@@ -98,7 +98,6 @@ typedef struct{
   int thread_group_size;
 
   // for separate stride-1 functions
-  int target_kernel;
   void (*ref_stride) STRIDE1_SIG;
 
   int num_wf; // number of wavefront updats per iteration
@@ -125,7 +124,7 @@ struct Kernel {
   enum Stencil_Coefficients stencil_coeff;
   void (*spt_blk_func)KERNEL_SIG;
   void (*stat_sched_func)KERNEL_SIG;
-  void (*swd_func)KERNEL_MWD_SIG;
+  void (*mwd_func)KERNEL_MWD_SIG;
 //  void (*mwd_func)KERNEL_MWD_SIG;
 };
 

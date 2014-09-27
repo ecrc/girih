@@ -24,10 +24,7 @@ extern void iso_ref_2space_1time_var_stride STRIDE1_SIG;
 extern void iso_ref_2space_1time_var_axsym_stride STRIDE1_SIG;
 extern void domain_decompose(Parameters *p);
 
-
 extern struct time_stepper TSList[];
-extern struct Kernel KernelList[];
-
 
 extern void dynamic_intra_diamond_ts(Parameters *p);
 

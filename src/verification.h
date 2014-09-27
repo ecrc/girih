@@ -47,5 +47,4 @@ extern void domain_data_fill(Parameters * p);
 extern void mpi_halo_init(Parameters *);
 extern void check_merr(int e);
 
-extern struct Kernel KernelList[];
 extern struct time_stepper TSList[];
