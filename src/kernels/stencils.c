@@ -150,6 +150,42 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 /*
  * Wrap the created functions in array
  */
+
+struct StencilInfo stencil_info_list[] = {
+    // parameters: name, semi-bandwidth, order in time, shape, coefficients variability
+    {"star", 4, 2, STAR, CONSTANT_COEFFICIENT},
+    {"star", 1, 1, STAR, CONSTANT_COEFFICIENT},
+    {"star", 1, 1, STAR, VARIABLE_COEFFICIENT},
+    {"star", 1, 1, STAR, VARIABLE_COEFFICIENT_AXSYM},
+    {"star", 4, 1, STAR, VARIABLE_COEFFICIENT_AXSYM},
+    {"star", 1, 1, STAR, VARIABLE_COEFFICIENT_NOSYM},
+    {0, 0, 0, 0, 0},
+};
+
+spt_blk_func_t spt_blk_func_list[] = {
+    iso_ref,
+    iso_ref_2space_1time,
+    iso_ref_2space_1time_var,
+    iso_ref_2space_1time_var_axsym,
+    iso_ref_8space_1time_var_axsym,
+    iso_ref_2space_1time_var_nosym,};
+
+spt_blk_func_t stat_sched_func_list[] = {
+    stat_sched_iso_ref,
+    stat_sched_iso_ref_2space_1time,
+    stat_sched_iso_ref_2space_1time_var,
+    stat_sched_iso_ref_2space_1time_var_axsym,
+    stat_sched_iso_ref_8space_1time_var_axsym,
+    stat_sched_iso_ref_2space_1time_var_nosym,};
+
+mwd_func_t swd_func_list[] = {
+    swd_iso_ref,
+    swd_iso_ref_2space_1time,
+    swd_iso_ref_2space_1time_var,
+    swd_iso_ref_2space_1time_var_axsym,
+    swd_iso_ref_8space_1time_var_axsym,
+    swd_iso_ref_2space_1time_var_nosym,};
+
 mwd_func_t mwd_func_list[] = {
     mwd_iso_ref,
     mwd_iso_ref_2space_1time,

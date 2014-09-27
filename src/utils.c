@@ -437,6 +437,22 @@ void set_kernels(Parameters *p){
     #endif
   #endif
 
+  p->stencil.name = stencil_info_list[p->target_kernel].name;
+  p->stencil.stencil_coeff = stencil_info_list[p->target_kernel].stencil_coeff;
+  p->stencil.stencil_radius = stencil_info_list[p->target_kernel].stencil_radius;
+  p->stencil.time_order = stencil_info_list[p->target_kernel].time_order;
+  p->stencil.stencil_shape = stencil_info_list[p->target_kernel].stencil_shape;
+  p->stencil.spt_blk_func = spt_blk_func_list[p->target_kernel];
+  p->stencil.stat_sched_func = stat_sched_func_list[p->target_kernel];
+
+  if (p->target_ts == 2){
+    if(p->num_threads == 1){ //1WD use implementation
+      p->stencil.swd_func = swd_func_list[p->target_kernel];
+    }
+    else {
+      p->stencil.swd_func = mwd_func_list[p->target_kernel];
+    }
+  }
 
   // set central line updates kernels
   p->stencil_ctx.target_kernel = p->target_kernel;

@@ -112,10 +112,11 @@ typedef struct{
 
 // Kernels and time steppers data structures
 #define KERNEL_SIG (const int *, const int, const int, const int, const int, const int, const int,\
-    const FLOAT_PRECISION * restrict, FLOAT_PRECISION * restrict, FLOAT_PRECISION * restrict, FLOAT_PRECISION * restrict, stencil_CTX stencil_ctx)
+    const FLOAT_PRECISION * restrict, FLOAT_PRECISION * restrict, const FLOAT_PRECISION * restrict, const FLOAT_PRECISION * restrict, stencil_CTX stencil_ctx)
 #define KERNEL_MWD_SIG ( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze, \
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, stencil_CTX stencil_ctx, int mtid)
+
 struct Kernel {
   const char *name;
   int stencil_radius;
@@ -128,6 +129,15 @@ struct Kernel {
 //  void (*mwd_func)KERNEL_MWD_SIG;
 };
 
+struct StencilInfo {
+  const char *name;
+  int stencil_radius;
+  int time_order;
+  enum Stencil_Shapes stencil_shape;
+  enum Stencil_Coefficients stencil_coeff;
+};
+
+typedef void (*spt_blk_func_t)KERNEL_SIG;
 typedef void (*mwd_func_t)KERNEL_MWD_SIG;
 
 
@@ -175,6 +185,7 @@ typedef struct{
   Profile prof;
 
   void (*mwd_func)KERNEL_MWD_SIG;
+  struct Kernel stencil;
 
   // list of coefficients to be used in stencil operators
   FLOAT_PRECISION g_coef[11];

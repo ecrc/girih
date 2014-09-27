@@ -28,10 +28,13 @@ extern void domain_decompose(Parameters *p);
 extern struct time_stepper TSList[];
 extern struct Kernel KernelList[];
 
-extern void intra_diamond_1wf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc);
-extern void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tid);
+
 extern void dynamic_intra_diamond_ts(Parameters *p);
 
+extern struct StencilInfo stencil_info_list[];
+extern spt_blk_func_t spt_blk_func_list[];
+extern spt_blk_func_t stat_sched_func_list[];
+extern mwd_func_t swd_func_list[];
 extern mwd_func_t mwd_func_list[];
 extern mwd_func_t femwd_func_list[];
 extern void iso_ref_all_wf_split KERNEL_MWD_SIG;
