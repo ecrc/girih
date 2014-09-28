@@ -92,7 +92,7 @@ def get_summary(f):
                 'OpenMP Threads',
                 'MPI size',
                 'Stencil Kernel semi-bandwidth',
-                'number of idiamond wavefronts',
+                'Multi-wavefront updates',
                 'Time parallel muti-core wavefront',
                 'Using separate call to central line update',
                 'Thread group size',
