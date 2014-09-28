@@ -18,7 +18,7 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
   for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
     ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
     //printf("bs_x:%d  xb:%d  xe:%d  ib:%d  ie:%d\n", bs_x, xb, xe, ib, ie);
-    for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop
+    for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
       if(zi+nwf >= ze) nwf = ze-zi;
       yb = yb_r;
       ye = ye_r;
@@ -26,9 +26,9 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
       ie = ie_r;
 
       kt = zi;
-      for(t=0; t< time_blk; t++){
-        if((t)%2 == 1){
+      for(t=0; t< time_blk; t++){ // Diamond blocking in time
 
+        if((t)%2 == 1){
           for(k=kt; k<nwf+kt; k++){
             for(j=yb; j<ye; j++) {
   #pragma simd
@@ -39,7 +39,6 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
           }
 
         }else{
-
           for(k=kt; k<nwf+kt; k++){
             for(j=yb; j<ye; j++) {
   #pragma simd
@@ -49,13 +48,13 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
             }
           }
 
-        }
+        } // end diamond blocking in time
 
         // Update block size in Y
-        if(t< t_dim){ // inverted trapezoid (or lower half of the diamond)
+        if(t< t_dim){ // lower half of the diamond
           yb -= b_inc;
           ye += e_inc;
-        }else{ // trapezoid  (or upper half of the diamond)
+        }else{ // upper half of the diamond
           yb += b_inc;
           ye -= e_inc;
         }
@@ -66,7 +65,7 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
 
         kt -= NHALO;
 
-      } // time loop
+      } // diamond blocking in time (time loop)
     } // wavefront loop
   } // blocking in x
 }

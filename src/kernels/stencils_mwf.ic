@@ -42,7 +42,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
       ye = ye_r;
       thb = th_nwf*tid;
       the = th_nwf*(tid+1);
-      while(not_done) { // wavrfront loop
+      while(not_done) { // wavefront loop (Z direction)
 
   //if(t==0)  
   //if(tid==1) 
@@ -58,6 +58,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
                 }
               }
             }
+
           }else{
             for(k=kt+thb; k<kt+the; k++){
               for(j=yb; j<ye; j++) {
@@ -68,15 +69,14 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
               }
             }
           }
-  //      }
 
-          if(t+1 < time_blk){
 
+          if(t+1 < time_blk){ // update size in X and Y during diamond update
             // Update block size in Y
-            if(t< t_dim){ // inverted trapezoid (or lower half of the diamond)
+            if(t< t_dim){ // lower half of the diamond
               yb -= b_inc;
               ye += e_inc;
-            }else{ // trapezoid  (or upper half of the diamond)
+            }else{ // upper half of the diamond
               yb += b_inc;
               ye -= e_inc;
             }
@@ -87,7 +87,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
             if (ib != xb) ib-=NHALO;
             if (ie != xe) ie-=NHALO;
 
-          } else {
+          } else { // reset counters after diamond update
   //printf("\n");
             t = 0;
             yb = yb_r;
@@ -101,7 +101,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
             if(zi >= ze) not_done = 0;
           }
 
-        // reassign the wavefronts to cores if fraction of MW remains
+        // reassign the wavefronts to cores if fraction of multi-frontlines remains
         if( ((ze-zi) < nwf) & (t == 0)){ 
           q = (int)((ze-zi)/tgs);
           r = (ze-zi)%tgs;
