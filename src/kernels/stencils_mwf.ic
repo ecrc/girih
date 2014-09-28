@@ -22,8 +22,6 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
 #pragma omp parallel default(none) shared(ln_domain, two, u, v, roc2, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
         private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, thb, the, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
-
-//private(ib_r, ie_r, ib, ie, zi, kt, yb, ye, t, q, r, thb, the, tid, gtid, i, j, k, not_done) shared(bs_x, tgs, nwf, th_nwf, zb, ze, yb_r, ye_r, mtid, xb, xe, time_blk, t_dim, b_inc, e_inc, t_start) num_threads(stencil_ctx.thread_group_size)
   {
     tid = 0;
     gtid = 0;
@@ -32,12 +30,12 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
     gtid = tid + mtid * tgs;
 #endif
 
-    thb = th_nwf*tid;
-    the = th_nwf*(tid+1);
-
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
-      //printf("bs_x:%d  xb:%d  xe:%d  ib:%d  ie:%d\n", bs_x, xb, xe, ib, ie);
+ 
+      thb = th_nwf*tid;
+      the = th_nwf*(tid+1);
+//      printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
       for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
 
         if(ze-zi < nwf){ 
