@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-def sort_fields(data,items):
+def sort_cols(data,items):
     for i in items:
         data.remove(i)
     data = items + list(data)
@@ -10,6 +10,7 @@ def sort_fields(data,items):
 def main():
     #from itertools import izip
     #from csv import reader, writer
+    from operator import itemgetter
     from csv import DictWriter
     import sys
     import os
@@ -30,10 +31,11 @@ def main():
             print('Rejected the file: '+ f)
             
 
-#    order=['Time stepper name', 'Time unroll', 'npx', 'npy', 'npz', 'Local NX', 'Local NY', 'Local NZ']
-    order = ['Stencil Kernel semi-bandwidth', 'Time stepper orig name', 'Thread group size', 'MPI size', 'MStencil/s  MAX','WD main-loop RANK0 MStencil/s  MAX', 'Intra-diamond width']
-    fields = sort_fields(all_fields, order) 
-    
+    cols_order = ['Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'MPI size', 'Global NX', 'MStencil/s  MAX', 'Intra-diamond width']
+    fields = sort_cols(all_fields, cols_order) 
+   
+    data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'MPI size', 'Global NX'))
+
 
     with open(output_name, 'w') as output_file:
         r = DictWriter(output_file,fieldnames=fields)
@@ -92,7 +94,7 @@ def get_summary(f):
                 'Stencil Kernel semi-bandwidth',
                 'number of idiamond wavefronts',
                 'Time parallel muti-core wavefront',
-                'Using separate call to 1-stride loop',
+                'Using separate call to central line update',
                 'Thread group size',
                 'Intra-diamond prologue/epilogue MStencils',
                 'Cache block size/wf (kB):',
@@ -132,9 +134,9 @@ def get_summary(f):
             nx = dims[0].split(':')[1]
             ny = dims[1].split(':')[1]
             nz = dims[2].split(':')[1]
-            mlist.append(('Global NX',nx))
-            mlist.append(('Global NY',ny))
-            mlist.append(('Global NZ',nz))
+            mlist.append(('Global NX',int(nx)))
+            mlist.append(('Global NY',int(ny)))
+            mlist.append(('Global NZ',int(nz)))
 
         # Local size
 #Rank 0 domain    size:131072    nx:32    ny:64    nz:64
@@ -143,9 +145,9 @@ def get_summary(f):
             nx = dims[0].split(':')[1]
             ny = dims[1].split(':')[1]
             nz = dims[2].split(':')[1]
-            mlist.append(('Local NX',nx))
-            mlist.append(('Local NY',ny))
-            mlist.append(('Local NZ',nz))
+            mlist.append(('Local NX',int(nx)))
+            mlist.append(('Local NY',int(ny)))
+            mlist.append(('Local NZ',int(nz)))
 
         # topology information
         if 'Processors topology' in line:
