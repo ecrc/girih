@@ -93,95 +93,10 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int it, int b_inc, int e_
 }
 
 
-void intra_diamond_1wf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc){
+void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tid){
   int t, z, zb, ze;
   int tb = p->t_dim*2+1; //temporal block size
   int yb, ye;
-//printf("HERE 1\n");
-
-  double t1, t2, t3;
-  int tid = 0;
-#if defined(_OPENMP)
-    tid = omp_get_thread_num();
-#endif
-
-  // wavefront prologue
-  t1 = MPI_Wtime();
-
-  yb = yb_r;
-  ye = ye_r;
-  zb = p->stencil.r;
-  for(t=0; t< tb-1; t++){
-    //    for(z=p->stencil.r; z< p->stencil.r*(tb-t); z++) // p->stencil.r*(tb-t) = p->stencil.r + p->stencil.r*(tb-t-1)
-    {
-      ze = p->stencil.r*(tb-t);
-      if(t%2 == 1){
-        p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
-      }else{
-        p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
-      }
-
-      if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
-        yb -= b_inc;
-        ye += e_inc;
-      }else{ // trapezoid  (or upper half of the diamond)
-        yb += b_inc;
-        ye -= e_inc;
-      }
-
-    }
-  }
-
-
-  t2 = MPI_Wtime();
-  // main wavefront loop
-  yb = yb_r;
-  ye = ye_r;
-  zb = p->stencil.r+(tb-1)*p->stencil.r;
-  ze = p->ldomain_shape[2]-p->stencil.r;
-
-  // compute the multi-wavefront steps
-  p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
-      p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, p->stencil_ctx, 0);
-  t3 = MPI_Wtime();
-
-
-  // wavefront epilogue
-  yb = yb_r - b_inc;
-  ye = ye_r + e_inc;
-  ze = p->ldomain_shape[2]-p->stencil.r;
-  for(t=1; t< tb; t++){
-    //    for(z=p->ldomain_shape[2]-p->stencil.r - t*p->stencil.r; z<p->ldomain_shape[2]-p->stencil.r; z++)
-    {
-      zb = p->ldomain_shape[2]-p->stencil.r - t*p->stencil.r;
-      if(t%2 == 1){
-        p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
-      }else{
-        p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
-      }
-
-      if((t)< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
-        yb -= b_inc;
-        ye += e_inc;
-      }else{ // trapezoid  (or upper half of the diamond)
-        yb += b_inc;
-        ye -= e_inc;
-      }
-    }
-  }
-
-
-  p->stencil_ctx.t_wf_prologue[tid] += t2-t1;
-  p->stencil_ctx.t_wf_main[tid]     += t3-t2;
-  p->stencil_ctx.t_wf_epilogue[tid] += MPI_Wtime() - t3;
-}
-
-
-void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tid){
-  int t, z, zb, ze, tnwf;
-  int tb = p->t_dim*2+1; //temporal block size
-  int yb, ye;
-//printf("HERE 1\n");
 
   double t1, t2, t3;
 
@@ -219,23 +134,10 @@ void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, in
   ye = ye_r;
   zb = p->stencil.r+(tb-1)*p->stencil.r;
   ze = p->ldomain_shape[2]-p->stencil.r;
-//  ze -= (ze-zb)%p->stencil_ctx.num_wf;
 
-  // compute the multi-wavefront steps
-//  p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
-//      p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil_ctx);
   p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
         p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, p->stencil_ctx, tid);
 
-//  tnwf = p->stencil_ctx.num_wf;
-//  p->stencil_ctx.num_wf = 1;
-//
-  // compute the remainders of the multi-wavefront steps
-//  zb = ze;
-//  ze = p->ldomain_shape[2]-p->stencil.r;
-//  p->stencil.swd_func(p->ldomain_shape, p->stencil.r, yb, zb,
-//      p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil_ctx);
-//  p->stencil_ctx.num_wf = tnwf;
   t3 = MPI_Wtime();
 
 
@@ -244,22 +146,19 @@ void intra_diamond_all_mwf_comp(Parameters *p, int yb_r, int ye_r, int b_inc, in
   ye = ye_r + e_inc;
   ze = p->ldomain_shape[2]-p->stencil.r;
   for(t=1; t< tb; t++){
-    //    for(z=p->ldomain_shape[2]-p->stencil.r - t*p->stencil.r; z<p->ldomain_shape[2]-p->stencil.r; z++)
-    {
-      zb = p->ldomain_shape[2]-p->stencil.r - t*p->stencil.r;
-      if(t%2 == 1){
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
-      }else{
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
-      }
+    zb = p->ldomain_shape[2]-p->stencil.r - t*p->stencil.r;
+    if(t%2 == 1){
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+    }else{
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+    }
 
-      if((t)< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
-        yb -= b_inc;
-        ye += e_inc;
-      }else{ // trapezoid  (or upper half of the diamond)
-        yb += b_inc;
-        ye -= e_inc;
-      }
+    if((t)< p->t_dim){ // lower half of the diamond
+      yb -= b_inc;
+      ye += e_inc;
+    }else{ // upper half of the diamond
+      yb += b_inc;
+      ye -= e_inc;
     }
   }
 
@@ -609,11 +508,7 @@ static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
   if(p->wavefront == 0){
     intra_diamond_comp(p, yb, ye, 1, b_inc, e_inc);
   } else {
-    if(p->wavefront == 1){
-      intra_diamond_1wf_comp(p, yb, ye, b_inc, e_inc);
-    } else {
-      intra_diamond_all_mwf_comp(p, yb, ye, b_inc, e_inc, tid);
-    }
+    intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, tid);
   }
 
   t1 = MPI_Wtime();
