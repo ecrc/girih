@@ -390,16 +390,19 @@ void auto_tune_diam_nwf(Parameters *op){
   op->stencil_ctx.num_wf = tp.stencil_ctx.num_wf;
 
 
-  //simple tuning of blocking in
-  int prev_bs_x;
+  //simple tuning of blocking in X
+  int prev_bs_x, base_bs_x;
+  double div=1.0;
   if (tp.stencil_ctx.bs_x > tp.stencil_shape[0]/tp.t.shape[0]){//no blocking set by user
     tp.stencil_ctx.bs_x = tp.stencil_shape[0]/tp.t.shape[0];
+    base_bs_x = tp.stencil_ctx.bs_x;
     printf("[AUTO TUNE]     Diamond width:%02d, wavefronts #:%d  [Blk. in X: pefromance (MLUPS/s)]\n", (tp.t_dim+1)*2*tp.stencil.r, tp.stencil_ctx.num_wf);
     printf("[AUTO TUNE]          [%03d: ", tp.stencil_ctx.bs_x);  
     prev_nwf_perf = run_tuning_test(&tp);
     while(1){
+      div += 1;
       prev_bs_x = tp.stencil_ctx.bs_x; 
-      tp.stencil_ctx.bs_x = ceil( ((double)(tp.stencil_ctx.bs_x)) /2.0);
+      tp.stencil_ctx.bs_x = ceil( ((double)(base_bs_x)) /div);
       printf("[AUTO TUNE]          [%03d: ", tp.stencil_ctx.bs_x);  
       exp_perf = run_tuning_test(&tp);
 
@@ -407,7 +410,7 @@ void auto_tune_diam_nwf(Parameters *op){
         op->stencil_ctx.bs_x = prev_bs_x;
         break;
       }
-      exp_perf = prev_nwf_perf;
+      prev_nwf_perf = exp_perf;
     }
   }
 
