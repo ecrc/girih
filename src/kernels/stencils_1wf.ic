@@ -2,21 +2,20 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
 
-  int i, j, k, t, yb, ye, zi, kt, ib, ie, ib_r, ie_r, bs_x;
+  int i, j, k, t, yb, ye, zi, kt, ib, ie, ib_r, ie_r, bs_x, nwf;
   int nny =shape[1];
   int nnx =shape[0];
   unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
-  int nwf = stencil_ctx.num_wf;
 
   int time_blk = t_dim*2+1; //temporal block size
 
   // 25-point const. coeff specific
   FLOAT_PRECISION two=2.0;
   
-  if (zb+nwf >= ze) nwf = ze-zb;
   bs_x = stencil_ctx.bs_x;
   for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
     ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
+    nwf = stencil_ctx.num_wf;
     //printf("bs_x:%d  xb:%d  xe:%d  ib:%d  ie:%d\n", bs_x, xb, xe, ib, ie);
     for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
       if(zi+nwf >= ze) nwf = ze-zi;
