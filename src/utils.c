@@ -391,6 +391,8 @@ void auto_tune_diam_nwf(Parameters *op){
 
 
   //simple tuning of blocking in X
+  diam_concurrency = tp.stencil_shape[1]/((tp.t_dim+1)*2*tp.stencil.r);
+  tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
   int prev_bs_x, base_bs_x;
   double div=1.0;
   if (tp.stencil_ctx.bs_x > tp.stencil_shape[0]/tp.t.shape[0]){//no blocking set by user
