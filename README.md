@@ -1,5 +1,6 @@
-opt_stencils
+Girih 
 ============
+(Inspired from http://en.wikipedia.org/wiki/Girih)
 
 #### Introduction
 This tool serves as a test harness for different optimization techniques to
