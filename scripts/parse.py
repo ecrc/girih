@@ -98,6 +98,7 @@ def get_summary(f):
                 'Thread group size',
                 'Intra-diamond prologue/epilogue MStencils',
                 'Cache block size/wf (kB):',
+                'Block size in X',
                 'Total cache block size (kB):')
 
     mlist = []
