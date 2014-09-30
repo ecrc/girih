@@ -31,10 +31,10 @@ def main():
             print('Rejected the file: '+ f)
             
 
-    cols_order = ['Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'MPI size', 'Global NX', 'MStencil/s  MAX', 'Intra-diamond width']
+    cols_order = ['Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'OpenMP Threads', 'Global NX', 'MStencil/s  MAX', 'Energy', 'Energy DRAM', 'Power', 'Power DRAM', 'Intra-diamond width']
     fields = sort_cols(all_fields, cols_order) 
    
-    data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'MPI size', 'Global NX'))
+    data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'OpenMP Threads', 'MPI size', 'Global NX'))
 
 
     with open(output_name, 'w') as output_file:
