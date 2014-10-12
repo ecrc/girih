@@ -1,0 +1,65 @@
+#!/bin/bash -l
+#PBS -q regular
+#PBS -l mppwidth=24
+#PBS -l walltime=00:29:00
+#PBS -N 7pt_const
+#PBS -j oe
+#PBS -V
+
+cd $PBS_O_WORKDIR
+export MPICH_CPUMASK_DISPLAY=1
+res_dir=results/edison_c7pt_thread_scaling/
+mkdir -p $res_dir
+
+
+function run_exp {
+declare -a threads=("${!1}")
+ts=$2
+nt=$3
+tgs=$4
+
+for t in "${threads[@]}"
+do
+  res_file=${res_dir}c7pt_tgs${tgs}_ts${ts}_th${t}.txt
+  export OMP_NUM_THREADS=$t
+  aprun -n 1 -N 1 -d $t -ss -cc depth ./build_dp/mwd_kernel --n-tests 2 --nx 960 --ny 960 --nz 960 --target-ts $ts --target-kernel 1 --nt $nt --thread-group-size $tgs  | tee -a ${res_file} 
+done
+
+}
+
+ts=0
+nt=20
+tgs=0
+threads=( 1 2 4 6 8 10 12 )
+#run_exp threads[@] $ts $nt $tgs
+
+ts=2
+nt=50
+tgs=1
+threads=( 1 2 4 6 8 10 12 )
+#run_exp threads[@] $ts $nt $tgs
+
+ts=2
+nt=50
+tgs=2
+threads=( 2 4 6 8 10 12 )
+#run_exp threads[@] $ts $nt $tgs
+
+ts=2
+nt=50
+tgs=4
+threads=( 4 8 12 )
+run_exp threads[@] $ts $nt $tgs
+
+ts=2
+nt=50
+tgs=6
+threads=( 6 12 )
+run_exp threads[@] $ts $nt $tgs
+
+ts=2
+nt=50
+tgs=12
+threads=( 12 )
+run_exp threads[@] $ts $nt $tgs
+
