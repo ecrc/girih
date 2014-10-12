@@ -1,0 +1,82 @@
+#!/bin/bash -l
+#PBS -q regular
+#PBS -l mppwidth=24
+#PBS -l walltime=02:00:00
+#PBS -N thread_scaling
+#PBS -j oe
+#PBS -V
+
+cd $PBS_O_WORKDIR
+export MPICH_CPUMASK_DISPLAY=1
+
+res_dir=results/edison_thread_scaling/
+mkdir -p $res_dir
+
+
+function run_exp {
+declare -a threads=("${!1}")
+ts=$2
+nt=$3
+tgs=$4
+k=$5
+N=$6
+
+for t in "${threads[@]}"
+do
+  res_file=${res_dir}kernel${k}_tgs${tgs}_ts${ts}_th${t}.txt
+  export OMP_NUM_THREADS=$t
+  aprun -n 1 -N 1 -d $t -ss -cc depth ./build_dp/mwd_kernel --n-tests 2 --nx $N --ny $N --nz $N --target-ts $ts --target-kernel $k --nt $nt --cache-size 4096 --thread-group-size $tgs  | tee -a ${res_file} 
+done
+
+}
+
+function run_stencil {
+k=$1
+N=$2
+
+ts=0
+nt=20
+tgs=0
+threads=( 1 2 4 6 8 10 12 )
+#run_exp threads[@] $ts $nt $tgs $k $N
+
+ts=2
+nt=50
+tgs=1
+threads=( 1 2 4 6 8 10 12 )
+#run_exp threads[@] $ts $nt $tgs $k $N
+
+tgs=2
+threads=( 2 4 6 8 10 12 )
+#run_exp threads[@] $ts $nt $tgs $k $N
+
+tgs=4
+threads=( 4 8 12 )
+run_exp threads[@] $ts $nt $tgs $k $N
+
+tgs=6
+threads=( 6 12 )
+run_exp threads[@] $ts $nt $tgs $k $N
+
+tgs=12
+threads=( 12 )
+run_exp threads[@] $ts $nt $tgs $k $N
+}
+
+k=1
+N=960
+#run_stencil $k $N
+
+k=4
+N=480
+#run_stencil $k $N
+
+k=5
+N=680
+#run_stencil $k $N
+
+k=0
+N=960
+run_stencil $k $N
+
+
