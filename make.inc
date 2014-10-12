@@ -18,6 +18,9 @@ stampede_CFLAGS = -g -O3 -xAVX -xhost -fno-alias -openmp
 # Intel compiler flags at Emmy
 emmy_CFLAGS = -g -O3 -xAVX -fno-alias -openmp# -mcmodel=large
 
+# Intel compiler flags at Edison
+edison_CFLAGS = -g -O3 -xAVX -fno-alias -openmp# -mcmodel=large
+
 # Intel compiler flags at Harpertown
 harpertown1_CFLAGS = -g -O3 -openmp -funroll-loops -xHOST -no-prec-div
 
@@ -68,7 +71,15 @@ ifeq ($(findstring harpertown1,$(MACHINE)),harpertown1)
 	CFLAGS=$(harpertown1_CFLAGS)
 	ARCH=Harpertown1
 else
+ifeq ($(findstring edison04,$(MACHINE)),edison04)
+	CFLAGS=$(edison_CFLAGS) 
+	ARCH=Edison
+	CC=cc
+	FC=ftn
+ 
+else
 	ARCH=Unknown
+endif
 endif
 endif
 endif
