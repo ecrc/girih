@@ -97,9 +97,9 @@ def get_summary(f):
                 'Using separate call to central line update',
                 'Thread group size',
                 'Intra-diamond prologue/epilogue MStencils',
-                'Cache block size/wf (kB):',
+                'Cache block size/wf (kiB)',
                 'Block size in X',
-                'Total cache block size (kB):')
+                'Total cache block size (kiB)')
 
     mlist = []
     # default not cotiguous MPI datatype
@@ -107,6 +107,8 @@ def get_summary(f):
     mlist.append(('Halo concatenation', 0))
     mlist.append(('Intra-diamond width', 0))
 
+    mlist.append(('Cache block size/wf (kiB)', 0))
+    mlist.append(('Total cache block size (kiB)', 0))
     mlist.append(('Thread group size', 0))
     mlist.append(('WD main-loop RANK0 MStencil/s  MAX', 0))
     mlist.append(('Multi-wavefront updates', 0))
