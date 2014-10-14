@@ -39,10 +39,10 @@ def main():
 
     kernel = 1
     exp = []
-    exp = exp + [[0, i, 960, 50,  0]
+    exp = exp + [[0, 0, 960, 50,  0]]
     exp = exp + [[0, 0, 480, 400, 0]]
-    exp = exp + [[2, i, 480, 400, 10] for i in range(1, 18, 2)] 
-    exp = exp + [[2, i, 960, 50,  10] for i in range(1, 14, 2)] 
+    exp = exp + [[2, i, 480, 400, 10] for i in range(1, 30, 2)] 
+    exp = exp + [[2, i, 960, 50,  10] for i in range(1, 30, 2)] 
     for ts, tb, N, nt, tgs in exp:
         outfile=(exp_name + '_ts%d_kernel%d_tb%d_tgs%d_N%d' % (ts, kernel, tb, tgs, N))
         submit_emmy_experiment(N, N, N, nt, is_dp=1, ts=ts, tb=tb, kernel=kernel, outfile=outfile, target_dir=target_dir, tgs=tgs)
@@ -50,10 +50,10 @@ def main():
 
     kernel = 5
     exp = []
-    exp = exp + [[0, 0, 340, 1000, 0]]
-    exp = exp + [[0, 0, 680, 50,   0]]
-    exp = exp + [[2, i, 340, 1000, 10] for i in range(1, 20, 2)] 
-    exp = exp + [[2, i, 680, 50,   10] for i in range(1, 20, 2)] 
+    exp = exp + [[0, 0, 384, 1000, 0]]
+    exp = exp + [[0, 0, 768, 50,   0]]
+    exp = exp + [[2, i, 384, 1000, 10] for i in range(1, 20, 2)] 
+    exp = exp + [[2, i, 768, 50,   10] for i in range(1, 20, 2)] 
     for ts, tb, N, nt, tgs in exp:
         outfile=(exp_name + '_ts%d_kernel%d_tb%d_tgs%d_N%d' % (ts, kernel, tb, tgs, N))
         submit_emmy_experiment(N, N, N, nt, is_dp=1, ts=ts, tb=tb, kernel=kernel, outfile=outfile, target_dir=target_dir, tgs=tgs)
