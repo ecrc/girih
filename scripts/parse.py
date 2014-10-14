@@ -109,6 +109,8 @@ def get_summary(f):
 
     mlist.append(('Thread group size', 0))
     mlist.append(('WD main-loop RANK0 MStencil/s  MAX', 0))
+    mlist.append(('Multi-wavefront updates', 0))
+    mlist.append(('Intra-diamond prologue/epilogue MStencils', 0))
 
     for line in f:
         # General float cases
