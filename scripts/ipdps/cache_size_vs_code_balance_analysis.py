@@ -34,7 +34,8 @@ def gen_res(raw_data, stencil_kernel, N):
 
   fig_size =  [fig_width,fig_height]
   params = {
-         'axes.labelsize': 7,         'axes.linewidth': 0.5,
+         'axes.labelsize': 7,
+         'axes.linewidth': 0.5,
          'lines.linewidth': 0.75,
          'text.fontsize': 7,
          'legend.fontsize': 5,
@@ -46,17 +47,10 @@ def gen_res(raw_data, stencil_kernel, N):
   pylab.rcParams.update(params)
 
 
-  req_fields = [('MStencil/s  MAX', float), ('Time stepper orig name', str), ('Stencil Kernel semi-bandwidth', int), ('Stencil Kernel coefficients', str), ('Precision', str), ('Time unroll',int), ('Number of time steps',int), ('Number of tests',int), ('Local NX',int), ('Local NY',int), ('Local NZ',int), ('Total Memory Transfer', float), ('Thread group size' ,int), ('Intra-diamond prologue/epilogue MStencils',int), ('Total cache block size (kB):',int), ('Multi-wavefront updates', int), ('Intra-diamond width', int)]
+  req_fields = [('Total cache block size (kiB)', int), ('MStencil/s  MAX', float), ('Time stepper orig name', str), ('Stencil Kernel semi-bandwidth', int), ('Stencil Kernel coefficients', str), ('Precision', str), ('Time unroll',int), ('Number of time steps',int), ('Number of tests',int), ('Local NX',int), ('Local NY',int), ('Local NZ',int), ('Total Memory Transfer', float), ('Thread group size' ,int), ('Intra-diamond prologue/epilogue MStencils',int), ('Multi-wavefront updates', int), ('Intra-diamond width', int)]
   data = []
   for k in raw_data:
     tup = dict()
-    # defaults
-    if k['Intra-diamond prologue/epilogue MStencils'] == '':
-      k['Intra-diamond prologue/epilogue MStencils'] = 0
-    if k['Total cache block size (kB):'] == '':
-      k['Total cache block size (kB):'] = 0
-    if k['Multi-wavefront updates'] == '':
-      k['Multi-wavefront updates'] = 0
     # add the general fileds
     for f in req_fields:
       try:
@@ -67,8 +61,7 @@ def gen_res(raw_data, stencil_kernel, N):
     tup['Kernel'] = get_stencil_num(k)
     data.append(tup)
 
-#    data = sorted(data, key=itemgetter(0, 1, 2, 3,4))
-#    for i in data: print i
+  #for i in data: print i
 
   WS = 8 # word size in bytes
   data2 = []
@@ -81,6 +74,8 @@ def gen_res(raw_data, stencil_kernel, N):
     tup['Performance'] = tup['MStencil/s  MAX']
     tup['Cache block'] = get_bs(Dw=tup['D_width'], Nd=get_nd(tup['Kernel']), Nf=(tup['Multi-wavefront updates']-1), Nx=tup['Local NX'], WS=WS)  
     data2.append(tup)
+#    try: print "%6.3f  %6.3f  %6.3f" % (tup['Cache block'], tup['Total cache block size (kiB)']/1024.0,tup['Cache block']- tup['Total cache block size (kiB)']/1024.0)
+#    except: pass
 
   #for i in data2: print i
   data2 = sorted(data2, key=itemgetter('Kernel', 'Local NX', 'D_width'))
@@ -119,7 +114,7 @@ def gen_res(raw_data, stencil_kernel, N):
     #if ((d+4)%8 == 0):
 #    ax.annotate(d, (cs[i], cb[i]))  
 
-  title = '_code_balance__vs_cache_size_N'+str(N)
+  title = '_code_balance_vs_cache_size_N'+str(N)
   if stencil_kernel == 0:
       title = '25_pt_const' + title
   elif stencil_kernel == 1:
@@ -150,6 +145,8 @@ def actual_BpU(tup):
 
   stencil_size = 2*ny*nz + ny*nz*(nx+2*R) 
   BpU = (total_mem * 10**9) / ( stencil_size * nt - oh*10**6*tup['Number of tests'])
+
+  #print BpU, total_mem, stencil_size, nt, oh, tup['Number of tests']
   return BpU
 
 
@@ -162,18 +159,15 @@ def models(tup):
   ny = tup['Local NY']
 
   # number of streamed copies of the domain (buffers)
-  if   tup['Kernel'] == 0: nb = 3
-  elif tup['Kernel'] == 1: nb = 2
-  elif tup['Kernel'] == 4: nb = 2+13
-  elif tup['Kernel'] == 5: nb = 2+7
+  nb = get_nd(tup['Kernel'])
 
   width = tup['Intra-diamond width']
   YT_section = float((TB+1)**2 * 2 * R)
 
-  # no temporal blocking model
-  if tup['Time stepper orig name'] == 'Naive':
+  # temporal blocking model
+  if tup['Time stepper orig name'] == 'Spatial Blocking':
     bpu = (1 + nb) * word_size
-  else: # temporal blocking model
+  else: # no temporal blocking model
     bpu = ( ((width - 2*R) + width) + (nb*width + 2*R) ) * word_size / YT_section
  
   return bpu
