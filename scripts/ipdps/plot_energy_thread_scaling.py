@@ -136,7 +136,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp, val):
             plt.plot(x, y, color=col, marker=marker, markersize=markersize, linestyle='-', label=ts2)
 
  
-    title = '_'+ val +'_threadscaling_perf'
+    title = '_threadscaling_'+val.lower()
     if stencil_kernel == 0:
         title = '25_pt_const' + title
     elif stencil_kernel == 1:

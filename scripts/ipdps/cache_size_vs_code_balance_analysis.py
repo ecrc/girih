@@ -29,18 +29,19 @@ def gen_res(raw_data, stencil_kernel, N):
   from csv import DictWriter
   from operator import itemgetter
 
-  fig_width = 8.588*0.393701 # inches
+  #fig_width = 8.588*0.393701 # inches
+  fig_width = 5.5*0.393701 # inches
   fig_height = 0.68*fig_width #* 210.0/280.0#433.62/578.16
 
   fig_size =  [fig_width,fig_height]
   params = {
-         'axes.labelsize': 7,
+         'axes.labelsize': 5,
          'axes.linewidth': 0.5,
          'lines.linewidth': 1,
-         'text.fontsize': 7,
-         'legend.fontsize': 7,
-         'xtick.labelsize': 7,
-         'ytick.labelsize': 7,
+         'text.fontsize': 5,
+         'legend.fontsize': 5,
+         'xtick.labelsize': 5,
+         'ytick.labelsize': 5,
          'lines.markersize': 5,
          'text.usetex': True,
          'figure.figsize': fig_size}
