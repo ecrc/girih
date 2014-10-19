@@ -82,7 +82,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp, val):
     tgs_l = map(int,tgs_l)
     tgs_l.sort()
 
-    req_fields = [('Thread group size', int), ('WD main-loop RANK0 MStencil/s  MAX', float), ('Time stepper orig name', str), ('OpenMP Threads', int), ('MStencil/s  MAX', float), ('Time unroll',int), ('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float), ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int), ('Number of time steps', int)]
+    req_fields = [('Thread group size', int), ('WD main-loop RANK0 MStencil/s  MAX', float), ('Time stepper orig name', str), ('OpenMP Threads', int), ('MStencil/s  MAX', float), ('Time unroll',int), ('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float), ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int)]
     data = []
     for k in raw_data:
         if k['Intra-diamond prologue/epilogue MStencils'] == '':
@@ -106,10 +106,12 @@ def plot_lines(raw_data, stencil_kernel, is_dp, val):
     data = sorted(data, key=itemgetter('Time stepper orig name', 'stencil', 'Thread group size', 'OpenMP Threads'))
 #    for i in data: print i
 
+    tgs_l = [ 10, 1, 2, 4, 5, 8]
+    if stencil_kernel == 1: tgs_l = [10, 0, 1, 2, 4, 5, 8]
     max_single = 0
     cols = {0:'g', 1:'k', 2:'b', 4:'c', 5:'r', 8:'m', 10:'m'}
     markers = {0:'o', 1:'^', 2:'v', 4:'.', 5:'x', 8:'.', 10:'*'}
-    for tgs in [ 10, 1, 2, 4, 5, 8]:
+    for tgs in tgs_l:
         marker = markers[tgs]
         x = []
         y = []
@@ -124,14 +126,14 @@ def plot_lines(raw_data, stencil_kernel, is_dp, val):
                 NT = k['Global NX']**3 * k['Number of time steps']
                 Neff = NT - ext_lups
                 if 'Energy' in val:
-                    scale = Neff / 1e9
+                    scale = k['Number of tests'] * Neff / 1e9
                 y.append((k[cpuv]+k[memv])/scale)
                 y1.append(k[cpuv]/scale)
                 y2.append(k[memv]/scale)
                 x.append(k['OpenMP Threads'])
         col = cols[tgs]
         ts2 = str(tgs) + 'WD' if tgs !=0 else 'Spt.blk.'
-        markersize = 12 if tgs == 10 else 4
+        markersize = 8 if tgs == 10 else 4
         if(x):
             plt.plot(x, y, color=col, marker=marker, markersize=markersize, linestyle='-', label=ts2)
 
@@ -156,8 +158,8 @@ def plot_lines(raw_data, stencil_kernel, is_dp, val):
     plt.xlabel('Threads')
  
     plt.legend(loc='best')
-    plt.grid()
-    pylab.savefig(f_name+'.png', bbox_inches="tight", pad_inches=0.04)
+    #plt.grid()
+    #pylab.savefig(f_name+'.png', bbox_inches="tight", pad_inches=0.04)
     pylab.savefig(f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     #plt.show()     
     plt.clf()

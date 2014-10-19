@@ -29,26 +29,28 @@ def gen_res(raw_data, stencil_kernel, N):
   from csv import DictWriter
   from operator import itemgetter
 
+
   #fig_width = 8.588*0.393701 # inches
-  fig_width = 5.5*0.393701 # inches
+  fig_width = 6.0*0.393701 # inches
   fig_height = 0.68*fig_width #* 210.0/280.0#433.62/578.16
 
   fig_size =  [fig_width,fig_height]
   params = {
-         'axes.labelsize': 5,
+         'axes.labelsize': 6,
          'axes.linewidth': 0.5,
-         'lines.linewidth': 1,
-         'text.fontsize': 5,
+         'lines.linewidth': 0.75,
+         'text.fontsize': 7,
          'legend.fontsize': 5,
-         'xtick.labelsize': 5,
-         'ytick.labelsize': 5,
-         'lines.markersize': 5,
+         'xtick.labelsize': 6,
+         'ytick.labelsize': 6,
+         'lines.markersize': 3,
+         'font.size': 6,
          'text.usetex': True,
          'figure.figsize': fig_size}
   pylab.rcParams.update(params)
 
 
-  req_fields = [('Total cache block size (kiB)', int), ('MStencil/s  MAX', float), ('Time stepper orig name', str), ('Stencil Kernel semi-bandwidth', int), ('Stencil Kernel coefficients', str), ('Precision', str), ('Time unroll',int), ('Number of time steps',int), ('Number of tests',int), ('Local NX',int), ('Local NY',int), ('Local NZ',int), ('Total Memory Transfer', float), ('Thread group size' ,int), ('Intra-diamond prologue/epilogue MStencils',int), ('Multi-wavefront updates', int), ('Intra-diamond width', int)]
+  req_fields = [('Total cache block size (kiB)', int), ('MStencil/s  MAX', float), ('Time stepper orig name', str), ('Stencil Kernel semi-bandwidth', int), ('Stencil Kernel coefficients', str), ('Precision', str), ('Time unroll',int), ('Number of time steps',int), ('Number of tests',int), ('Local NX',int), ('Local NY',int), ('Local NZ',int), ('Total Memory Transfer', float), ('Thread group size' ,int), ('Intra-diamond prologue/epilogue MStencils',int), ('Multi-wavefront updates', int), ('Intra-diamond width', int), ('Energy', float), ('Energy DRAM', float)]
   data = []
   for k in raw_data:
     tup = dict()
@@ -57,23 +59,49 @@ def gen_res(raw_data, stencil_kernel, N):
       try:
         tup[f[0]] = map(f[1], [k[f[0]]] )[0]
       except:
-        print f[0]
+        pass
+#        print f[0]
     # add the stencil operator
     tup['Kernel'] = get_stencil_num(k)
     data.append(tup)
 
-  #for i in data: print i
+
+  data1 = []
+  dd1 = data[:]
+  dd2 = data[:]
+  for d1 in dd1:
+    for d2 in dd2:
+      if d1['Time unroll'] == d2['Time unroll'] and d1['Kernel'] == d2['Kernel']:
+        if 'Energy' in d1 and 'Energy' not in d2:
+          d1['Total Memory Transfer'] = d2['Total Memory Transfer']
+          data1.append(d1)
+
+  #for i in data1: 
+  #  print i['Kernel'],i['Time unroll'],i['Energy'],i['Total Memory Transfer'],i['Energy DRAM']
+  #print ""
+
 
   WS = 8 # word size in bytes
   data2 = []
-  for tup in data:
+  for tup in data1:
     tup['Actual Bytes/LUP'] = actual_BpU(tup)
     tup['Model'] = models(tup)
     # model error
     tup['Err %'] = 100 * (tup['Model'] - tup['Actual Bytes/LUP'])/tup['Actual Bytes/LUP']
     tup['D_width'] = tup['Intra-diamond width']
     tup['Performance'] = tup['MStencil/s  MAX']
-    tup['Cache block'] = get_bs(Dw=tup['D_width'], Nd=get_nd(tup['Kernel']), Nf=(tup['Multi-wavefront updates']-1), Nx=tup['Local NX'], WS=WS)  
+ 
+    # energy
+
+    ext_lups = tup['Intra-diamond prologue/epilogue MStencils']*1e6
+    NT = tup['Local NX']**3 * tup['Number of time steps']
+    Neff = NT - ext_lups
+    lups = tup['Number of tests'] * Neff / 1e9
+    tup['cpu energy'] = tup['Energy']/lups
+    tup['dram energy'] = tup['Energy DRAM']/lups
+    tup['total energy'] = tup['dram energy'] + tup['cpu energy']
+
+#   tup['Cache block'] = get_bs(Dw=tup['D_width'], Nd=get_nd(tup['Kernel']), Nf=(tup['Multi-wavefront updates']-1), Nx=tup['Local NX'], WS=WS)  
     data2.append(tup)
 #    try: print "%6.3f  %6.3f  %6.3f" % (tup['Cache block'], tup['Total cache block size (kiB)']/1024.0,tup['Cache block']- tup['Total cache block size (kiB)']/1024.0)
 #    except: pass
@@ -82,46 +110,56 @@ def gen_res(raw_data, stencil_kernel, N):
   data2 = sorted(data2, key=itemgetter('Kernel', 'Local NX', 'D_width'))
 
 
-  cs=[]
+  et=[]
+  ec=[]
+  er=[]
   cb=[]
   cb_meas=[]
   Dw=[]
+  perf = []
   for k in data2:
-    if k['Kernel']==stencil_kernel and (k['Thread group size']==10 or k['Thread group size']==0) and k['Local NX']==N:
-      cs.append(k['Cache block'])
+    if k['Kernel']==stencil_kernel and k['Local NX']==N:
+      et.append(k['total energy'])
+      ec.append(k['cpu energy'])
+      er.append(k['dram energy'])
       cb.append(k['Model'])
       cb_meas.append(k['Actual Bytes/LUP'])
       Dw.append(k['D_width'])
+      perf.append("%.2f" % (k['Performance']/1000.0))
 
-  #for i in range(len(cs)):
-  #  print Dw[i], cs[i], cb_meas[i], cb[i]
+#  for i in range(len(et)):
+#    print Dw[i], et[i], cb_meas[i], cb[i], perf[i]
 
   if Dw==[]: return
 
   fig, ax = plt.subplots()
-  ax.plot(cs, cb     , marker='^', linestyle='-', color='k', label="Model")
-  ax.plot(cs, cb_meas, marker='x', linestyle='--', color='b', label="Measured")
-  ax.set_ylabel('Code balance (Bytes/LUP)')
-  ax.set_xlabel('Cache block size (MiB)')
-  ax.set_ylim([0, max(cb_meas+cb)+1])
-  ax.set_xlim([0, max(cs)+0.5])
+  #ax.plot(cb,      cs, marker='^', linestyle='-', color='k', label="Model")
+  ax.plot(cb_meas, et, marker='*', linestyle='--', color='k', label="Total")
+  ax.plot(cb_meas, ec, marker='x', linestyle='--', color='m', label="CPU")
+  ax.plot(cb_meas, er, marker='+', linestyle='--', color='b', label="DRAM")
+  ax.set_xlabel('Measured code balance (Bytes/LUP)')
+  ax.set_ylabel('pJ/LUP')
+  ax.set_xlim([0, max(cb_meas+cb)+1])
+  ax.set_ylim([0, max(et)+0.5])
   ax2 = ax.twiny()
-  ax2.set_xticks(cs)
-  ax2.set_xlabel('Diamond width')
+  ax2.set_xticks(cb_meas)
+  ax2.set_xlabel('GLUP/s')
+  ax2.set_xticklabels(perf, rotation=60)
   ax2.set_xlim(ax.get_xlim())
 
-  if stencil_kernel==1:
-    Dw = map(str,Dw)
-    Dw[1]=''
-    Dw[3]=''
-    Dw[5]=''
-  ax2.set_xticklabels(Dw)
-
-#  for i, d in enumerate(Dw):
+  for i, d in enumerate(Dw):
     #if ((d+4)%8 == 0):
-#    ax.annotate(d, (cs[i], cb[i]))  
+    ys = -max(et)/11
+    xs = 0
+    an = d
+    if d==8: 
+      an="Dw=8"
+      #xs = -cb_meas[0]/9
+    if stencil_kernel==5 and d==4:
+      xs = -1
+    ax.annotate(an, (cb_meas[i]+xs, et[i]+ys))  
 
-  title = '_code_balance_vs_cache_size_N'+str(N)
+  title = '_code_balance_vs_energy_N'+str(N)
   if stencil_kernel == 0:
       title = '25_pt_const' + title
   elif stencil_kernel == 1:
@@ -132,8 +170,8 @@ def gen_res(raw_data, stencil_kernel, N):
       title = '7_pt_var' + title
 
   ax.legend(loc='best')
-  ax.grid()
-  pylab.savefig(title+'.png', bbox_inches="tight", pad_inches=0.04)
+#  ax.grid()
+#  pylab.savefig(title+'.png', bbox_inches="tight", pad_inches=0.04)
   pylab.savefig(title+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
 

@@ -117,7 +117,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp):
                 y.append(k['MStencil/s  MAX']/10**3)
         col = cols[tgs]
         ts2 = str(tgs) + 'WD' if tgs !=0 else 'Spt.blk.'
-        markersize = 12 if ((tgs==10) or (tgs==12)) else 4
+        markersize = 8 if ((tgs==10) or (tgs==12)) else 4
         if(x):
             plt.plot(x, y, color=col, marker=marker, markersize=markersize, linestyle='-', label=ts2)
 
@@ -159,8 +159,8 @@ def plot_lines(raw_data, stencil_kernel, is_dp):
     plt.xlabel('Threads')
  
     plt.legend(loc='best')
-    plt.grid()
-    pylab.savefig(f_name+'.png', bbox_inches="tight", pad_inches=0.04)
+#    plt.grid()
+    #pylab.savefig(f_name+'.png', bbox_inches="tight", pad_inches=0.04)
     pylab.savefig(f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     #plt.show()     
     plt.clf()
