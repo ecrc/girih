@@ -7,9 +7,6 @@ void FUNC_NAME( const int shape[3], const int xb, const int yb, const int zb, co
   int nnx =shape[0];
   unsigned long ln_domain = shape[0]*shape[1]*shape[2];
 
-  // 25-point const. coeff specific
-  FLOAT_PRECISION two=2.0;
-  
   for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
   {
     je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);

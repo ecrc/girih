@@ -12,9 +12,6 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   int tgs = stencil_ctx.thread_group_size;
   int th_nwf = nwf/tgs;
   
-  // 25-point const. coeff specific
-  FLOAT_PRECISION two=2.0;
-
 #pragma omp parallel private(gtid, yb, ye, t, zi, kt, tid, i, j, k, not_done) shared(tgs, nwf, th_nwf, zb, ze, yb_r, ye_r, mtid, xb, xe, time_blk, t_dim, b_inc, e_inc, t_start) num_threads(stencil_ctx.thread_group_size)
   {
     tid = 0;

@@ -9,9 +9,6 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
 
   int time_blk = t_dim*2+1; //temporal block size
   FLOAT_PRECISION * restrict ptmp;
-
-  // 25-point const. coeff specific
-  FLOAT_PRECISION two=2.0;
   
   bs_x = stencil_ctx.bs_x;
   for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
