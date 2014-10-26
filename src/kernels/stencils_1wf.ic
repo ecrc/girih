@@ -8,6 +8,7 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
   unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
 
   int time_blk = t_dim*2+1; //temporal block size
+  FLOAT_PRECISION * restrict ptmp;
 
   // 25-point const. coeff specific
   FLOAT_PRECISION two=2.0;
@@ -26,28 +27,16 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
 
       kt = zi;
       for(t=0; t< time_blk; t++){ // Diamond blocking in time
+        ptmp=u; u=v; v=ptmp; //swap pointers
 
-        if((t)%2 == 1){
-          for(k=kt; k<nwf+kt; k++){
-            for(j=yb; j<ye; j++) {
+        for(k=kt; k<nwf+kt; k++){
+          for(j=yb; j<ye; j++) {
   #pragma simd
-              for(i=ib; i<ie; i++) {
-                FUNC_BODY(U,V)
-              }
+            for(i=ib; i<ie; i++) {
+              FUNC_BODY()
             }
           }
-
-        }else{
-          for(k=kt; k<nwf+kt; k++){
-            for(j=yb; j<ye; j++) {
-  #pragma simd
-              for(i=ib; i<ie; i++) {
-                FUNC_BODY(V,U)
-              }
-            }
-          }
-
-        } // end diamond blocking in time
+        }
 
         // Update block size in Y
         if(t< t_dim){ // lower half of the diamond
@@ -65,6 +54,7 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
         kt -= NHALO;
 
       } // diamond blocking in time (time loop)
+      ptmp=u; u=v; v=ptmp; //swap pointers
     } // wavefront loop
   } // blocking in x
 }

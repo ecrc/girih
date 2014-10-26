@@ -21,7 +21,7 @@ void FUNC_NAME( const int shape[3], const int xb, const int yb, const int zb, co
         for(j=jb; j<je; j++) {
 #pragma simd
           for(i=xb; i<xe; i++) {
-            FUNC_BODY(U,V)
+            FUNC_BODY()
           }
         }
       }

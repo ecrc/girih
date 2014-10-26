@@ -12,6 +12,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
 
   // 25-point const. coeff specific
   FLOAT_PRECISION two=2.0;
+  FLOAT_PRECISION * restrict ptmp;
   
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
@@ -19,8 +20,9 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
   th_nwf = nwf/tgs;
 
 
-#pragma omp parallel default(none) shared(ln_domain, two, u, v, roc2, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
-        private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, thb, the, q, r, t_start) \
+#pragma omp parallel default(none) shared(roc2, ln_domain, two, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
+        firstprivate(u, v) \
+        private(ptmp, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, thb, the, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
   {
     tid = 0;
@@ -58,28 +60,16 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
 
         kt = zi;
         for(t=0; t< time_blk; t++){ // Diamond blocking in time
+          ptmp=u; u=v; v=ptmp; //swap pointers
 
-          if((t)%2 == 1){
-            for(k=kt+thb; k<kt+the; k++){
-              for(j=yb; j<ye; j++) {
+          for(k=kt+thb; k<kt+the; k++){
+            for(j=yb; j<ye; j++) {
     #pragma simd
-                for(i=ib; i<ie; i++) {
-                  FUNC_BODY(U,V)
-                }
+              for(i=ib; i<ie; i++) {
+                FUNC_BODY()
               }
             }
-
-          }else{
-            for(k=kt+thb; k<kt+the; k++){
-              for(j=yb; j<ye; j++) {
-    #pragma simd
-                for(i=ib; i<ie; i++) {
-                  FUNC_BODY(V,U)
-                }
-              }
-            }
-
-          } // end diamond blocking in time
+          }
 
           // Update block size in Y
           if(t< t_dim){ // lower half of the diamond
@@ -101,6 +91,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
         } // diamond blocking in time (time loop)
+        ptmp=u; u=v; v=ptmp; //swap pointers
       } // wavefront loop
     } // blocking in x
   } // parallel region

@@ -6,7 +6,7 @@
 #ifdef FUNC_BODY
 #undef FUNC_BODY
 #endif
-#define FUNC_BODY(U,V) { \
+#define FUNC_BODY() { \
 U(i,j,k) = two*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*(coef[0]*V(i,j,k) \
 +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
 +coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
@@ -36,7 +36,7 @@ U(i,j,k) = two*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*(coef[0]*V(i,j,k) \
 #ifdef FUNC_BODY
 #undef FUNC_BODY
 #endif
-#define FUNC_BODY(U,V) { \
+#define FUNC_BODY() { \
 U(i,j,k) = coef[0]*V(i,j,k) \
 +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
 +coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
@@ -57,7 +57,7 @@ U(i,j,k) = coef[0]*V(i,j,k) \
 #ifdef FUNC_BODY
 #undef FUNC_BODY
 #endif
-#define FUNC_BODY(U,V) { \
+#define FUNC_BODY() { \
 U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 +COEF(1,i,j,k)*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
 +COEF(1,i,j,k)*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
@@ -78,7 +78,7 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #ifdef FUNC_BODY
 #undef FUNC_BODY
 #endif
-#define FUNC_BODY(U,V) { \
+#define FUNC_BODY() { \
 U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 +COEF(1,i,j,k)*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
 +COEF(2,i,j,k)*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
@@ -99,7 +99,7 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #ifdef FUNC_BODY
 #undef FUNC_BODY
 #endif
-#define FUNC_BODY(U,V) { \
+#define FUNC_BODY() { \
 U(i,j,k) = COEF(0 ,i,j,k)*V(i,j,k) \
 +COEF(1 ,i,j,k)*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
 +COEF(2 ,i,j,k)*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
@@ -129,7 +129,7 @@ U(i,j,k) = COEF(0 ,i,j,k)*V(i,j,k) \
 #ifdef FUNC_BODY
 #undef FUNC_BODY
 #endif
-#define FUNC_BODY(U,V) { \
+#define FUNC_BODY() { \
 U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 +COEF(1,i,j,k)*V(i-1,j  ,k  ) \
 +COEF(2,i,j,k)*V(i+1,j  ,k  ) \
