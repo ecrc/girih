@@ -220,7 +220,7 @@ unsigned long get_mwf_size(Parameters *p, int t_dim){
 }
 double run_tuning_test(Parameters *tp){
   double t = 0.0;
-  int reps = 1, new_reps;
+  int reps = 1, orig_reps;
   float obt_perf;
 
   do{
@@ -228,15 +228,15 @@ double run_tuning_test(Parameters *tp){
     tp->prof.ts_main = 0;
     dynamic_intra_diamond_ts(tp);
     t = tp->prof.ts_main;
-    new_reps = (int) (2.0/t);
-    reps = (t>2? reps: new_reps);
-  } while(t < 1.0);
+    orig_reps =reps;
+    reps *= (int) ceil(3.0/t);
+  } while(t < 2.0);
 
   unsigned long lups = (tp->ln_stencils*tp->nt - tp->idiamond_pro_epi_logue_updates);
   obt_perf =  lups/tp->prof.ts_main;
 
   printf("%06.2f]  time:%es  lups:%lu  cache block size:%lukiB  reps:%d\n",
-      obt_perf/(1e6), tp->prof.ts_main, lups, get_mwf_size(tp, tp->t_dim)*(tp->num_threads/tp->stencil_ctx.thread_group_size)/1024, reps);
+      obt_perf/(1e6), tp->prof.ts_main, lups, get_mwf_size(tp, tp->t_dim)*(tp->num_threads/tp->stencil_ctx.thread_group_size)/1024, orig_reps);
 
   return obt_perf;
 }
