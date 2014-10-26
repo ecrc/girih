@@ -448,13 +448,11 @@ void set_kernels(Parameters *p){
   #if USE_FIXED_EXE == 1 // MWD with fixed execution multi-wavefront kernels
     p->stencil.mwd_func = femwd_func_list[p->target_kernel];
   #else // standard MWD kernels
-    if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
-      p->stencil.mwd_func = swd_func_list[p->target_kernel];
-    }
-    else {
-      p->stencil.mwd_func = mwd_func_list[p->target_kernel];
-    }
+    p->stencil.mwd_func = mwd_func_list[p->target_kernel];
   #endif
+  if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
+    p->stencil.mwd_func = swd_func_list[p->target_kernel];
+  }
 #endif
 
   p->stencil.name = stencil_info_list[p->target_kernel].name;
