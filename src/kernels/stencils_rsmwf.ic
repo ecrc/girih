@@ -75,9 +75,6 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
             }
           }
 
-          //update current thread time step status
-          STATUS(tid) = t+1;
-
           // Update block size in Y
           if(t< t_dim){ // lower half of the diamond
             yb -= b_inc;
@@ -101,6 +98,9 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
             }while(STATUS(tid) > STATUS(tid-1));
           }
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
+          //update current thread time step status
+          STATUS(tid) = t+1;
 
         } // diamond blocking in time (time loop)
         ptmp=u; u=v; v=ptmp; //swap pointers
