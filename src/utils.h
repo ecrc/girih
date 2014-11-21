@@ -19,6 +19,7 @@ extern void mpi_halo_init(Parameters *);
 extern void domain_decompose(Parameters *p);
 
 extern struct time_stepper TSList[];
+extern const char *MWD_names[];
 
 extern void dynamic_intra_diamond_ts(Parameters *p);
 
@@ -27,8 +28,11 @@ extern struct StencilInfo stencil_info_list[];
 extern spt_blk_func_t spt_blk_func_list[];
 extern spt_blk_func_t stat_sched_func_list[];
 extern mwd_func_t swd_func_list[];
+
 extern mwd_func_t mwd_func_list[];
 extern mwd_func_t femwd_func_list[];
+extern mwd_func_t *mwd_list[];
+
 extern void swd_iso_ref_split KERNEL_MWD_SIG;
 extern void mwd_iso_ref_split KERNEL_MWD_SIG;
 extern void iso_ref_split KERNEL_SIG;

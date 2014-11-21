@@ -25,10 +25,6 @@
 #define USE_SPLIT_STRIDE (0)
 #endif
 
-#ifndef USE_FIXED_EXE
-#define USE_FIXED_EXE (0)
-#endif
-
 #if DP
 #define FLOAT_PRECISION double
 #define MPI_FLOAT_PRECISION MPI_DOUBLE
@@ -141,6 +137,7 @@ struct StencilInfo {
   enum Stencil_Coefficients coeff;
 };
 
+char *MWD_name;
 
 // context information
 typedef struct{
@@ -174,7 +171,7 @@ typedef struct{
   int halo_concat;
 
   // Specific data for the diamond method
-  int t_dim, larger_t_dim, is_last;
+  int t_dim, larger_t_dim, is_last, mwd_type;
   Halo hu[3], hv[3];
 
   int wavefront;

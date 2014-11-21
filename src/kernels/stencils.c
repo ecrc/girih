@@ -201,3 +201,9 @@ mwd_func_t femwd_func_list[] = {
     femwd_iso_ref_2space_1time_var_axsym,
     femwd_iso_ref_8space_1time_var_axsym,
     femwd_iso_ref_2space_1time_var_nosym,};
+
+const char *MWD_names[] = {"Wavefront", "Fixed execution wavefronts", 0};
+
+mwd_func_t *mwd_list[] = {mwd_func_list, femwd_func_list,};
+
+

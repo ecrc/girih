@@ -37,6 +37,7 @@ void param_default(Parameters *p) {
   p->debug = 0;
   p->source_point_enabled = 0;
   p->array_padding = 1;
+  p->mwd_type = 0;
 
   // diamond method
   p->t_dim = -1;
@@ -445,11 +446,10 @@ void set_kernels(Parameters *p){
 #else
   p->stencil.spt_blk_func = spt_blk_func_list[p->target_kernel];
 
-  #if USE_FIXED_EXE == 1 // MWD with fixed execution multi-wavefront kernels
-    p->stencil.mwd_func = femwd_func_list[p->target_kernel];
-  #else // standard MWD kernels
-    p->stencil.mwd_func = mwd_func_list[p->target_kernel];
-  #endif
+  p->stencil.mwd_func = mwd_list[p->mwd_type][p->target_kernel];
+
+
+
   if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
     p->stencil.mwd_func = swd_func_list[p->target_kernel];
   }
@@ -579,14 +579,14 @@ void intra_diamond_info_init(Parameters *p){
     }
 
 
-#if USE_FIXED_EXE == 1
+  if (p->mwd_type == 1){ // fixed execution to data
     if( (p->stencil_ctx.num_wf%p->stencil_ctx.thread_group_size != 0) && (p->stencil_ctx.thread_group_size != 1) ){
       if(p->mpi_rank ==0) fprintf(stderr,"ERROR: number of wavefronts must be multiples of thread group size\n");
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);
     }
-#endif
+  }
 
   if( (p->wavefront == 1) && (p->stencil_ctx.thread_group_size != 1) ) // multi-thread group
     p->wavefront = -1;
@@ -889,6 +889,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->verify = a.verify;
   b->num_threads = a.num_threads;
   b->array_padding = a.array_padding;
+  b->mwd_type = a.mwd_type;
 
   b->stencil_ctx.bs_y = a.stencil_ctx.bs_y;
   b->stencil_ctx.bs_x = a.stencil_ctx.bs_x;
@@ -1217,7 +1218,7 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
 
 void print_param(Parameters p) {
 
-  char *coeff_type, *precision, *mwd_algorithm;
+  char *coeff_type, *precision;
   int wf_halo = p.stencil.r;
   int diam_height;
 
@@ -1237,14 +1238,6 @@ void print_param(Parameters p) {
     coeff_type = "variable no-symmetry";
     break;
   }
-
-#if USE_FIXED_EXE == 1
-  mwd_algorithm = "fixed execution multi-wavefronts";
-#else
-  mwd_algorithm = "multi-wavefronts";
-#endif
-
-
 
   precision = ((sizeof(FLOAT_PRECISION)==4)?"SP":"DP");
 
@@ -1276,7 +1269,7 @@ void print_param(Parameters p) {
   case 2: // dynamic scheduling intra diamond methods
     printf("Block size in X: %d\n", p.stencil_ctx.bs_x);
     printf("Enable wavefronts: %d\n", p.wavefront!=0);
-    if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", mwd_algorithm);
+    if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", &MWD_name[p.mwd_type]);
     printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*p.stencil.r);
     printf("Wavefront width:  %d\n", diam_height);
     printf("Cache block size/wf (kiB): %lu\n", p.wf_blk_size/1024);
@@ -1330,6 +1323,15 @@ void list_kernels(Parameters *p){
           i, stencil_info_list[i].name, stencil_info_list[i].time_order, stencil_info_list[i].r,coeff_type);
       i++;
     }
+
+    printf("Available MWD implementations:\n#    Name\n");
+    i = 0;
+    while(1){
+      if (MWD_name[i] == 0) break;
+      printf("%02d   %s\n",i, &MWD_name[i]);
+      i++;
+    }
+
   }
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
@@ -1457,6 +1459,7 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"num-wavefronts", 1, 0, 0},
         {"pad-array", 0, 0, 0},
         {"bsx", 1, 0, 0},
+        {"mwd-type", 1, 0, 0},
 //        {"target-parallel-wavefront", 1, 0, 0},
         {0, 0, 0, 0}
     };
@@ -1495,6 +1498,7 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "num-wavefronts") == 0) p->stencil_ctx.num_wf = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "pad-array") == 0) p->array_padding = 1;
       else if(strcmp(long_options[option_index].name, "bsx") == 0) p->stencil_ctx.bs_x = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "mwd-type") == 0) p->mwd_type = atoi(optarg);
 //      else if(strcmp(long_options[option_index].name, "target-parallel-wavefront") == 0) p->target_parallel_wavefront = atoi(optarg);
      break;
 
