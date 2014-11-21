@@ -20,7 +20,8 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   nwf = stencil_ctx.num_wf;
   th_nwf = nwf/tgs;
   const int CL=128;
-  char *status = posix_memalign((void *) status, CL, CL*tgs);
+  char *status;
+  posix_memalign((void *) status, CL, CL*tgs);
 
 #pragma omp parallel default(none) shared(status, roc2, ln_domain, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
@@ -96,8 +97,8 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 //#pragma omp barrier
           if(tid !=0){
             do{
-              _asm pause
-            }while(STATUS(tid) > STATUS(tid-1);)
+//              _asm pause
+            }while(STATUS(tid) > STATUS(tid-1));
           }
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 

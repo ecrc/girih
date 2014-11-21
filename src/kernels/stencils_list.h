@@ -3,3 +3,4 @@
 #include "stencils_1wf.ic"
 #include "stencils_mwf.ic"
 #include "stencils_femwf.ic"
+#include "stencils_rsmwf.ic"
