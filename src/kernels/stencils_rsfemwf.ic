@@ -16,7 +16,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
   tgs = stencil_ctx.thread_group_size;
 
   char *status;
-  posix_memalign((void *) status, CL, CL*nwf);
+  posix_memalign((void **)&status, CL, CL*nwf);
 
 #pragma omp parallel default(none) shared(status, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
