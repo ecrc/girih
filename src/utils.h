@@ -19,7 +19,7 @@ extern void mpi_halo_init(Parameters *);
 extern void domain_decompose(Parameters *p);
 
 extern struct time_stepper TSList[];
-extern const char *MWD_names[];
+extern const char *MWD_name[];
 
 extern void dynamic_intra_diamond_ts(Parameters *p);
 

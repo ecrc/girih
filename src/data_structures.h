@@ -137,8 +137,6 @@ struct StencilInfo {
   enum Stencil_Coefficients coeff;
 };
 
-char *MWD_name;
-
 // context information
 typedef struct{
   int alignment, verbose, stencil_shape[3];

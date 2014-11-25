@@ -221,11 +221,11 @@ mwd_func_t rsfemwd_func_list[] = { /* 3 */
 
 
 
-const char *MWD_names[] = {"Wavefront", 
+const char *MWD_name[] = {"Wavefront", 
                            "Fixed execution wavefronts", 
                            "Relaxed synchronization wavefront", 
                            "Relaxed synchronization wavefront with fixed execution", 
-                           0};
+                           0,};
 
 mwd_func_t *mwd_list[] = {mwd_func_list, femwd_func_list, rsmwd_func_list, };
 

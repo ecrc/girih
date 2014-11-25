@@ -1269,7 +1269,7 @@ void print_param(Parameters p) {
   case 2: // dynamic scheduling intra diamond methods
     printf("Block size in X: %d\n", p.stencil_ctx.bs_x);
     printf("Enable wavefronts: %d\n", p.wavefront!=0);
-    if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", &MWD_name[p.mwd_type]);
+    if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", MWD_name[p.mwd_type]);
     printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*p.stencil.r);
     printf("Wavefront width:  %d\n", diam_height);
     printf("Cache block size/wf (kiB): %lu\n", p.wf_blk_size/1024);
@@ -1324,11 +1324,11 @@ void list_kernels(Parameters *p){
       i++;
     }
 
-    printf("Available MWD implementations:\n#    Name\n");
+    printf("\nAvailable MWD implementations:\n#    Name\n");
     i = 0;
     while(1){
       if (MWD_name[i] == 0) break;
-      printf("%02d   %s\n",i, &MWD_name[i]);
+      printf("%02d   %s\n",i, MWD_name[i]);
       i++;
     }
 
@@ -1413,6 +1413,9 @@ void print_help(Parameters *p){
         "       Set the number of wavefronts updated per wavefront iteration (default 1)\n"
         "  --bsx <int>\n"
         "       Set block size in X for MWD (default 1e6)\n"
+        "  --mwd-type <int>\n"
+        "       Select one of the MWD implementations from the one available at --list option\n"
+
 
 
 //        "  --target-parallel-wavefront <integer>\n"
