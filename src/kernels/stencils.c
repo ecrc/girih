@@ -204,15 +204,28 @@ mwd_func_t femwd_func_list[] = { /* 1 */
     femwd_iso_ref_2space_1time_var_nosym,};
 
 mwd_func_t rsmwd_func_list[] = { /* 2 */
-    femwd_iso_ref,
-    femwd_iso_ref_2space_1time,
-    femwd_iso_ref_2space_1time_var,
-    femwd_iso_ref_2space_1time_var_axsym,
-    femwd_iso_ref_8space_1time_var_axsym,
-    femwd_iso_ref_2space_1time_var_nosym,};
+    rsmwd_iso_ref,
+    rsmwd_iso_ref_2space_1time,
+    rsmwd_iso_ref_2space_1time_var,
+    rsmwd_iso_ref_2space_1time_var_axsym,
+    rsmwd_iso_ref_8space_1time_var_axsym,
+    rsmwd_iso_ref_2space_1time_var_nosym,};
+
+mwd_func_t rsfemwd_func_list[] = { /* 3 */
+    rsfemwd_iso_ref,
+    rsfemwd_iso_ref_2space_1time,
+    rsfemwd_iso_ref_2space_1time_var,
+    rsfemwd_iso_ref_2space_1time_var_axsym,
+    rsfemwd_iso_ref_8space_1time_var_axsym,
+    rsfemwd_iso_ref_2space_1time_var_nosym,};
 
 
-const char *MWD_names[] = {"Wavefront", "Fixed execution wavefronts", "Relaxed synchronization wavefront", 0};
+
+const char *MWD_names[] = {"Wavefront", 
+                           "Fixed execution wavefronts", 
+                           "Relaxed synchronization wavefront", 
+                           "Relaxed synchronization wavefront with fixed execution", 
+                           0};
 
 mwd_func_t *mwd_list[] = {mwd_func_list, femwd_func_list, rsmwd_func_list, };
 
