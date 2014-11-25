@@ -1,8 +1,8 @@
-void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
+void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
 
-  int i, j, k, t, yb, ye, zi, kt, ib, ie;
+  int i, j, k, t, yb, ye, zi, kt, ib, ie, wf;
   int ib_r, ie_r, bs_x, nwf, tid, gtid, th_nwf, tgs, q, r;
   int nny =shape[1];
   int nnx =shape[0];
@@ -10,13 +10,17 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   int time_blk = t_dim*2+1; //temporal block size
   double t_start;
   FLOAT_PRECISION * restrict ptmp;
-  
+  nwf = stencil_ctx.num_wf;
+  const int CL = 128; 
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
 
-#pragma omp parallel default(none) shared(roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
+  char *status;
+  posix_memalign((void *) status, CL, CL*nwf);
+
+#pragma omp parallel default(none) shared(status, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
-        private(nwf, th_nwf, ptmp, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
+        private(wf, nwf, th_nwf, ptmp, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
   {
     tid = 0;
@@ -51,12 +55,22 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
           for(k=kt; k<kt+nwf; k++){
             if( ((k-NHALO)/th_nwf)%tgs == tid ) {
+              wf = k-kt;
+              while(t > STATUS(wf)){ 
+//                _asm pause
+              }
+              if(wf>1){
+                while(t > STATUS(wf-2)){
+//                _asm pause
+                }
+              }
               for(j=yb; j<ye; j++) {
       #pragma simd
                 for(i=ib; i<ie; i++) {
                   FUNC_BODY()
                 }
               }
+              STATUS(wf)=t+1;
             }
           }
 
@@ -84,4 +98,6 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
       } // wavefront loop
     } // blocking in x
   } // parallel region
+
+  free(status);
 }
