@@ -35,6 +35,9 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     gtid = tid + mtid * tgs;
 #endif
 
+    int left_tid = tid-1;
+    if(tid==0) left_tid = 0;
+
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
  
@@ -66,6 +69,13 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         for(t=0; t< time_blk; t++){ // Diamond blocking in time
           ptmp=u; u=v; v=ptmp; //swap pointers
 
+          t_start = MPI_Wtime();
+          // spin-wait for dependencies
+          while(STATUS(tid) > STATUS(left_tid)){
+//           _asm pause
+          }
+          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
           for(k=kt+thb; k<kt+the; k++){
             for(j=yb; j<ye; j++) {
     #pragma simd
@@ -75,6 +85,9 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
             }
           }
 
+          //update current thread time step status
+          STATUS(tid) = t+1;
+
           // Update block size in Y
           if(t< t_dim){ // lower half of the diamond
             yb -= b_inc;
@@ -83,26 +96,17 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
             yb += b_inc;
             ye -= e_inc;
           }
-
           // Update block size in X
           if (ib != xb) ib-=NHALO; 
           if (ie != xe) ie-=NHALO;
-
           kt -= NHALO;
 
-          t_start = MPI_Wtime();
-//#pragma omp barrier
-          if(tid !=0){
-            do{
-//              _asm pause
-            }while(STATUS(tid) > STATUS(tid-1));
-          }
-          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
-
-          //update current thread time step status
-          STATUS(tid) = t+1;
-
         } // diamond blocking in time (time loop)
+
+        t_start = MPI_Wtime();
+#pragma omp barrier // synchronize the group after full wavefront update
+        stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
         ptmp=u; u=v; v=ptmp; //swap pointers
       } // wavefront loop
     } // blocking in x
