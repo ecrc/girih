@@ -80,7 +80,8 @@ def get_summary(f):
     str_fields = ('Time stepper name',
                 'Stencil Kernel name',
                 'Stencil Kernel coefficients',
-                'Precision')
+                'Precision',
+                'Wavefront parallel strategy')
                 
     int_fields = ('Number of time steps',
                 'Alignment size',
@@ -183,7 +184,6 @@ def get_summary(f):
                     mlist.append((m[:-1] + ' group %d'%i ,vals[i])) 
 
 
-
         # LIKWID performance results
         if 'Measuring group' in line:
             val = line.split(' ')[2].strip()
@@ -192,41 +192,30 @@ def get_summary(f):
         if '|    Memory BW [MBytes/s]     |' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Sustained Memory BW',val))
-
         if '| Memory data volume [GBytes] |' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Total Memory Transfer',val))
 
 
-        if '| L3 bandwidth [MBytes/s] |' in line:
-            vals = [i.strip() for i in line.split('|')[2:-1]]
-            if len(vals) == 1:
-                mlist.append(('Sustained L3 BW',vals[0]))
-            else:
-                for i in range(len(vals)):
-                    mlist.append(('Sustained L3 BW core %d'%i ,vals[i])) 
+        snames = [('| %s bandwidth [MBytes/s] ','BW'),
+                  ('| %s data volume [GBytes] ', 'data volume'),
+                  ('|   %s Evict [MBytes/s] ', 'evict'),
+                  ('|   %s Load [MBytes/s] ', 'load')]
+        for cache in ['L2', 'L3']:
+            for sn in snames:
+                sn0 = sn[0]%(cache)
+                if ((sn0 in line) and ('STAT' in line)):
+                    vals = [i.strip() for i in line.split('|')[2:6]]
+                    for i, st in enumerate(['sum', 'max', 'min', 'avg']):
+                        mlist.append((cache+' '+sn[1]+' '+st, vals[i]))
+                elif sn0 in line:
+                    vals = [i.strip() for i in line.split('|')[2:-1]]
+                    if len(vals) == 1:
+                        mlist.append((sn[1]+' '+cache,vals[0]))
+                    else:
+                        for i in range(len(vals)):
+                            mlist.append(('%s BW c%d'%(cache,i) ,vals[i])) 
 
-        if '| L3 data volume [GBytes] |' in line:
-            vals = [i.strip() for i in line.split('|')[2:-1]]
-            if len(vals) == 1:
-                mlist.append(('Total L3 Transfer',vals[0]))
-            else:
-                for i in range(len(vals)):
-                    mlist.append(('Total L3 Transfer core %d'%i ,vals[i]))
-                    
-        if '| L3 bandwidth [MBytes/s] STAT |' in line:
-            vals = [i.strip() for i in line.split('|')[2:6]]
-            mlist.append(('Sustained L3 BW sum',vals[0]))
-            mlist.append(('Sustained L3 BW max',vals[1]))
-            mlist.append(('Sustained L3 BW min',vals[2]))
-            mlist.append(('Sustained L3 BW avg',vals[3]))
-
-        if '| L3 data volume [GBytes] STAT |' in line:
-            vals = [i.strip() for i in line.split('|')[2:6]]
-            mlist.append(('Total L3 Transfer sum',vals[0]))
-            mlist.append(('Total L3 Transfer max',vals[1]))
-            mlist.append(('Total L3 Transfer min',vals[2]))
-            mlist.append(('Total L3 Transfer avg',vals[3]))
 
         if '|  L1 DTLB miss rate STAT   |' in line:
             vals = [i.strip() for i in line.split('|')[2:6]]
@@ -235,13 +224,6 @@ def get_summary(f):
             mlist.append(('L1 DTLB miss rate min',vals[2]))
             mlist.append(('L1 DTLB miss rate avg',vals[3]))
 
-        if '| L2 bandwidth [MBytes/s] |' in line:
-            val = line.split('|')[2].strip()
-            mlist.append(('Sustained L2 BW',val))
-
-        if '| L2 data volume [GBytes] |' in line:
-            val = line.split('|')[2].strip()
-            mlist.append(('Total L2 Transfer',val))
 
         if '|      Energy [J]      |' in line:
             val = line.split('|')[2].strip()
