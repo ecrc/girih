@@ -2,9 +2,12 @@
 
 
 def sort_cols(data,items):
+    items2 = []
     for i in items:
-        data.remove(i)
-    data = items + list(data)
+        if i in data:
+            data.remove(i)
+            items2.append(i)
+    data = items2 + list(data)
     return data
 
 def main():
@@ -31,10 +34,41 @@ def main():
             print('Rejected the file: '+ f)
             
 
-    cols_order = ['Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'OpenMP Threads', 'Global NX', 'MStencil/s  MAX', 'Intra-diamond width']
+    cols_order = ['Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'Global NX', 'MStencil/s  MAX']
+
+    cols_order.append('Sustained Memory BW')
+    cols_order.append('Total Memory Transfer')
+    for i, st in enumerate(['sum', 'max', 'min', 'avg']):
+        cols_order.append('L1 DTLB miss rate %s'%(st))
+    snames = [('| %s bandwidth [MBytes/s] ','BW'),
+              ('| %s data volume [GBytes] ', 'data volume'),
+              ('|   %s Evict [MBytes/s] ', 'evict'),
+              ('|   %s Load [MBytes/s] ', 'load')]
+    for cache in ['L2', 'L3']:
+        for sn in snames:
+            for i, st in enumerate(['sum', 'max', 'min', 'avg']):
+                cols_order.append(cache+' '+sn[1]+' '+st)
+    for cache in ['L2', 'L3']:
+        for sn in snames:
+            for i in range(1000):
+                cols_order.append(cache+' '+sn[1]+' c'+str(i)) 
+    snames = [('|         CPI ', 'CPI'),
+              ('| Load to Store ratio ', 'Load to Store ratio')]
+    for sn in snames:
+        for i, st in enumerate(['sum', 'max', 'min', 'avg']):
+            cols_order.append(sn[1]+' '+st)
+    for sn in snames:
+        for i in range(1000):
+            cols_order.append(sn[1]+' c'+str(i)) 
+
+    for i in range(1000):
+        cols_order.append('Wavefront barrier wait [%] group '+str(i)) 
+
+
+
     fields = sort_cols(all_fields, cols_order) 
    
-    data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'OpenMP Threads', 'MPI size', 'Global NX'))
+    data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'OpenMP Threads', 'MPI size', 'Global NX'))
 
 
     with open(output_name, 'w') as output_file:
@@ -114,6 +148,7 @@ def get_summary(f):
     mlist.append(('WD main-loop RANK0 MStencil/s  MAX', 0))
     mlist.append(('Multi-wavefront updates', 0))
     mlist.append(('Intra-diamond prologue/epilogue MStencils', 0))
+    mlist.append(('Wavefront parallel strategy',0))
 
     for line in f:
         # General float cases
@@ -170,13 +205,15 @@ def get_summary(f):
                 mlist.append((field,val))
 
         # MWD statistics information
-        measures = ['Wavefront barrier wait [s]:', 'Wavefront barrier wait [%]:',
+        measures =[
+                   'Wavefront barrier wait [s]:', 'Wavefront barrier wait [%]:',
                    'Wavefront steady state [s]:', 'Wavefront steady state [%]:',
                    'Wavefront startup/end [s]:', 'Wavefront startup/end [%]:',
                    'Wavefront communication [s]:', 'Wavefront communication [%]:',
                    'Wavefront others [s]:', 'Wavefront others [%]:',
                    'Group spin-wait [s]:', 'Group spinn-wait [%]:',
-                   'Resolved diamonds:']
+                   'Resolved diamonds:'
+                   ]
         for m in measures:
             if m in line:
                 vals = [i.strip() for i in line.split(':')[1].split(' ') if len(i.strip()) !=0]
@@ -201,6 +238,7 @@ def get_summary(f):
                   ('| %s data volume [GBytes] ', 'data volume'),
                   ('|   %s Evict [MBytes/s] ', 'evict'),
                   ('|   %s Load [MBytes/s] ', 'load')]
+
         for cache in ['L2', 'L3']:
             for sn in snames:
                 sn0 = sn[0]%(cache)
@@ -211,18 +249,31 @@ def get_summary(f):
                 elif sn0 in line:
                     vals = [i.strip() for i in line.split('|')[2:-1]]
                     if len(vals) == 1:
-                        mlist.append((sn[1]+' '+cache,vals[0]))
+                        mlist.append((cache+' '+sn[1],vals[0]))
                     else:
                         for i in range(len(vals)):
-                            mlist.append(('%s BW c%d'%(cache,i) ,vals[i])) 
+                            mlist.append((cache+' '+sn[1]+' c'+str(i), vals[i])) 
+
+        snames = [('|         CPI ', 'CPI'),
+                  ('| Load to Store ratio ', 'Load to Store ratio')]
+        for sn in snames:
+            if ((sn[0] in line) and ('STAT' in line)):
+                vals = [i.strip() for i in line.split('|')[2:6]]
+                for i, st in enumerate(['sum', 'max', 'min', 'avg']):
+                    mlist.append((sn[1]+' '+st, vals[i]))
+            elif sn[0] in line:
+                vals = [i.strip() for i in line.split('|')[2:-1]]
+                if len(vals) == 1:
+                    mlist.append((sn[1],vals[0]))
+                else:
+                    for i in range(len(vals)):
+                        mlist.append((sn[1]+' c'+str(i), vals[i])) 
 
 
         if '|  L1 DTLB miss rate STAT   |' in line:
             vals = [i.strip() for i in line.split('|')[2:6]]
-            mlist.append(('L1 DTLB miss rate sum',vals[0]))
-            mlist.append(('L1 DTLB miss rate max',vals[1]))
-            mlist.append(('L1 DTLB miss rate min',vals[2]))
-            mlist.append(('L1 DTLB miss rate avg',vals[3]))
+            for i, st in enumerate(['sum', 'max', 'min', 'avg']):
+                mlist.append(('L1 DTLB miss rate %s'%(st),vals[i]))
 
 
         if '|      Energy [J]      |' in line:
