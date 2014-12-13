@@ -1,0 +1,4 @@
+CC=tau_cc.sh
+FC=tau_f90.sh
+CFLAGS = -g -O3 -xAVX -fno-alias -openmp #-mcmodel=large
+

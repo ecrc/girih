@@ -1,4 +1,5 @@
-include make.inc
+include conf/make.conf
+include conf/make.inc
 
 KERNEL=mwd_kernel
 
@@ -11,7 +12,6 @@ KERNELS_OBJ = $(patsubst src/kernels/%.c, ${BUILD_DIR}/%.o, $(KERNELS_SRC))
 all: ${BUILD_DIR} ${BUILD_DIR}/${KERNEL}
 
 ${BUILD_DIR}:
-	@echo Architecture is $(ARCH)
 	mkdir -p ${BUILD_DIR}
 
 ${BUILD_DIR}/%.o: src/kernels/%.c

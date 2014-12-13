@@ -1,0 +1,4 @@
+
+CC=mpicc
+FC=mpif90
+CFLAGS = -g -O3
