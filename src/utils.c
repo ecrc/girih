@@ -588,6 +588,15 @@ void intra_diamond_info_init(Parameters *p){
     }
   }
 
+  if (p->mwd_type == 2){ // relaxed synchronization
+    if(p->stencil_ctx.num_wf/p->stencil_ctx.thread_group_size < p->stencil.r){
+      if(p->mpi_rank ==0) fprintf(stderr,"ERROR: number of frontlines per thread must be greater or equal to the stencil radius in the relaxed synchronization implementation\n");
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(1);
+    }
+  }
+
   if( (p->wavefront == 1) && (p->stencil_ctx.thread_group_size != 1) ) // multi-thread group
     p->wavefront = -1;
 
