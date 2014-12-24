@@ -57,11 +57,11 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
             if( ((k-NHALO)/th_nwf)%tgs == tid ) {
               wf = k-kt;
               while(t > STATUS(wf)){ 
-//                _asm pause
+                asm("");
               }
               if(wf>1){
                 while(t > STATUS(wf-2)){
-//                _asm pause
+                  asm("");
                 }
               }
               for(j=yb; j<ye; j++) {

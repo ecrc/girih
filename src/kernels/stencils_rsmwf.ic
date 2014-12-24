@@ -38,7 +38,6 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     tid = omp_get_thread_num();
     gtid = tid + mtid * tgs;
 #endif
-//    int volatile dummy=0;
     int left_tid = tid-1;
     if(tid==0) left_tid = tgs-1;
 
@@ -106,14 +105,12 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
           t_start = MPI_Wtime();
           if(tid == 0){ // wait for dependencies across frontlines
             while( (zi > current_z) & (STATUS(tid) > (STATUS(left_tid)+time_blk)) ){
-              _mm_pause();
+              asm("");
             }
           }
           else{ // wait for dependencies within the frontline
             while(STATUS(tid) > STATUS(left_tid)){
-//           _asm pause
-//              dummy++;
-              _mm_pause();
+              asm("");
             }
           }
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;

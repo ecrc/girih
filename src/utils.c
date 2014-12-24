@@ -38,6 +38,7 @@ void param_default(Parameters *p) {
   p->source_point_enabled = 0;
   p->array_padding = 1;
   p->mwd_type = 0;
+  p->use_omp_stat_sched = 0;
 
   // diamond method
   p->t_dim = -1;
@@ -446,7 +447,13 @@ void set_kernels(Parameters *p){
   p->stencil_ctx.clu_func = clu_func_list[p->target_kernel];
 
 #else
+
   p->stencil.spt_blk_func = spt_blk_func_list[p->target_kernel];
+
+  // use static openmp schedule if set for spatial blocking time steppers
+  if( (p->target_ts==0 || p->target_ts==1) && (p->use_omp_stat_sched==1) ){      
+    p->stencil.spt_blk_func = stat_sched_func_list[p->target_kernel];
+  }
 
   p->stencil.mwd_func = mwd_list[p->mwd_type][p->target_kernel];
 
@@ -901,7 +908,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->num_threads = a.num_threads;
   b->array_padding = a.array_padding;
   b->mwd_type = a.mwd_type;
-
+  b->use_omp_stat_sched = a.use_omp_stat_sched;
   b->stencil_ctx.bs_y = a.stencil_ctx.bs_y;
   b->stencil_ctx.bs_x = a.stencil_ctx.bs_x;
   b->stencil_ctx.thread_group_size = a.stencil_ctx.thread_group_size;
@@ -1426,6 +1433,9 @@ void print_help(Parameters *p){
         "       Set block size in X for MWD (default 1e6)\n"
         "  --mwd-type <int>\n"
         "       Select one of the MWD implementations from the one available at --list option\n"
+        "  --use-omp-stat-sched\n"
+        "       Use OpenMP static schedule instead of static,1 at the spatial blocking time steppers\n"
+
 
 
 
@@ -1474,6 +1484,7 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"pad-array", 0, 0, 0},
         {"bsx", 1, 0, 0},
         {"mwd-type", 1, 0, 0},
+        {"use-omp-stat-sched", 0, 0, 0},
 //        {"target-parallel-wavefront", 1, 0, 0},
         {0, 0, 0, 0}
     };
@@ -1513,6 +1524,7 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "pad-array") == 0) p->array_padding = 1;
       else if(strcmp(long_options[option_index].name, "bsx") == 0) p->stencil_ctx.bs_x = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "mwd-type") == 0) p->mwd_type = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "use-omp-stat-sched") == 0) p->use_omp_stat_sched = 1;
 //      else if(strcmp(long_options[option_index].name, "target-parallel-wavefront") == 0) p->target_parallel_wavefront = atoi(optarg);
      break;
 
@@ -1538,6 +1550,7 @@ void parse_args (int argc, char** argv, Parameters * p)
   // allow thread group size change only for methods supporting multiple thread groups
   if(p->target_ts == 2) {
     p->stencil_ctx.thread_group_size = thread_group_size;
+    p->use_omp_stat_sched = 0;
   }
 }
 

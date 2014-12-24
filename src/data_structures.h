@@ -148,7 +148,7 @@ typedef struct{
   int source_pt[3];
   int debug;
   int num_threads;
-
+  int use_omp_stat_sched;
   int lstencil_shape[3], ldomain_shape[3], gb[3], ge[3], lsource_pt[3], has_source; //MPI ranks' global indices, and local source locations
 
 //  int stencil_radius, is_constant_coefficient;
