@@ -1283,6 +1283,8 @@ void print_param(Parameters p) {
   case 1:
     if(p.h[2].is_contiguous ==1) printf("MPI datatype is contiguous across the Z direction\n");
     printf("Block size in Y: %d\n", p.stencil_ctx.bs_y);
+    printf("OpenMP schedule: ");
+    if(p.use_omp_stat_sched==1) printf("static\n"); else printf("static1\n");
     break;
   case 2: // dynamic scheduling intra diamond methods
     printf("Block size in X: %d\n", p.stencil_ctx.bs_x);
