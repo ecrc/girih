@@ -768,8 +768,15 @@ void init(Parameters *p) {
 
   // calculate the block size in Y to satisfy the layer condition at the spatially blocked code
   if (p->cache_size >0){
+
     int num_thread_groups = (int) ceil(1.0*p->num_threads / p->stencil_ctx.thread_group_size);
-    p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
+
+    if(p->use_omp_stat_sched==0){
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
+    } else {// tailored for the Xeon Phi
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/(p->stencil_ctx.thread_group_size*(1+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
+    }
+
   } else {
     p->stencil_ctx.bs_y = 1000000; // make the block larger than the domain
   }
