@@ -1,4 +1,4 @@
-VCFLAGS = -g -O0
+VCFLAGS += -g -O0
 
 DP=0
 USE_SPLIT_STRIDE=0
