@@ -222,6 +222,7 @@ def get_summary(f):
 
 
         # LIKWID performance results
+
         if 'Measuring group' in line:
             val = line.split(' ')[2].strip()
             mlist.append(('LIKWID performance counter',val))
@@ -255,7 +256,13 @@ def get_summary(f):
                             mlist.append((cache+' '+sn[1]+' c'+str(i), vals[i])) 
 
         snames = [('|         CPI ', 'CPI'),
-                  ('| Load to Store ratio ', 'Load to Store ratio')]
+                  ('| Load to Store ratio ', 'Load to Store ratio'),
+                  ('| L2_DATA_WRITE_MISS_MEM_FILL ', 'L2_DATA_WRITE_MISS_MEM_FILL'),
+                  ('| L2_DATA_READ_MISS_MEM_FILL ', 'L2_DATA_READ_MISS_MEM_FILL'),
+                  ('| HWP_L2MISS ', 'HWP_L2MISS'),
+                  ('| L2_VICTIM_REQ_WITH_DATA ', 'L2_VICTIM_REQ_WITH_DATA'),
+                  ('| SNP_HITM_L2 ', 'SNP_HITM_L2'),
+                  ('|   CPU_CLK_UNHALTED ', 'CPU_CLK_UNHALTED')]
         for sn in snames:
             if ((sn[0] in line) and ('STAT' in line)):
                 vals = [i.strip() for i in line.split('|')[2:6]]
