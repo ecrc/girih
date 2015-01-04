@@ -65,10 +65,11 @@ def main():
         cols_order.append('Wavefront barrier wait [%] group '+str(i)) 
 
 
-
-    fields = sort_cols(all_fields, cols_order) 
-   
-    data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'OpenMP Threads', 'MPI size', 'Global NX'))
+    try:
+      fields = sort_cols(all_fields, cols_order) 
+      data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'OpenMP Threads', 'MPI size', 'Global NX'))
+    except:
+      pass
 
 
     with open(output_name, 'w') as output_file:
@@ -204,6 +205,12 @@ def get_summary(f):
                 val = line.split(':')[1].strip()
                 mlist.append((field,val))
 
+        # cache size filed
+        if 'Assumed usable cache size' in line:
+            cs = line.split(':')[1].strip()
+            cs = cs.split('K')[0]
+            mlist.append(('cache size',int(cs)))        
+
         # MWD statistics information
         measures =[
                    'Wavefront barrier wait [s]:', 'Wavefront barrier wait [%]:',
@@ -249,11 +256,8 @@ def get_summary(f):
                         mlist.append((cache+' '+sn[1]+' '+st, vals[i]))
                 elif sn0 in line:
                     vals = [i.strip() for i in line.split('|')[2:-1]]
-                    if len(vals) == 1:
-                        mlist.append((cache+' '+sn[1],vals[0]))
-                    else:
-                        for i in range(len(vals)):
-                            mlist.append((cache+' '+sn[1]+' c'+str(i), vals[i])) 
+                    for i in range(len(vals)):
+                        mlist.append((cache+' '+sn[1]+' c'+str(i), vals[i])) 
 
         snames = [('|         CPI ', 'CPI'),
                   ('| Load to Store ratio ', 'Load to Store ratio'),
@@ -270,11 +274,8 @@ def get_summary(f):
                     mlist.append((sn[1]+' '+st, vals[i]))
             elif sn[0] in line:
                 vals = [i.strip() for i in line.split('|')[2:-1]]
-                if len(vals) == 1:
-                    mlist.append((sn[1],vals[0]))
-                else:
-                    for i in range(len(vals)):
-                        mlist.append((sn[1]+' c'+str(i), vals[i])) 
+                for i in range(len(vals)):
+                    mlist.append((sn[1]+' c'+str(i), vals[i])) 
 
 
         if '|  L1 DTLB miss rate STAT   |' in line:
