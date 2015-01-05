@@ -265,7 +265,7 @@ void auto_tune_diam_nwf(Parameters *op){
 
   ntg = tp.num_threads / tgs;
   tp.stencil_ctx.num_wf = tgs; // set the number of wavefronts to the minimum possible value
-  if(tp.mwd_type == 2) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
+  if((tp.mwd_type == 2) | (tp.mwd_type == 3)) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
 
   // find max possible diamond width and allocate memory accordingly
   max_t_dim = -1;
@@ -336,7 +336,7 @@ void auto_tune_diam_nwf(Parameters *op){
       // loop over increasing number of wavefronts per update
       prev_nwf_perf = -1;
       tp.stencil_ctx.num_wf = tgs; // start with smallest possible number of updates
-      if(tp.mwd_type == 2) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
+      if( (tp.mwd_type == 2) | (tp.mwd_type == 3) ) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
       tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
       while(1){
@@ -597,7 +597,7 @@ void intra_diamond_info_init(Parameters *p){
     }
   }
 
-  if (p->mwd_type == 2){ // relaxed synchronization
+  if( (p->mwd_type == 2) | (p->mwd_type == 3) ){ // relaxed synchronization
     if(p->stencil_ctx.num_wf/p->stencil_ctx.thread_group_size < p->stencil.r){
       if(p->mpi_rank ==0) fprintf(stderr,"ERROR: number of frontlines per thread must be greater or equal to the stencil radius in the relaxed synchronization implementation\n");
       MPI_Barrier(MPI_COMM_WORLD);

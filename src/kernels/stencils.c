@@ -227,6 +227,6 @@ const char *MWD_name[] = {"Wavefront",
                            "Relaxed synchronization wavefront with fixed execution", 
                            0,};
 
-mwd_func_t *mwd_list[] = {mwd_func_list, femwd_func_list, rsmwd_func_list, };
+mwd_func_t *mwd_list[] = {mwd_func_list, femwd_func_list, rsmwd_func_list, rsfemwd_func_list, };
 
 

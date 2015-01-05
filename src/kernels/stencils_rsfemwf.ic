@@ -2,7 +2,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
 
-  int i, j, k, t, yb, ye, zi, kt, ib, ie, wf;
+  int i, j, k, t, yb, ye, zi, kt, ib, ie;
   int ib_r, ie_r, bs_x, nwf, tid, gtid, th_nwf, tgs, q, r;
   int nny =shape[1];
   int nnx =shape[0];
@@ -10,17 +10,21 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
   int time_blk = t_dim*2+1; //temporal block size
   double t_start;
   FLOAT_PRECISION * restrict ptmp;
-  nwf = stencil_ctx.num_wf;
-  const int CL = 128; 
+  
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
 
-  char *status;
-  posix_memalign((void **)&status, CL, CL*nwf);
+  const int CL=128/sizeof(unsigned long);
+  volatile unsigned long *status;
+  posix_memalign((void **)&status, 128, CL*tgs*sizeof(unsigned long));
+  for(i=0; i<tgs; i++){
+    STATUS(i)=0;
+  }
+//  int volatile current_z=0;
 
 #pragma omp parallel default(none) shared(status, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
-        private(wf, nwf, th_nwf, ptmp, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
+        private(nwf, th_nwf, ptmp, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
   {
     tid = 0;
@@ -29,6 +33,8 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
     tid = omp_get_thread_num();
     gtid = tid + mtid * tgs;
 #endif
+    int left_tid = (tid+tgs-1)%tgs;
+    int right_tid = (tid+1)%tgs;
 
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
@@ -41,6 +47,8 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
 
         if(ze-zi < nwf){ 
           nwf = ze-zi;
+          th_nwf = nwf/tgs;
+          if(th_nwf < 1) th_nwf=1;
         }
 
         yb = yb_r;
@@ -55,24 +63,17 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
 
           for(k=kt; k<kt+nwf; k++){
             if( ((k-NHALO)/th_nwf)%tgs == tid ) {
-              wf = k-kt;
-              while(t > STATUS(wf)){ 
-                asm("");
-              }
-              if(wf>1){
-                while(t > STATUS(wf-2)){
-                  asm("");
-                }
-              }
               for(j=yb; j<ye; j++) {
       #pragma simd
                 for(i=ib; i<ie; i++) {
                   FUNC_BODY()
                 }
               }
-              STATUS(wf)=t+1;
             }
           }
+
+          //update current thread time step status
+          STATUS(tid)++;
 
           // Update block size in Y
           if(t< t_dim){ // lower half of the diamond
@@ -86,17 +87,47 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
           // Update block size in X
           if (ib != xb) ib-=NHALO; 
           if (ie != xe) ie-=NHALO;
-
           kt -= NHALO;
 
+          // spin-wait for data dependencies
+          t_start = MPI_Wtime();
+          int kth = kt-NHALO;
+          for(k=kth; k<kth+nwf; k++){
+            if( (k/th_nwf)%tgs == tid ) {
+
+              // left neighbor dependency
+              if(k>=(kth+2)*NHALO){ // left neighbor in same frontline 
+                if( ((k-NHALO)/th_nwf)%tgs != tid ){ // left data belong to the left thread
+                  while(STATUS(tid) > STATUS(left_tid)){
+                    asm("");
+                  }
+                }
+              }else { // left neighbor belongs to previous frontlint
+                if( ((k-NHALO)/th_nwf)%tgs != tid ){ // left data belong to the left thread
+                  while(STATUS(tid) > (STATUS(left_tid)+time_blk)){
+                    asm("");
+                  }
+                }
+              } // left neighbor dependency
+
+              // right data dependency
+              if( ((k+NHALO)/th_nwf)%tgs != tid ){ // right data belong to the right thread
+                while(STATUS(tid) > STATUS(right_tid)){
+                  asm("");
+                }
+              } // right data dependency
+
+            }
+          }
+          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
         } // diamond blocking in time (time loop)
-        t_start = MPI_Wtime();
-#pragma omp barrier
-        stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
         ptmp=u; u=v; v=ptmp; //swap pointers
+        if( (ze != zi+nwf) & (ze-(zi+nwf) < nwf)){ // Last frontline update has remainder
+          #pragma omp barrier
+        }
+
       } // wavefront loop
     } // blocking in x
   } // parallel region
-
-  free(status);
 }
