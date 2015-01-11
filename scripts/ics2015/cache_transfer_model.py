@@ -9,16 +9,16 @@ def get_stencil_num(k):
   # add the stencil operator
   if  k['Stencil Kernel coefficients'] in 'constant':
     if  int(k['Stencil Kernel semi-bandwidth'])==4:
-      stencil = 0
+      stencil = '25pt-const'
     else:
-      stencil = 1
+      stencil = '7pt-const'
   elif  'no-symmetry' in k['Stencil Kernel coefficients']:
-    stencil = 5
+    stencil = '7pt-var'
   elif  'sym' in k['Stencil Kernel coefficients']:
     if int(k['Stencil Kernel semi-bandwidth'])==1:
       stencil = 3
     else:
-      stencil = 4
+      stencil = '25pt-var'
   else:
     stencil = 2
   return stencil
@@ -47,7 +47,9 @@ def create_table(raw_data):
                 ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int),
                 ('Number of time steps', int), ('Number of tests', int),
                 ('Total Memory Transfer', float), ('L2 data volume sum', float),
-                ('L3 data volume sum', float), ('LIKWID performance counter',str)]
+                ('L3 data volume sum', float), ('LIKWID performance counter',str),
+                ('L2 data volume c0', float),('L3 data volume c0', float),
+                ('Wavefront parallel strategy' ,str), ('CPI avg', float), ('CPI c0', float)]
   data = []
   for k in raw_data: 
     tup = {}
@@ -68,6 +70,15 @@ def create_table(raw_data):
     else:
       p = 0
     tup['Precision'] = p
+
+    # wavefront stratigy
+    if k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront':
+      tup['wavefront'] = 'relax-sync'
+    elif k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront with fixed execution':
+      tup['wavefront'] = 'relax-sync/fixed-exe-data'
+    else:
+      tup['wavefront'] = 'none'
+
     data.append(tup)
 #    for i in data: print i
 
@@ -78,43 +89,50 @@ def create_table(raw_data):
   th_l = set()
   group_l = set()
   size_l = set()
+  wf_l = set()
   for k in data:
     tgs_l.add(k['Thread group size'])
     kernel_l.add(k['stencil'])
     th_l.add(k['OpenMP Threads'])
     group_l.add(k['LIKWID performance counter'])
     size_l.add(k['Global NX'])
+    wf_l.add(k['wavefront'])
 
   data2 = []
-  for tgs in tgs_l:
-    for kernel in kernel_l:
-      for size in size_l:
-        for th in th_l:
-          k = {}
-          k['Thread group size'] = tgs
-          k['stencil'] = kernel
-          k['N'] = size
-          k['OpenMP Threads'] = th
-          for tup in data:
-            try:
-              if (tup['Thread group size']==tgs ) and   (tup['stencil']==kernel ) and (tup['Global NX']==size ) and (tup['OpenMP Threads']==th ):
-                if tup['LIKWID performance counter'] == 'MEM':
-                  k['Total Memory Transfer'] = tup['Total Memory Transfer']
-                elif tup['LIKWID performance counter'] == 'L2':
-                  k['L2 data volume sum'] = tup['L2 data volume sum']
-                elif tup['LIKWID performance counter'] == 'L3':
-                  k['L3 data volume sum'] = tup['L3 data volume sum']
-                k[tup['LIKWID performance counter']+'_perf'] = tup['MStencil/s  MAX']
-                k['Number of time steps'] = tup['Number of time steps']
-                k['Intra-diamond prologue/epilogue MStencils'] = tup['Intra-diamond prologue/epilogue MStencils']
-                k['Number of tests'] = tup['Number of tests']
-                k['D width'] = (tup['Time unroll']+1)*2
-            except:
-              print tup
-              raise
-            
-          if 'Total Memory Transfer' in k.keys():
-            data2.append(k)
+  for mwdt in wf_l:
+    for tgs in tgs_l:
+      for kernel in kernel_l:
+        for size in size_l:
+          for th in th_l:
+            k = {}
+            k['Thread group size'] = tgs
+            k['stencil'] = kernel
+            k['N'] = size
+            k['OpenMP Threads'] = th
+            k['wavefront'] = mwdt
+            for tup in data:
+              try:
+                if (tup['wavefront'] == mwdt) and (tup['Thread group size']==tgs ) and   (tup['stencil']==kernel ) and (tup['Global NX']==size ) and (tup['OpenMP Threads']==th ):
+                  field = 'c0' if tup['OpenMP Threads']==1 else 'sum'
+                  if tup['LIKWID performance counter'] == 'MEM':
+                    k['Total Memory Transfer'] = tup['Total Memory Transfer']
+                  elif tup['LIKWID performance counter'] == 'L2':
+                    k['L2 data volume sum'] = tup['L2 data volume '+field]
+                  elif tup['LIKWID performance counter'] == 'L3':
+                    k['L3 data volume sum'] = tup['L3 data volume '+field]
+                  elif tup['LIKWID performance counter'] == 'DATA':
+                    k['CPI'] = tup['CPI c0'] if tup['OpenMP Threads']==1 else tup['CPI avg']
+                  k[tup['LIKWID performance counter']+'_perf'] = tup['MStencil/s  MAX']
+                  k['Number of time steps'] = tup['Number of time steps']
+                  k['Intra-diamond prologue/epilogue MStencils'] = tup['Intra-diamond prologue/epilogue MStencils']
+                  k['Number of tests'] = tup['Number of tests']
+                  k['D width'] = (tup['Time unroll']+1)*2
+              except:
+                print tup
+                raise
+              
+            if 'Total Memory Transfer' in k.keys():
+              data2.append(k)
 
 
   for k in data2:
@@ -125,9 +143,9 @@ def create_table(raw_data):
     k['L3 Bytes/LUP']  = k['L3 data volume sum']/glups
 
   from operator import itemgetter
-  data2 = sorted(data2, key=itemgetter('stencil', 'Thread group size', 'N', 'OpenMP Threads'))
+  data2 = sorted(data2, key=itemgetter('wavefront', 'stencil', 'Thread group size', 'N', 'OpenMP Threads'))
 
-  fields = sort_cols(data2[0].keys(), ['stencil', 'Thread group size', 'N', 'OpenMP Threads', 'D width', 'MEM Bytes/LUP', 'L3 Bytes/LUP', 'L2 Bytes/LUP'])
+  fields = sort_cols(data2[0].keys(), ['wavefront', 'stencil', 'Thread group size', 'N', 'OpenMP Threads', 'D width', 'MEM Bytes/LUP', 'L3 Bytes/LUP', 'L2 Bytes/LUP', 'CPI'])
   with open('cache_transfer.csv', 'w') as output_file:
     r = DictWriter(output_file, fieldnames=fields)
     r.writeheader()
