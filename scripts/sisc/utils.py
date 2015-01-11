@@ -127,7 +127,7 @@ def create_project_tarball(dest_dir, fname):
     import tarfile, glob
     import os
 
-    nl = ["src/kernels/*.c", "src/*.c", "src/*.h", "scripts/*.py", "make.inc", "Makefile"]
+    nl = ["src/kernels/*.c", "src/*.c", "src/*.h", "scripts/*.py", "scripts/*/*.py", "make.inc", "Makefile"]
     nl = [glob.glob(n) for n in nl]
     nl = [n for nn in nl for n in nn]
 
