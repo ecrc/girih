@@ -7,7 +7,7 @@ def submit_experiment(kernel, ts, nx, ny, nz, nt, is_dp, outfile, target_dir, tg
   from utils import ensure_dir    
 
   job_template=Template(
-"""$exec_path --n-tests 2 --disable-source-point --npx 1 --npy 1 --npz 1 --nx $nx --ny $ny --nz $nz  --verbose 1 --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs | tee $outfile""")
+"""$exec_path --n-tests 2 --disable-source-point --npx 1 --npy 1 --npz 1 --nx $nx --ny $ny --nz $nz  --verbose 1 --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type 2 | tee $outfile""")
 
   target_dir = os.path.join(os.path.abspath("."),target_dir)
   ensure_dir(target_dir)
@@ -32,11 +32,11 @@ def ts_test(target_dir, exp_name, cs, ts, kernel, tgs, N, th_l):
   for th in th_l:
     if th%tgs == 0:
       exe_cmd = "export OMP_NUM_THREADS=%d; likwid-perfctr -m -C S0:0-%d -s 0x03 -g ENERGY " % (th, th-1)
-      outfile=(exp_name + 'isDP%d_ts%d_kernel%d_tgs%d_N%d_th%d.txt' % (is_dp, ts, kernel, tgs,  N, th))
+      outfile=('ts%d_kernel%d_tgs%d_N%d_th%d.txt' % (ts, kernel, tgs,  N, th))
       nx = N
       ny = N
       nz = N
-      nt = int(max(10 * 4e9/(nx*ny*nz*3), 50))
+      nt = int(max((10.0 * 4e9 / th) /(nx*ny*nz*3), 50))
       submit_experiment(kernel, ts=ts, nx=nx, ny=ny, nz=nz, nt=nt, is_dp=is_dp, 
          outfile=outfile, target_dir=target_dir, tgs=tgs, cs=cs, exe_cmd=exe_cmd)
 
@@ -46,9 +46,9 @@ def main():
   from utils import create_project_tarball 
 
   import socket
-  hostname = socket.gethostname()
+#  hostname = socket.gethostname()
   exp_name = "emmy_"
-  exp_name = exp_name + "threadscaling_energy_at_%s" % (hostname)  
+  exp_name = exp_name + "threadscaling_energy"#_at_%s" % (hostname)  
 
   tarball_dir='results/'+exp_name
   create_project_tarball(tarball_dir, "project_"+exp_name)
@@ -57,18 +57,16 @@ def main():
 
   th_l = [1,2,3,4,5,6,7,8,9,10]
   cs = 4096
-#  for tgs in [1]:
-#    ts_test(target_dir, exp_name[:-8], cs, ts=2, kernel=1, tgs=tgs, N=960, th_l=th_l) 
-  ts_test(target_dir, exp_name[:-8], cs, ts=2, kernel=1, tgs=1, N=960, th_l=th_l) 
-#  ts_test(target_dir, exp_name[:-8], cs, ts=2, kernel=4, tgs=2, N=480, th_l=[2]) 
-#  ts_test(target_dir, exp_name[:-8], cs, ts=2, kernel=4, tgs=5, N=480, th_l=[5]) 
-#  ts_test(target_dir, exp_name[:-8], cs, ts=2, kernel=5, tgs=5, N=680, th_l=[5]) 
+  for tgs in [1,2,5,10]:
+#    ts_test(target_dir, exp_name, cs, ts=2, kernel=1, tgs=tgs, N=960, th_l=th_l) 
+#    ts_test(target_dir, exp_name, cs, ts=2, kernel=4, tgs=tgs, N=480, th_l=th_l) 
+    ts_test(target_dir, exp_name, cs, ts=2, kernel=5, tgs=tgs, N=680, th_l=th_l) 
 
 
-  cs = 8192
-#  ts_test(target_dir, exp_name[:-8], cs, ts=0, kernel=1, tgs=1, N=960, th_l=[8]) 
-#  ts_test(target_dir, exp_name[:-8], cs, ts=0, kernel=4, tgs=1, N=480, th_l=[3, 7, 10]) 
-#  ts_test(target_dir, exp_name[:-8], cs, ts=0, kernel=5, tgs=1, N=680, th_l=[7]) 
+#  cs = 8192
+#  ts_test(target_dir, exp_name[:-8], cs, ts=0, kernel=1, tgs=0, N=960, th_l=[8]) 
+#  ts_test(target_dir, exp_name[:-8], cs, ts=0, kernel=4, tgs=0, N=480, th_l=[3, 7, 10]) 
+#  ts_test(target_dir, exp_name[:-8], cs, ts=0, kernel=5, tgs=0, N=680, th_l=[7]) 
 
 
 
