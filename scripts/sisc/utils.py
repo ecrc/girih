@@ -48,4 +48,11 @@ def ensure_dir(d):
       pass
     else: raise
 
+def load_csv(data_file):
+  from csv import DictReader
+  with open(data_file, 'rb') as output_file:
+    data = DictReader(output_file)
+    data = [k for k in data]
+  return data
+
 
