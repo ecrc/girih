@@ -1,3 +1,25 @@
+
+def select_fields(data, rows=[], cols=[]):
+
+  sel_data = []
+  # select rows
+  if rows:
+    for k in data:
+      for row in rows:
+        cmp_res = [k[field] == val for field, val in row.iteritems()]
+        if all(cmp_res):
+          if cols:
+            tup = {}
+            for col in cols:
+              tup[col] = k[col]
+            sel_data.append(tup)
+          else: # select all columns
+            sel_data.append(dict(k))
+        
+
+  return sel_data
+
+
 def create_project_tarball(dest_dir, fname):
   import tarfile, glob
   import os
@@ -25,3 +47,5 @@ def ensure_dir(d):
     if exc.errno == errno.EEXIST:
       pass
     else: raise
+
+
