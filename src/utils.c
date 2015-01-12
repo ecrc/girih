@@ -405,12 +405,10 @@ void auto_tune_diam_nwf(Parameters *op){
     tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
     while(1){
-      wf_size = get_mwf_size(&tp, tp.t_dim);
-      cache_size_cond = wf_size*ntg > (unsigned long) (tp.cache_size*1024);
       diam_height = tp.t_dim*2*tp.stencil.r+1 +tp.stencil_ctx.num_wf-1;
       wf_len_cond = diam_height <= tp.stencil_shape[2];
 
-      if( (wf_len_cond==1) && (cache_size_cond == 1) ){
+      if(wf_len_cond==1){
         printf("[AUTO TUNE]     [%03d: ",tp.stencil_ctx.num_wf);  
         exp_perf = run_tuning_test(&tp);
 
