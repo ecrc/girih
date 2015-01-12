@@ -30,8 +30,7 @@ def submit_experiment(kernel, Dw, nwf, ts, nx, ny, nz, nt, is_dp, outfile, targe
 def ts_test(target_dir, exp_name, cs, ts, kernel, tgs, N, group, dw_l):
   is_dp = 1
 
-  if kernel==5: nwf = 20   
-  if kernel==1: nwf = 35 
+  nwf=-1
   for Dw in dw_l:
     exe_cmd = "export OMP_NUM_THREADS=10; likwid-perfctr -m -C S0:0-9 -s 0x03 -g %s " % (group)
     outfile=('ts%d_kernel%d_tgs%d_N%d_%s_TB%d.txt' % (ts, kernel, tgs,  N, group,Dw))
