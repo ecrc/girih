@@ -153,7 +153,7 @@ def actual_BpU(tup):
   oh = tup['Intra-diamond prologue/epilogue MStencils']
 
   stencil_size = 2*ny*nz + ny*nz*(nx+2*R) 
-  BpU = (total_mem * 10**9) / ( stencil_size * nt - oh*10**6*tup['Number of tests'])
+  BpU = (total_mem * 10**9) / ( (stencil_size * nt - oh*10**6)*tup['Number of tests'])
 
   #print BpU, total_mem, stencil_size, nt, oh, tup['Number of tests']
   return BpU

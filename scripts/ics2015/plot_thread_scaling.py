@@ -104,9 +104,9 @@ def plot_lines(raw_data, stencil_kernel, is_dp):
 #    for i in data: print i
 
     max_single = 0
-    cols = {0:'g', 1:'k', 2:'b', 4:'c', 5:'r', 6:'r', 8:'m', 10:'m', 12:'m'}
-    markers = {0:'o', 1:'^', 2:'v', 4:'.', 5:'x', 6:'x', 8:'.', 10:'*', 12:'*'}
-    for tgs in [0, 12, 10, 1, 2, 4, 5, 6, 8]:
+    cols = {0:'g', 1:'k', 2:'b', 4:'c', 5:'r', 6:'r', 7:'r', 8:'m', 10:'m', 12:'m', 14:'m'}
+    markers = {0:'o', 1:'^', 2:'v', 4:'.', 5:'x', 6:'x', 7:'x', 8:'.', 10:'*', 12:'*', 14:'*'}
+    for tgs in [0, 14, 12, 10, 1, 2, 4, 5, 6, 7, 8]:
         marker = markers[tgs]
         x = []
         y = []
