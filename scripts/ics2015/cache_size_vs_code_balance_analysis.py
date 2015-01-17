@@ -144,7 +144,7 @@ def gen_res(raw_data, stencil_kernel, N):
 def actual_BpU(tup):
   total_mem = tup['Total Memory Transfer']
   R = tup['Stencil Kernel semi-bandwidth']
-  nt = tup['Number of time steps'] * tup['Number of tests']
+  nt = tup['Number of time steps']
 
   nx = tup['Local NX']
   ny = tup['Local NY']
@@ -152,7 +152,7 @@ def actual_BpU(tup):
 
   oh = tup['Intra-diamond prologue/epilogue MStencils']
 
-  stencil_size = 2*ny*nz + ny*nz*(nx+2*R) 
+  stencil_size = nx*ny*nz#2*ny*nz + ny*nz*(nx+2*R) 
   BpU = (total_mem * 10**9) / ( (stencil_size * nt - oh*10**6)*tup['Number of tests'])
 
   #print BpU, total_mem, stencil_size, nt, oh, tup['Number of tests']
