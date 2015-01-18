@@ -104,6 +104,10 @@ def gen_res(raw_data, stencil_kernel, N):
   fig, ax = plt.subplots()
   ax.plot(cs, cb     , marker='^', linestyle='-', color='k', label="Model")
   ax.plot(cs, cb_meas, marker='x', linestyle='--', color='b', label="Measured")
+
+  # show the usable cache size limits
+  ax.plot([12.5, 12.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
+
   ax.set_ylabel('Code balance (Bytes/LUP)')
   ax.set_xlabel('Cache block size (MiB)')
   ax.set_ylim([0, max(cb_meas+cb)+1])
