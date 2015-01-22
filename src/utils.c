@@ -824,6 +824,8 @@ void init(Parameters *p) {
     } else {// tailored for the Xeon Phi
       p->stencil_ctx.bs_y = (p->cache_size*1024)/(p->stencil_ctx.thread_group_size*(1+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
     }
+    // set minimum block size if cache is not sufficient
+    if(p->stencil_ctx.bs_y == 0) p->stencil_ctx.bs_y=1;
 
   } else {
     p->stencil_ctx.bs_y = 1000000; // make the block larger than the domain
