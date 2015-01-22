@@ -14,7 +14,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
 
-#pragma omp parallel default(none) shared(roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
+#pragma omp parallel default(none) shared(stencil_ctx, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
         private(nwf, th_nwf, ptmp, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
