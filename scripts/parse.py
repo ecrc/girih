@@ -135,7 +135,8 @@ def get_summary(f):
                 'Intra-diamond prologue/epilogue MStencils',
                 'Cache block size/wf (kiB)',
                 'Block size in X',
-                'Total cache block size (kiB)')
+                'Total cache block size (kiB)',
+                'Threads per core')
 
     mlist = []
     # default not cotiguous MPI datatype
