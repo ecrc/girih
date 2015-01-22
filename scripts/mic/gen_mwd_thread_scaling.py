@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-def submit_experiment(outfile, target_dir, ntest=4, kernel=1, ts=0, nx=480, ny=480, nz=480, npx=1, npy=1, npz=1, nt=50, is_dp=1, tgs=1, cs=8192, exe_cmd='', tb=-1, nwf=-1, mwd_type=0, bsx=100000):
+def submit_experiment(outfile, target_dir, ntest=4, kernel=1, ts=0, nx=480, ny=480, nz=480, npx=1, npy=1, npz=1, nt=50, is_dp=1, tgs=1, cs=8192, exe_cmd='', tb=-1, nwf=-1, mwd_type=0, bsx=100000, tpc=0):
   import os
   import subprocess
   from string import Template
 
   job_template=Template(
-"""$exec_path --n-tests $ntest --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose 1 --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --t-dim $tb --num-wavefronts $nwf --bsx $bsx --mwd-type $mwd_type | tee $outfile""")
+"""echo 'Threads per core: $tpc' | tee $outfile; $exe_cmd $exec_path --n-tests $ntest --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose 1 --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --t-dim $tb --num-wavefronts $nwf --bsx $bsx --mwd-type $mwd_type | tee -a $outfile""")
 
   outpath = os.path.join(target_dir,outfile)
 
@@ -15,9 +15,8 @@ def submit_experiment(outfile, target_dir, ntest=4, kernel=1, ts=0, nx=480, ny=4
   else:
     exec_path = os.path.join(os.path.abspath("."),"build/mwd_kernel")
 
-  job_cmd = job_template.substitute(cs=cs, tgs=tgs, nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel, ts=ts, outfile=outpath, exec_path=exec_path, target_dir=target_dir, tb=tb, nwf=nwf, mwd_type=mwd_type, ntest=ntest, npx=npx, npy=npy, npz=npz, bsx=bsx)
+  job_cmd = job_template.substitute(tpc=tpc, cs=cs, tgs=tgs, nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel, ts=ts, outfile=outpath, exe_cmd=exe_cmd, exec_path=exec_path, target_dir=target_dir, tb=tb, nwf=nwf, mwd_type=mwd_type, ntest=ntest, npx=npx, npy=npy, npz=npz, bsx=bsx)
 
-  job_cmd = exe_cmd + job_cmd
   return job_cmd
 
 
@@ -40,7 +39,7 @@ def get_knum(k):
   return stencil
  
 
-def mwd(target_dir, exp_name, cs, N, ts, kernel, tgs, th, mwd_type, groups, aff, tb=-1, nwf=-1, bsx=100000):
+def mwd(target_dir, exp_name, cs, N, ts, kernel, tgs, th, mwd_type, groups, aff, tb=-1, nwf=-1, bsx=100000, tpc=0):
   is_dp = 1
   cmds =[]
   for group in groups:
@@ -51,7 +50,7 @@ def mwd(target_dir, exp_name, cs, N, ts, kernel, tgs, th, mwd_type, groups, aff,
     if tb==-1 or group!='CPI':
       cmd = submit_experiment(kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, is_dp=is_dp, 
                       outfile=outfile, target_dir=target_dir, tgs=tgs, cs=cs,
-                      exe_cmd=exe_cmd, tb=tb, nwf=nwf, mwd_type=mwd_type, bsx=bsx)
+                      exe_cmd=exe_cmd, tb=tb, nwf=nwf, mwd_type=mwd_type, bsx=bsx, tpc=tpc)
       cmds.append([cmd])
   return cmds
 
@@ -76,17 +75,76 @@ def main():
   ts = 2
   kernel=1; N=768
 
+#  # cache blocks within L2 caches
+#  cmds = []
+#  mwdt=2
+#  for tgs in [1,2,4]:
+#    for tpc in [1,2,4]:
+#      if tgs <= tpc:
+#        th_l = [tpc*t  for t in range(6,61,6)]
+#        for th in th_l:
+#          aff="E:N:%d:%d:%d" % (th, tpc, 4)
+#          cmds = cmds + mwd(target_dir, exp_name, cs, N=N, ts=ts, kernel=kernel, tgs=tgs, th=th, mwd_type=mwdt, groups=['CPI'], aff=aff, tpc=tpc)
+#
+#  cmds = [c for sublist in cmds for c in sublist]
+#  fname = target_dir + "/ts%d_kernel%d_mwdt%d_CPI_autotune.sh"%(ts, kernel,mwdt)
+#  with open(fname, 'w') as fn:
+#    fn.write("#!/bin/sh\n\n")
+#    for c in cmds:
+#      cp = 'echo ' + str.replace(c,';',"';'")
+#      cp = str.replace(cp, '|', '#|')
+#      fn.write('echo "'+c+'"\n')
+#      fn.write(c+'\n\n')
+
+
+  # parse the results to obtain the selected parameters by the auto tuner
+  data = []
+  data_file = os.path.join(target_dir, 'summary.csv')
+  with open(data_file, 'rb') as output_file:
+    raw_data = DictReader(output_file)
+    for k in raw_data:
+      k['stencil'] = get_knum(k)
+      k['method'] = 2 if 'Diamond' in k['Time stepper orig name'] else 0
+      if k['method'] == 2:
+        if k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront with fixed execution':
+          k['mwdt'] = 3
+        elif k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront':
+          k['mwdt'] = 2
+        if int(k['Thread group size']) == 1:
+          k['mwdt'] = 0
+
+      data.append(k)
+
+  params = dict()
+  for k in data:
+    try:
+      if k['method']!=0:
+        params[(k['mwdt'], k['method'], k['stencil'], int(k['Thread group size']), int(k['Global NX']), int(k['Threads per core']), int(k['OpenMP Threads']) )]= (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Block size in X']))
+    except:
+      print k
+      raise
+
+#  for k in params.keys(): print k
+
   # cache blocks within L2 caches
   cmds = []
-  mwdt=2
+  mwdt_r=2
   for tgs in [1,2,4]:
-    th_l = [tgs*t  for t in range(6,61,6)]
-    for th in th_l:
-      aff="E:N:%d:%d:%d" % (th, tgs, 4)
-      cmds = cmds + mwd(target_dir, exp_name, cs, N=N, ts=ts, kernel=kernel, tgs=tgs, th=th, mwd_type=mwdt, groups=['CPI'], aff=aff)
+    for tpc in [1,2,4]:
+      if tgs <= tpc:
+        th_l = [tpc*t  for t in range(6,61,6)]
+        for th in th_l:
+   
+          if ((th/tgs)<=(N/4)):
+  
+            mwdt=mwdt_r if tgs!=1 else 0
+            tb, nwf, bsx = params[(mwdt, ts, kernel, tgs, N, tpc, th)]
+
+            aff="E:N:%d:%d:%d" % (th, tpc, 4)
+            cmds = cmds + mwd(target_dir, exp_name, cs, N=N, ts=ts, kernel=kernel, tgs=tgs, th=th, mwd_type=mwdt, groups=['MEM1', 'MEM2', 'MEM3', 'MEM4', 'MEM5'], aff=aff, tpc=tpc, tb=tb, nwf=nwf, bsx=bsx)
 
   cmds = [c for sublist in cmds for c in sublist]
-  fname = target_dir + "/ts%d_kernel%d_mwdt%d_CPI_autotune.sh"%(ts, kernel,mwdt)
+  fname = target_dir + "/ts%d_kernel%d_mwdt%d_other_groups.sh"%(ts, kernel,mwdt)
   with open(fname, 'w') as fn:
     fn.write("#!/bin/sh\n\n")
     for c in cmds:
@@ -96,37 +154,7 @@ def main():
       fn.write(c+'\n\n')
 
 
-
-
-  # parse the results to obtain the selected parameters by the auto tuner
-#  data = []
-#  data_file = os.path.join(target_dir, 'summary.csv')
-#  with open(data_file, 'rb') as output_file:
-#    raw_data = DictReader(output_file)
-#    for k in raw_data:
-#      k['stencil'] = get_knum(k)
-#      k['method'] = 2 if 'Diamond' in k['Time stepper orig name'] else 0
-#      if k['method'] == 2:
-#        if k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront with fixed execution':
-#          k['mwdt'] = 3
-#        elif k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront':
-#          k['mwdt'] = 2
-#        if int(k['Thread group size']) == 1:
-#          k['mwdt'] = 0
 #
-#      data.append(k)
-#
-#  params = dict()
-#  for k in data:
-#    try:
-#      if k['method']!=0:
-#        params[(k['mwdt'], k['method'], k['stencil'], int(k['Thread group size']), int(k['Global NX']))]= (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Block size in X']))
-#    except:
-#      print k
-#      raise
-#
-#
-#  cs = 16000
 #  th_l = [1,2,3,4,5,6,7,8,9,10]
 #    for tgs, ths, mwdt_l in [(0,th_l, [0]), (1, th_l, [0]), (2,[2,4,6,8,10], [2,3]), (5, [5,10], [2,3]), (10, [10], [2,3])]:
 #      for mwdt in mwdt_l:
@@ -139,7 +167,7 @@ def main():
 #            ts = 2
 #            tb, nwf, bsx = params[(mwdt, ts, kernel, tgs, N)]
 #
-#          mwd(target_dir, exp_name, cs, N=N, ts=ts, kernel=kernel, tgs=tgs, th=th, mwd_type=mwdt, groups=['DATA', 'L2', 'L3', 'MEM'], tb=tb, nwf=nwf, bsx=bsx) 
+#          mwd(target_dir, exp_name, cs, N=N, ts=ts, kernel=kernel, tgs=tgs, th=th, mwd_type=mwdt, groups=['MEM1', 'MEM2', 'MEM3', 'MEM4', 'MEM5'], tb=tb, nwf=nwf, bsx=bsx) 
 
 
 if __name__ == "__main__":
