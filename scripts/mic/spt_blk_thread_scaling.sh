@@ -2,8 +2,12 @@
 
 . /home/hpc/unrz/unrz280/girih/scripts/mic/run_test.sh
 
-k=1
-N=768
+#k=1
+#N=768
+k=5
+N=456
+
+
 ts=0
 
 # 1 thread per core tests
@@ -32,17 +36,17 @@ do
         mwd_t=2
       fi
 
-      affinity="E:N:${t}:$blk_size}:4"
+      affinity="E:N:${t}:${blk_size}:4"
       nt=`expr $t \* 1`
-      if [ $nt -gt 100 ]
+      if [ $nt -gt 50 ]
       then
-        nt=100
+        nt=50
       elif [ $nt -lt 4 ]
       then 
         nt=4
       fi 
 
-      run_test $t $affinity $group $N $ts $k $nt $tgs $cs $mwdt
+      run_test $t $affinity $group $N $ts $k $nt $tgs $cs $mwd_t
 
       t=`expr $t + $blk_size \* 6`
 
