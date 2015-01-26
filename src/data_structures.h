@@ -1,7 +1,16 @@
 #ifndef DATA_STRUCTURES_H_
 #define DATA_STRUCTURES_H_
 
+#ifdef LIKWID_PERFMON
 #include "likwid.h"
+#else
+#define LIKWID_MARKER_INIT
+#define LIKWID_MARKER_THREADINIT
+#define LIKWID_MARKER_START(reg)
+#define LIKWID_MARKER_STOP(reg)
+#define LIKWID_MARKER_CLOSE
+#endif
+
 
 #ifndef _MPI_INCLUDE
 #include "mpi.h"
