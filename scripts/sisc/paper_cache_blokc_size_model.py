@@ -63,8 +63,9 @@ def plot_series(exp, f_name, show_y_label):
   plt.xlabel("Diamond tile width")
   if show_y_label ==1: plt.ylabel("Cache block size (MiB)") 
   plt.legend(loc='best')
-  pylab.savefig(f_name+'.png', bbox_inches="tight", pad_inches=0.04)
-  pylab.savefig(f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+#  pylab.savefig(f_name+'.png', bbox_inches="tight", pad_inches=0.04)
+#  pylab.savefig(f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+  pylab.savefig(f_name+'.eps', format='eps', bbox_inches="tight", pad_inches=0.02)
 
   plt.clf()
 

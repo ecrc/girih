@@ -93,7 +93,8 @@ def plot_stacked_clustered_bars():
   host.legend( (p1, p2), ('MWD', 'Pochoir'), loc='center left', fontsize=sec_fontsize)
 
   f_name = "pochoir_comparison" 
-  pylab.savefig(f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+  #pylab.savefig(f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+  pylab.savefig(f_name+'.eps', format='eps', bbox_inches="tight", pad_inches=0.02)
 
   return
       
