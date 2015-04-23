@@ -4,7 +4,7 @@
 
 void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
+    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie;
   int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, th_nwf, tgs, q, r;
@@ -13,7 +13,6 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
   int time_blk = t_dim*2+1; //temporal block size
   double t_start;
-  FLOAT_PRECISION * restrict ptmp;
   
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
@@ -27,9 +26,9 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   }
   int volatile current_z=0;
 
-#pragma omp parallel default(none) shared(stencil_ctx, current_z, status, roc2, ln_domain, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, t_dim, b_inc, e_inc, NHALO) \
+#pragma omp parallel default(none) shared(stencil_ctx, current_z, status, roc2, ln_domain, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, tb, te, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
-        private(ptmp, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, thb, the, q, r, t_start) \
+        private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, thb, the, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
   {
     tid = 0;
@@ -41,6 +40,9 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     int left_tid = tid-1;
     if(tid==0) left_tid = tgs-1;
 
+    FLOAT_PRECISION * restrict u_r = u;
+    FLOAT_PRECISION * restrict v_r = v;
+ 
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
  
@@ -70,9 +72,14 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         ie = ie_r;
 
         kt = zi;
-        for(t=0; t< time_blk; t++){ // Diamond blocking in time
-          ptmp=u; u=v; v=ptmp; //swap pointers
-
+        for(t=tb; t< te; t++){ // Diamond blocking in time
+       
+          if(t%2 == 0){ //swap pointers
+            u = v_r; v = u_r;
+          } else{
+            u = u_r; v = v_r;
+          }
+          
           for(k=kt+thb; k<kt+the; k++){
             for(j=yb; j<ye; j++) {
     #pragma simd
@@ -116,7 +123,6 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
         } // diamond blocking in time (time loop)
-        ptmp=u; u=v; v=ptmp; //swap pointers
       } // wavefront loop
       #pragma omp barrier
     } // blocking in x

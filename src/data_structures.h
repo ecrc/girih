@@ -122,7 +122,7 @@ typedef struct{
     const FLOAT_PRECISION * restrict, FLOAT_PRECISION * restrict, const FLOAT_PRECISION * restrict, const FLOAT_PRECISION * restrict, stencil_CTX stencil_ctx)
 #define KERNEL_MWD_SIG ( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze, \
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid)
+    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid)
 
 typedef void (*spt_blk_func_t)KERNEL_SIG;
 typedef void (*mwd_func_t)KERNEL_MWD_SIG;
