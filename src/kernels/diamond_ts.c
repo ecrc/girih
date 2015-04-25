@@ -46,7 +46,7 @@ MPI_Request wait_req_send_l[2], wait_req_recv_l[2], wait_req_send_r[2], wait_req
   }
 //  p->stencil_ctx.thread_group_size = swp_tgs;
 
-}*/
+}
 
 void intra_diamond_inv_trapzd_comp(Parameters *p, int it, int yb, int ye){
   int t;
@@ -91,13 +91,13 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int it, int b_inc, int e_
     }
     it++;
   }
-}
+}*/
 
 
 void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tb, int te, int tid){
   int t, z, zb, ze;
-  int time_blk = p->t_dim*2+1; //temporal block size
   int yb, ye;
+  int time_len = te-tb;
 
   double t1, t2, t3;
 
@@ -108,9 +108,8 @@ void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
   ye = ye_r;
   zb = p->stencil.r;
   for(t=tb; t< te-1; t++){
-    //    for(z=p->stencil.r; z< p->stencil.r*(time_blk-t); z++) // p->stencil.r*(time_blk-t) = p->stencil.r + p->stencil.r*(time_blk-t-1)
     {
-      ze = p->stencil.r*(time_blk-t);
+      ze = p->stencil.r*(time_len-(t-tb));
       if(t%2 == 1){
         p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
       }else{
@@ -508,11 +507,11 @@ static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
   intra_diamond_get_info(p, y_coord, tid, t_coord, &diam_size, &yb, &ye, &b_inc, &e_inc);
   p->stencil_ctx.wf_num_resolved_diamonds[tid] += diam_size;
 
-  if(p->wavefront == 0){
-    intra_diamond_comp(p, yb, ye, 1, b_inc, e_inc);
-  } else {
+//  if(p->wavefront == 0){
+//    intra_diamond_comp(p, yb, ye, 1, b_inc, e_inc);
+//  } else {
     intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, p->t_dim*2+1, tid);
-  }
+//  }
 
   t1 = MPI_Wtime();
   intra_diamond_comm(p, y_coord, t_coord);
@@ -684,8 +683,8 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   for(i=0; i<y_len_l; i++){
     yb = yb_r + i*diam_width;
     ye = ye_r + i*diam_width;
-    intra_diamond_inv_trapzd_comp(p, p->nt - (t_dim+2), yb, ye);
-    //intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, t_dim+1, tid);
+    //intra_diamond_inv_trapzd_comp(p, p->nt - (t_dim+2), yb, ye);
+    intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, t_dim+1, tid);
   }
   }
 
