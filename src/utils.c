@@ -403,7 +403,7 @@ void init(Parameters *p) {
 
 void init_coeff(Parameters * p) {
   int i, k, ax;
-  unsigned long idx;
+  unsigned long idx, f;
 
   switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
@@ -449,8 +449,10 @@ void init_coeff(Parameters * p) {
     break;
 
   case SOLAR_COEFFICIENT:
-    for(idx=0;idx<p->ln_domain*28lu*2lu; idx++){
-      p->coef[idx] = (FLOAT_PRECISION) (1.0*idx)/(1.0*p->ln_domain);
+    for(f=0; f<28;f++){
+      for(idx=0;idx<p->ln_domain*2lu; idx++){
+        p->coef[idx] = p->g_coef[f%10];
+      }
     }
     break;
 
@@ -648,10 +650,96 @@ void domain_data_fill_std(Parameters * p){
   }
 }
 void domain_data_fill_solar(Parameters *p){
-  unsigned long i;
-  for(i=0; i<2*12*p->ln_domain; i++){
-    p->U1[i] = (1.0*i)/(1.0*p->ln_domain);
+
+  unsigned long f, i,j,k, gi, gj, gk;
+  FLOAT_PRECISION r;
+  int xb, xe, yb, ye, zb, ze;
+  for(i=0; i<p->ln_domain*24lu;i++){
+    p->U1[i] = 0.0;
   }
+  xb = 0;
+  yb = 0;
+  zb = 0;
+  xe = p->lstencil_shape[0]+2*p->stencil.r;
+  ye = p->lstencil_shape[1]+2*p->stencil.r;
+  ze = p->lstencil_shape[2]+2*p->stencil.r;
+/*  if(p->t.rank_coords[0] == 0) xb += 2*p->stencil.r;
+  if(p->t.rank_coords[1] == 0) yb += 2*p->stencil.r;
+  if(p->t.rank_coords[2] == 0) zb += 2*p->stencil.r;
+  if(p->t.rank_coords[0] == p->t.shape[0]-1) xe -= 2*p->stencil.r;
+  if(p->t.rank_coords[1] == p->t.shape[1]-1) ye -= 2*p->stencil.r;
+  if(p->t.rank_coords[2] == p->t.shape[2]-1) ze -= 2*p->stencil.r;
+*/  // fill the local stencil subdomain according to the global location and pad the boundary with zeroes
+  for(f=0; f<12; f++){
+    for(k=zb; k<ze; k++){
+      for(j=yb; j<ye; j++){
+        for(i=xb; i<xe; i++){
+          gi = i + p->gb[0];
+          gj = j + p->gb[1];
+          gk = k + p->gb[2];
+
+          r = 1.0/(3.0) * (1.0*gi/p->stencil_shape[0] + 1.0*gj/p->stencil_shape[1]  + 1.0*gk/p->stencil_shape[2]);
+
+            p->U1[2*((k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + i +p->ln_domain*f)] = r*1.845703;
+            p->U1[2*((k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + i +p->ln_domain*f)+1] = r*1.845703;
+        }
+      }
+    }
+  }
+/*  // fill the extra allocation of diamond tiles
+  int gb_1;
+  if( (p->target_ts == 2) && (p->stencil.time_order == 2) && p->mpi_size > 1){
+    // last process extends to the beginning of the domain
+    if(p->t.rank_coords[1] == p->t.shape[1]-1) {
+      yb = ye + 2*p->stencil.r;
+      ye = yb + (p->t_dim+1+1)*p->stencil.r;
+      gb_1 = -yb+p->stencil.r;
+    } else {
+      yb = ye;
+      ye += (p->t_dim+1)*p->stencil.r;
+      gb_1 = p->gb[1];
+    }
+    for(k=zb; k<ze; k++){
+      for(j=yb; j<ye; j++){
+        for(i=xb; i<xe; i++){
+          gi = i + p->gb[0];
+          gj = j + gb_1;
+          gk = k + p->gb[2];
+
+          r = 1.0/3 * (1.0*gi/p->stencil_shape[0] + 1.0*gj/p->stencil_shape[1]  + 1.0*gk/p->stencil_shape[2]);
+
+          pU1(i, j, k) = r*1.845703;
+          pU2(i, j, k) = r*1.845703;
+          if(p->stencil.time_order == 2)
+            pU3(i, j, k) = r*1.845703;
+        }
+      }
+    }
+  }
+*/
+/*  // set source points at the first and last YZ plains
+  for(f=0; f<12;f++){
+    if(p->t.rank_coords[0] == 0){
+      for(k=0; k<p->ldomain_shape[2]; k++){
+        for(j=0; j<p->ldomain_shape[1]; j++){
+          for(i=0;i<2;i++){
+            p->U1[2*((k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + p->ln_domain*f + i)] += BOUNDARY_SRC_VAL;
+            p->U1[2*((k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + p->ln_domain*f + i)+1] += BOUNDARY_SRC_VAL;
+          }
+        }
+      }
+    }
+    if(p->t.rank_coords[0] == p->t.shape[0]-1){
+      for(k=0; k<p->ldomain_shape[2]; k++){
+        for(j=0; j<p->ldomain_shape[1]; j++){
+          for(i=0;i<2;i++){
+            p->U1[2*(p->lstencil_shape[0]+2*p->stencil.r-1  + (k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + p->ln_domain*f -i)] += BOUNDARY_SRC_VAL;
+            p->U1[2*(p->lstencil_shape[0]+2*p->stencil.r-1  + (k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + p->ln_domain*f -i) + 1] += BOUNDARY_SRC_VAL;
+          }
+        }
+      }
+    }
+  }*/
 }
 void domain_data_fill(Parameters *p){
   switch(p->stencil.type){

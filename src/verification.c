@@ -7,45 +7,30 @@
 
 void verify(Parameters *p){
 
-//printf("[%d]  Here\n", p->mpi_rank);
-//printf("[%d]1  Here\n", p->mpi_rank);
-
-//printf("[%d]2  Here\n", p->mpi_rank);
   verification_printing(*p);
   mpi_halo_init(p);
 
-//printf("[%d]3  Here\n", p->mpi_rank);
   // allocate and initialize the required arrays
   arrays_allocate(p);
   init_coeff(p);
-//printf("[%d]4  Here\n", p->mpi_rank);
   domain_data_fill(p);
 
-//printf("[%d]5.5  Here\n", p->mpi_rank);
   // compute data in parallel using the time stepper to be tested
-//printf("[%d] target    nt:%d\n", p->mpi_rank, p->nt);
   TSList[p->target_ts].func(p);
-//printf("[%d]6  Here\n", p->mpi_rank);
 
   // aggregate all subdomains into rank zero to compare with the serial results
   FLOAT_PRECISION * restrict aggr_domain = aggregate_subdomains(*p);
-//printf("[%d]7  Here\n", p->mpi_rank);
-
+  arrays_free(p);
   // compute data serially using reference time stepper
   //    compare and report results
   if(p->mpi_rank==0) {
     verify_serial_generic(aggr_domain, *p);
     free(aggr_domain);
   }
-//printf("[%d]8  Here\n", p->mpi_rank);
 
   mpi_halo_finalize(p);
-  arrays_free(p);
-//printf("[%d]9  Here\n", p->mpi_rank);
 }
 void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
-//  int nt = p.nt;
-//  int nt2;
   int male;
   // function pointer to select the reference stencil operator
   void (*std_kernel)( const int [],
@@ -53,23 +38,38 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
       const FLOAT_PRECISION * restrict, const FLOAT_PRECISION * restrict);
 
   FLOAT_PRECISION * restrict u, * restrict v, * restrict roc2, * restrict coef;
-  int it, i, j , k, ax;
+  unsigned long it, i, j , k, f, ax;
   int nnx = p.stencil_shape[0]+2*p.stencil.r;
   int nny = p.stencil_shape[1]+2*p.stencil.r;
   int nnz = p.stencil_shape[2]+2*p.stencil.r;
   unsigned long n_domain = nnx*nny*nnz;
+  unsigned long domain_size;
 
-  male = posix_memalign((void **)&(u),    p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
-  male = posix_memalign((void **)&(v),    p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
+  switch(p.stencil.type){
+    case REGULAR:
+      male = posix_memalign((void **)&(u),    p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
+      male = posix_memalign((void **)&(v),    p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
+    if(p.stencil.time_order == 2)
+      male = posix_memalign((void **)&(roc2), p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
+     break;
 
-  if(p.stencil.time_order == 2)
-    male = posix_memalign((void **)&(roc2), p.alignment, sizeof(FLOAT_PRECISION)*n_domain); check_merr(male);
+    case SOLAR:
+      domain_size = n_domain*12lu*2lu;
+      male = posix_memalign((void **)&(u), p.alignment, sizeof(FLOAT_PRECISION)*domain_size); check_merr(male);
+      v = 0; 
+      break;
+
+   default:
+    printf("ERROR: unknown type of stencil\n");
+    exit(1);
+    break;
+  }
 
 
   // allocate the the coefficients according to the stencil type
   // initialize the coefficients
   // select the desired stencil operator function
-  unsigned long coef_size;
+  unsigned long coef_size, idx;
   switch(p.stencil.coeff){
   case CONSTANT_COEFFICIENT:
     coef_size = 11;
@@ -145,34 +145,44 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
     break;
 
 
-    case VARIABLE_COEFFICIENT_NOSYM:
-      coef_size = n_domain*(1 + 6*p.stencil.r);
-      male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male);
+  case VARIABLE_COEFFICIENT_NOSYM:
+    coef_size = n_domain*(1 + 6*p.stencil.r);
+    male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male);
 
-      // central point coeff
-      for(i=0; i<n_domain; i++){
-        coef[i] = p.g_coef[0];
-      }
-      for(k=0; k < p.stencil.r; k++){
-        for(ax=0; ax<3; ax++){
-          for(i=0; i<n_domain; i++){
-            coef[i + n_domain + 6*k*n_domain +  2*ax   *n_domain] = p.g_coef[k+1];
-            coef[i + n_domain + 6*k*n_domain + (2*ax+1)*n_domain] = p.g_coef[k+1];
-          }
+    // central point coeff
+    for(i=0; i<n_domain; i++){
+      coef[i] = p.g_coef[0];
+    }
+    for(k=0; k < p.stencil.r; k++){
+      for(ax=0; ax<3; ax++){
+        for(i=0; i<n_domain; i++){
+          coef[i + n_domain + 6*k*n_domain +  2*ax   *n_domain] = p.g_coef[k+1];
+          coef[i + n_domain + 6*k*n_domain + (2*ax+1)*n_domain] = p.g_coef[k+1];
         }
       }
+    }
 
-      // select the stencil type
-      switch(p.stencil.r){
-      case 1:
-        std_kernel = &std_kernel_2space_1time_var_nosym;
-        break;
-      default:
-        printf("ERROR: unknown type of stencil\n");
-        exit(1);
-        break;
-      }
+    // select the stencil type
+    switch(p.stencil.r){
+    case 1:
+      std_kernel = &std_kernel_2space_1time_var_nosym;
       break;
+    default:
+      printf("ERROR: unknown type of stencil\n");
+      exit(1);
+      break;
+    }
+    break;
+
+
+  case SOLAR_COEFFICIENT:
+    std_kernel = &solar_kernel;
+    coef_size = n_domain*28lu*2lu;
+    male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male); 
+    for(idx=0;idx<coef_size; idx++){
+      coef[idx] = (FLOAT_PRECISION) (1.0*idx)/(1.0*n_domain);
+    }
+    break;
 
 
   default:
@@ -182,38 +192,64 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
   }
 
 
-  //-- Initialize u,v,roc2
-  // fill the array points according to their location in space and pad the boundary with zeroes
-  for(i=0; i<n_domain;i++){
-    u[i] = 0.0;
-    v[i] = 0.0;
-    if(p.stencil.time_order == 2)
-      roc2[i]= 0.0;
-  }
-  FLOAT_PRECISION r;
-  for(k=p.stencil.r; k<p.stencil_shape[2]+p.stencil.r; k++){
-    for(j=p.stencil.r; j<p.stencil_shape[1]+p.stencil.r; j++){
-      for(i=p.stencil.r; i<p.stencil_shape[0]+p.stencil.r; i++){
-        r = 1.0/3 * (1.0*i/p.stencil_shape[0] + 1.0*j/p.stencil_shape[1]  + 1.0*k/p.stencil_shape[2]);
-        U(i, j, k)    = r*1.845703;
-        V(i, j, k)    = r*1.845703;
-
+  switch(p.stencil.type){
+    case REGULAR:
+      //-- Initialize u,v,roc2
+      // fill the array points according to their location in space and pad the boundary with zeroes
+      for(i=0; i<n_domain;i++){
+        u[i] = 0.0;
+        v[i] = 0.0;
         if(p.stencil.time_order == 2)
-          ROC2(i, j, k) = r*1.845703;
+          roc2[i]= 0.0;
       }
-    }
-  }
+      FLOAT_PRECISION r;
+      for(k=p.stencil.r; k<p.stencil_shape[2]+p.stencil.r; k++){
+        for(j=p.stencil.r; j<p.stencil_shape[1]+p.stencil.r; j++){
+          for(i=p.stencil.r; i<p.stencil_shape[0]+p.stencil.r; i++){
+            r = 1.0/3 * (1.0*i/p.stencil_shape[0] + 1.0*j/p.stencil_shape[1]  + 1.0*k/p.stencil_shape[2]);
+            U(i, j, k)    = r*1.845703;
+            V(i, j, k)    = r*1.845703;
 
-//   set source points at the boundary of the leading dimension
-  for(k=0; k<nnz; k++){
-    for(j=0; j<nny; j++){
-      U(0, j, k) += BOUNDARY_SRC_VAL;
-      V(0, j, k) += BOUNDARY_SRC_VAL;
-      U(nnx-1, j, k) += BOUNDARY_SRC_VAL;
-      V(nnx-1, j, k) += BOUNDARY_SRC_VAL;
-    }
-  }
-
+            if(p.stencil.time_order == 2)
+              ROC2(i, j, k) = r*1.845703;
+          }
+        }
+      }
+    //   set source points at the boundary of the leading dimension
+      for(k=0; k<nnz; k++){
+        for(j=0; j<nny; j++){
+          U(0, j, k) += BOUNDARY_SRC_VAL;
+          V(0, j, k) += BOUNDARY_SRC_VAL;
+          U(nnx-1, j, k) += BOUNDARY_SRC_VAL;
+          V(nnx-1, j, k) += BOUNDARY_SRC_VAL;
+        }
+      }
+      break;
+  
+    case SOLAR:
+      for(i=0; i<n_domain*24lu;i++){
+        u[i] = 0.0;
+      }
+      // fill the local stencil subdomain according to the global location and pad the boundary with zeroes
+      for(f=0; f<12; f++){
+        for(k=0; k<nnz; k++){
+          for(j=0; j<nny; j++){
+            for(i=0; i<nnx; i++){
+              idx = 2*((k*nny+j)*nnx + i +n_domain*f);
+              r = 1.0/(3.0) * (1.0*i/p.stencil_shape[0] + 1.0*j/p.stencil_shape[1]  + 1.0*k/p.stencil_shape[2]);
+              u[idx] = r*1.845703;
+              u[idx+1] = r*1.845703;
+            }
+          }
+        }
+      }
+      break;
+    
+   default:
+    printf("ERROR: unknown type of stencil\n");
+    exit(1);
+    break;
+  } 
   //-- Reference kernel Main Loop -
   int domain_shape[3];
   domain_shape[0] = nnx;
@@ -229,11 +265,27 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
   // compare results
   compare_results(u, target_domain, p.alignment, p.stencil_shape[0], p.stencil_shape[1], p.stencil_shape[2], p.stencil.r);
 
-  free(u);
-  free(v);
 
-  if(p.stencil.time_order == 2)
-    free(roc2);
+  switch(p.stencil.type){
+    case REGULAR:
+      free(u);
+      free(v);
+      free(coef);
+      if(p.stencil.time_order == 2)
+        free(roc2);
+      break;
+
+    case SOLAR:
+      free(u);
+      free(coef);
+      break;
+
+   default:
+    printf("ERROR: unknown type of stencil\n");
+    exit(1);
+    break;
+  }
+
 }
 
 // This is the standard ISO 25-points stencil kernel with constant coefficients,
@@ -403,6 +455,314 @@ void std_kernel_2space_1time_var_nosym( const int shape[3],
 
 }
 
+void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u){
+  int i,j,k;
+  int nnz =shape[2];
+  int nny =shape[1];
+  int nnx =shape[0];
+  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  unsigned long ixmin, ixmax;
+
+  FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hzxd = &(u[1ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hxyd = &(u[2ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hzyd = &(u[3ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hxzd = &(u[4ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hyzd = &(u[5ul*ln_domain]);
+
+  FLOAT_PRECISION * restrict Exzd = &(u[6ul*ln_domain]);
+  FLOAT_PRECISION * restrict Eyzd = &(u[7ul*ln_domain]);
+  FLOAT_PRECISION * restrict Eyxd = &(u[8ul*ln_domain]);
+  FLOAT_PRECISION * restrict Ezxd = &(u[9ul*ln_domain]);
+  FLOAT_PRECISION * restrict Exyd = &(u[10ul*ln_domain]);
+  FLOAT_PRECISION * restrict Ezyd = &(u[11ul*ln_domain]);
+
+
+  const FLOAT_PRECISION * restrict cHyxd = &(coef[0ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHzxd = &(coef[1ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHxyd = &(coef[2ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHzyd = &(coef[3ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHxzd = &(coef[4ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHyzd = &(coef[5ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict tHyxd = &(coef[6ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHzxd = &(coef[7ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHxyd = &(coef[8ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHzyd = &(coef[9ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHxzd = &(coef[10ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHyzd = &(coef[11ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict Hxbndd = &(coef[12ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Hybndd = &(coef[13ul*ln_domain]);
+
+  unsigned long isub;
+  FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
+
+  // Update H-field
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) {
+        // Hy_x: csc, Ex_{y,z}: css
+        isub      = i + 2 * ( -nnx * nny );
+        stagDiffR = Exyd[i] - Exyd[isub] + Exzd[i] - Exzd[isub];
+        stagDiffI = Exyd[i + 1] - Exyd[isub + 1] + Exzd[i + 1] - Exzd[isub + 1];
+        asgn      = Hyxd[i] * tHyxd[i] - Hyxd[i + 1] * tHyxd[i + 1] + Hybndd[i] - cHyxd[i] * stagDiffR + cHyxd[i + 1] * stagDiffI;
+        Hyxd[i + 1]  = Hyxd[i] * tHyxd[i + 1] + Hyxd[i + 1] * tHyxd[i] + Hybndd[i + 1] - cHyxd[i] * stagDiffI - cHyxd[i + 1] * stagDiffR;
+        Hyxd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) {
+        // Hz_x: ccs, Ex_{y,z}: css
+        isub      = i + 2 * ( -nnx );
+        stagDiffR = Exyd[isub] - Exyd[i] + Exzd[isub] - Exzd[i];
+        stagDiffI = Exyd[isub + 1] - Exyd[i + 1] + Exzd[isub + 1] - Exzd[i + 1];
+        asgn      = Hzxd[i] * tHzxd[i] - Hzxd[i + 1] * tHzxd[i + 1] - cHzxd[i] * stagDiffR + cHzxd[i + 1] * stagDiffI;
+        Hzxd[i + 1]  = Hzxd[i] * tHzxd[i + 1] + Hzxd[i + 1] * tHzxd[i] - cHzxd[i] * stagDiffI - cHzxd[i + 1] * stagDiffR;
+        Hzxd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) {
+        // Hx_y: scc, Ey_{x,z}: scs
+        isub      = i + 2 * ( -nnx * nny );
+        stagDiffR = Eyxd[isub] - Eyxd[i] + Eyzd[isub] - Eyzd[i];
+        stagDiffI = Eyxd[isub + 1] - Eyxd[i + 1] + Eyzd[isub + 1] - Eyzd[i + 1];
+        asgn      = Hxyd[i] * tHxyd[i] - Hxyd[i + 1] * tHxyd[i + 1] + Hxbndd[i] - cHxyd[i] * stagDiffR + cHxyd[i + 1] * stagDiffI;
+        Hxyd[i + 1]  = Hxyd[i] * tHxyd[i + 1] + Hxyd[i + 1] * tHxyd[i] + Hxbndd[i + 1] - cHxyd[i] * stagDiffI - cHxyd[i + 1] * stagDiffR;
+        Hxyd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) {
+        // Hz_y: ccs, Ey_{x,z}: scs
+        isub      = i + 2 * ( -1 );
+        stagDiffR = Eyxd[i] - Eyxd[isub] + Eyzd[i] - Eyzd[isub];
+        stagDiffI = Eyxd[i + 1] - Eyxd[isub + 1] + Eyzd[i + 1] - Eyzd[isub + 1];
+        asgn      = Hzyd[i] * tHzyd[i] - Hzyd[i + 1] * tHzyd[i + 1] - cHzyd[i] * stagDiffR + cHzyd[i + 1] * stagDiffI;
+        Hzyd[i + 1]  = Hzyd[i] * tHzyd[i + 1] + Hzyd[i + 1] * tHzyd[i] - cHzyd[i] * stagDiffI - cHzyd[i + 1] * stagDiffR;
+        Hzyd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) {
+        // Hx_z: scc, Ez_{x,y}: ssc
+        isub      = i + 2 * ( -nnx );
+        stagDiffR = Ezxd[i] - Ezxd[isub] + Ezyd[i] - Ezyd[isub];
+        stagDiffI = Ezxd[i + 1] - Ezxd[isub + 1] + Ezyd[i + 1] - Ezyd[isub + 1];
+        asgn      = Hxzd[i] * tHxzd[i] - Hxzd[i + 1] * tHxzd[i + 1] - cHxzd[i] * stagDiffR + cHxzd[i + 1] * stagDiffI;
+        Hxzd[i + 1]  = Hxzd[i] * tHxzd[i + 1] + Hxzd[i + 1] * tHxzd[i] - cHxzd[i] * stagDiffI - cHxzd[i + 1] * stagDiffR;
+        Hxzd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) {
+        // Hy_z: csc, Ez_{x,y}: ssc
+        isub      = i + 2 * ( -1 );
+        stagDiffR = Ezxd[isub] + Ezyd[isub] - Ezxd[i] - Ezyd[i];
+        stagDiffI = Ezxd[isub + 1] + Ezyd[isub + 1] - Ezxd[i + 1] - Ezyd[i + 1];
+        asgn      = Hyzd[i] * tHyzd[i] - Hyzd[i + 1] * tHyzd[i + 1] - cHyzd[i] * stagDiffR + cHyzd[i + 1] * stagDiffI;
+        Hyzd[i + 1]  = Hyzd[i] * tHyzd[i + 1] + Hyzd[i + 1] * tHyzd[i] - cHyzd[i] * stagDiffI - cHyzd[i + 1] * stagDiffR;
+        Hyzd[i]      = asgn;
+      }
+    }
+  }
+}
+void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u){
+  int i,j,k;
+  int nnz =shape[2];
+  int nny =shape[1];
+  int nnx =shape[0];
+  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  unsigned long ixmin, ixmax;
+
+  FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hzxd = &(u[1ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hxyd = &(u[2ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hzyd = &(u[3ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hxzd = &(u[4ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hyzd = &(u[5ul*ln_domain]);
+
+  FLOAT_PRECISION * restrict Exzd = &(u[6ul*ln_domain]);
+  FLOAT_PRECISION * restrict Eyzd = &(u[7ul*ln_domain]);
+  FLOAT_PRECISION * restrict Eyxd = &(u[8ul*ln_domain]);
+  FLOAT_PRECISION * restrict Ezxd = &(u[9ul*ln_domain]);
+  FLOAT_PRECISION * restrict Exyd = &(u[10ul*ln_domain]);
+  FLOAT_PRECISION * restrict Ezyd = &(u[11ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict cExzd = &(coef[14ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEyzd = &(coef[15ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEyxd = &(coef[16ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEzxd = &(coef[17ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cExyd = &(coef[18ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEzyd = &(coef[19ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict tExzd = &(coef[20ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEyzd = &(coef[21ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEyxd = &(coef[22ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEzxd = &(coef[23ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tExyd = &(coef[24ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEzyd = &(coef[25ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict Exbndd = &(coef[26ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Eybndd = &(coef[27ul*ln_domain]);
+
+  unsigned long isub;
+  FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
+
+  // Update E-field
+  // ---------------------------------------------------------------------------------------
+  // -----  Ex_z = Cex_tz * Ex_z + Cex_z * (N(Hz_x + Hz_y) - S(Hz_x + Hz_y) ) --------------
+  // ---------------------------------------------------------------------------------------
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+
+      for(i=ixmin; i<ixmax; i+=2) {
+        // Ex_z: css, Hz_{x,y}: ccs
+        isub      = i + 2 * ( +nnx );
+        stagDiffR = Hzxd[isub] - Hzxd[i] + Hzyd[isub] - Hzyd[i];
+        stagDiffI = Hzxd[isub + 1] - Hzxd[i + 1] + Hzyd[isub + 1] - Hzyd[i + 1];
+        asgn      = Exzd[i] * tExzd[i] - Exzd[i + 1] * tExzd[i + 1] + cExzd[i] * stagDiffR - cExzd[i + 1] * stagDiffI;
+        Exzd[i + 1]  = Exzd[i] * tExzd[i + 1] + Exzd[i + 1] * tExzd[i] + cExzd[i] * stagDiffI + cExzd[i + 1] * stagDiffR;
+        Exzd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) { 
+        // Ey_{x,z}: scs, Hz_{x,y}: ccs
+        isub      = i + 2 * ( +1 );
+        stagDiffR = Hzxd[i] + Hzyd[i] - Hzxd[isub] - Hzyd[isub];
+        stagDiffI = Hzxd[i + 1] + Hzyd[i + 1] - Hzxd[isub + 1] - Hzyd[isub + 1];
+        asgn      = Eyzd[i] * tEyzd[i] - Eyzd[i + 1] * tEyzd[i + 1] + cEyzd[i] * stagDiffR - cEyzd[i + 1] * stagDiffI;
+        Eyzd[i + 1]  = Eyzd[i] * tEyzd[i + 1] + Eyzd[i + 1] * tEyzd[i] + cEyzd[i] * stagDiffI + cEyzd[i + 1] * stagDiffR;
+        Eyzd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) { 
+        // Ey_{x,z}: scs, Hx_{y,z}: scc
+        isub      = i + 2 * ( +nnx * nny );
+        stagDiffR = Hxyd[isub] - Hxyd[i] + Hxzd[isub] - Hxzd[i];
+        stagDiffI = Hxyd[isub + 1] - Hxyd[i + 1] + Hxzd[isub + 1] - Hxzd[i + 1];
+        asgn      = Eyxd[i] * tEyxd[i] - Eyxd[i + 1] * tEyxd[i + 1] + Eybndd[i] + cEyxd[i] * stagDiffR - cEyxd[i + 1] * stagDiffI;
+        Eyxd[i + 1]  = Eyxd[i] * tEyxd[i + 1] + Eyxd[i + 1] * tEyxd[i] + Eybndd[i + 1] + cEyxd[i] * stagDiffI + cEyxd[i + 1] * stagDiffR;
+        Eyxd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) { 
+        // Ez_x: ssc, Hx_{y,z}: scc
+        isub      = i + 2 * ( +nnx );
+        stagDiffR = Hxyd[i] + Hxzd[i] - Hxyd[isub] - Hxzd[isub];
+        stagDiffI = Hxyd[i + 1] + Hxzd[i + 1] - Hxyd[isub + 1] - Hxzd[isub + 1];
+        asgn      = Ezxd[i] * tEzxd[i] - Ezxd[i + 1] * tEzxd[i + 1] + cEzxd[i] * stagDiffR - cEzxd[i + 1] * stagDiffI;
+        Ezxd[i + 1]  = Ezxd[i] * tEzxd[i + 1] + Ezxd[i + 1] * tEzxd[i] + cEzxd[i] * stagDiffI + cEzxd[i + 1] * stagDiffR;
+        Ezxd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) { 
+        // Ex_y: css, Hy_{x,z}: csc
+        isub      = i + 2 * ( +nnx * nny );
+        stagDiffR = Hyxd[i] - Hyxd[isub] + Hyzd[i] - Hyzd[isub];
+        stagDiffI = Hyxd[i + 1] - Hyxd[isub + 1] + Hyzd[i + 1] - Hyzd[isub + 1];
+        asgn      = Exyd[i] * tExyd[i] - Exyd[i + 1] * tExyd[i + 1] + Exbndd[i] + cExyd[i] * stagDiffR - cExyd[i + 1] * stagDiffI;
+        Exyd[i + 1]  = Exyd[i] * tExyd[i + 1] + Exyd[i + 1] * tExyd[i] + Exbndd[i + 1] + cExyd[i] * stagDiffI + cExyd[i + 1] * stagDiffR;
+        Exyd[i]      = asgn;
+      }
+    }
+  }
+
+  for(k=2; k<nnz-2; k++) {
+    for(j=2; j<nny-2; j++) {
+
+      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      for(i=ixmin; i<ixmax; i+=2) { 
+        // Ez_y: ssc, Hy_{x,z}: csc
+        isub      = i + 2 * ( +1 );
+        stagDiffR = Hyxd[isub] - Hyxd[i] + Hyzd[isub] - Hyzd[i];
+        stagDiffI = Hyxd[isub + 1] - Hyxd[i + 1] + Hyzd[isub + 1] - Hyzd[i + 1];
+        asgn      = Ezyd[i] * tEzyd[i] - Ezyd[i + 1] * tEzyd[i + 1] + cEzyd[i] * stagDiffR - cEzyd[i + 1] * stagDiffI;
+        Ezyd[i + 1]  = Ezyd[i] * tEzyd[i + 1] + Ezyd[i + 1] * tEzyd[i] + cEzyd[i] * stagDiffI + cEzyd[i + 1] * stagDiffR;
+        Ezyd[i]      = asgn;
+      }      
+    }
+  } 
+
+}
+void solar_kernel( const int shape[3],
+    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
+    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2) {
+
+  if(u==0) u= (FLOAT_PRECISION * restrict) v; // in odd iterations the solution domain will be passed in v array (temporary patch)
+  solar_h_field_ref(shape, coef, u);
+  solar_e_field_ref(shape, coef, u);
+}
+
+
+
+
 void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO){
   int nnx=nx+2*NHALO, nny=ny+2*NHALO, nnz=nz+2*NHALO;
   unsigned long n_domain = nnx*nny*nnz;
@@ -459,6 +819,9 @@ void verification_printing(Parameters vp){
     case VARIABLE_COEFFICIENT_NOSYM:
       coeff_type = "var_nosym";
       break;
+    case SOLAR_COEFFICIENT:
+      coeff_type = "Solar kernel";
+      break;
     }
     precision = ((sizeof(FLOAT_PRECISION)==4)?"SP":"DP");
     concat = ((vp.halo_concat==0)?"no-concat":"   concat");
@@ -480,7 +843,8 @@ void verification_printing(Parameters vp){
   }
 }
 
-FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp){
+
+FLOAT_PRECISION *restrict aggregate_subdomains_std(Parameters vp){
   // aggregate the domains if there are more than 1 MPI ranks
   int i, j, k, ind, sind, male;
   FLOAT_PRECISION * restrict aggr_domain;
@@ -506,7 +870,53 @@ FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp){
   }
   return aggr_domain;
 }
+FLOAT_PRECISION *restrict aggregate_subdomains_solar(Parameters vp){
+  // aggregate the domains if there are more than 1 MPI ranks
+  unsigned long i, j, k, f, ind, sind;
+  int male;
+  int r = vp.stencil.r;
+  FLOAT_PRECISION * restrict aggr_domain;
 
+  int nnx = vp.ldomain_shape[0];
+  int nny = vp.ldomain_shape[1];
+  int nnz = vp.ldomain_shape[2];
+  unsigned long n_domain = nnx*nny*nnz;
+
+  int nx = vp.stencil_shape[0];
+  int ny = vp.stencil_shape[1];
+  int nz = vp.stencil_shape[2];
+  unsigned long n_stencil = nx*ny*nz;
+
+  if(vp.mpi_rank==0) {
+    male = posix_memalign((void **)&(aggr_domain), vp.alignment,
+        sizeof(FLOAT_PRECISION)*vp.n_stencils*24lu); check_merr(male);
+  }
+  if(vp.mpi_size > 1) {
+    // aggregate the domains
+    printf("ERROR: solar kernel verification works in shared memory only\n");
+  } else { // copy the domain without the halo points
+    for(f=0; f<12; f++){
+      for(i=0; i<vp.stencil_shape[2]; i++) {
+        for(j=0; j<vp.stencil_shape[1]; j++) {
+          for(k=0; k<vp.stencil_shape[0]; k++) {
+            ind  = n_domain*f  + 2*(((i+r)*nny +(j+r)) * nnx + (k+r));
+            sind = n_stencil*f + 2*(( i   *ny +  j   ) * nx +   k);
+            aggr_domain[sind] = vp.U1[ind];
+            aggr_domain[sind+1] = vp.U1[ind+1];
+          }
+        }
+      }
+    }
+  }
+  return aggr_domain;
+}
+
+FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp){
+
+  if(vp.stencil.type == REGULAR) return aggregate_subdomains_std(vp);
+
+  return aggregate_subdomains_solar(vp);
+}
 
 void aggregate_MPI_subdomains(Parameters vp, FLOAT_PRECISION * restrict aggr_domain){
   int i;

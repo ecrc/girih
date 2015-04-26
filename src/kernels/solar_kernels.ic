@@ -5,7 +5,7 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
   unsigned long ixmin, ixmax;
 
 /*  for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
@@ -170,7 +170,7 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
   unsigned long ixmin, ixmax;
 
   const FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);

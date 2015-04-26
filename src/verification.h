@@ -34,6 +34,9 @@ void std_kernel_8space_1time_var_axsym( const int shape[3],
 void std_kernel_2space_1time_var_nosym( const int shape[3],
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+void solar_kernel( const int shape[3],
+    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
+    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
 
 extern void copy_params_struct(Parameters a, Parameters * b);
 extern void print_param(Parameters p);
