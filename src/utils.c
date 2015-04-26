@@ -118,18 +118,32 @@ void reset_wf_timers(Parameters * p){
 
 void arrays_allocate(Parameters *p) {
   int male0, male1, male2;
+  unsigned long coef_size, domain_size;
 
-  male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
-  male1 = posix_memalign((void **)&(p->U2), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
+  switch(p->stencil.type){
+    case REGULAR:
+      male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
+      male1 = posix_memalign((void **)&(p->U2), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
+      if(p->stencil.time_order == 2)
+        male1 = posix_memalign((void **)&(p->U3), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
+      if(p->source_point_enabled==1)
+        male0 = posix_memalign((void **)&(p->source), p->alignment, sizeof(FLOAT_PRECISION)*p->nt); check_merr(male0);
+      domain_size = 2*p->ln_domain;
+      break;
 
-  if(p->stencil.time_order == 2)
-    male1 = posix_memalign((void **)&(p->U3), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
+    case SOLAR:
+      domain_size = p->ln_domain*12;
+      male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(FLOAT_PRECISION)*domain_size); check_merr(male1);
+      break;
 
-  if(p->source_point_enabled==1)
-    male0 = posix_memalign((void **)&(p->source), p->alignment, sizeof(FLOAT_PRECISION)*p->nt); check_merr(male0);
+   default:
+    printf("ERROR: unknown type of stencil\n");
+    exit(1);
+    break;
+  }
+
 
   // allocate the size of the coefficients matrix according to the stencil type
-  unsigned long coef_size;
   switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
     coef_size = 10;
@@ -147,6 +161,10 @@ void arrays_allocate(Parameters *p) {
     coef_size = p->ln_domain*(1 + 6*p->stencil.r);
     break;
 
+  case SOLAR_COEFFICIENT:
+    coef_size = p->ln_domain*28;
+    break;
+
   default:
     printf("ERROR: unknown type of stencil\n");
     exit(1);
@@ -158,22 +176,37 @@ void arrays_allocate(Parameters *p) {
   if (p->verbose == 1){
     if( (p->mpi_rank ==0)  || (p->mpi_rank == p->mpi_size-1))
     printf("[rank=%d] alloc. dom(err=%d):%fGiB coef(err=%d):%fGiB total:%fGiB\n", p->mpi_rank,
-            male1, sizeof(FLOAT_PRECISION)*p->ln_domain*1.0/(1024*1024*1024),
+            male1, sizeof(FLOAT_PRECISION)*domain_size*1.0/(1024*1024*1024),
             male2, sizeof(FLOAT_PRECISION)*coef_size*1.0/(1024*1024*1024),
-            sizeof(FLOAT_PRECISION)*(coef_size+ 2*p->ln_domain)*1.0/(1024*1024*1024));
+            sizeof(FLOAT_PRECISION)*(coef_size+ domain_size)*1.0/(1024*1024*1024));
   }
 }
 
 void arrays_free(Parameters *p) {
-  free(p->coef);
-  free(p->U1);
-  free(p->U2);
 
-  if(p->stencil.time_order == 2)
-      free(p->U3);
+  switch(p->stencil.type){
+    case REGULAR:
+    free(p->coef);
+    free(p->U1);
+    free(p->U2);
+    if(p->stencil.time_order == 2)
+        free(p->U3);
+    if(p->source_point_enabled==1)
+      free(p->source);
+      break;
 
-  if(p->source_point_enabled==1)
-    free(p->source);
+    case SOLAR:
+      free(p->coef);
+      free(p->U1);
+      break;
+
+   default:
+    printf("ERROR: unknown type of stencil\n");
+    exit(1);
+    break;
+  }
+
+
 }
 
 void set_centered_source(Parameters *p) {
@@ -190,13 +223,21 @@ void set_kernels(Parameters *p){
   p->stencil.nd = stencil_info_list[p->target_kernel].nd;
   p->stencil.time_order = stencil_info_list[p->target_kernel].time_order;
   p->stencil.shape = stencil_info_list[p->target_kernel].shape;
+  p->stencil.type = stencil_info_list[p->target_kernel].type;
   p->stencil.stat_sched_func = stat_sched_func_list[p->target_kernel];
 
 
 #if USE_SPLIT_STRIDE // separate central line update
+  if(p->stencil.type == SOLAR){
+    if(p->mpi_rank == 0) fprintf(stderr,"ERROR: solar kernels are not supported for separate central line update\n");
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
+    exit(1);
+  }
+
   p->stencil.spt_blk_func = iso_ref_split; // Note keeping the stat. sched. same
 
-  if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
+  if(p->stencil_ctx.thread_group_size == 1){ // use 1WD implementation
     p->stencil.mwd_func = swd_iso_ref_split;
   } else {
     p->stencil.mwd_func = mwd_iso_ref_split;
@@ -208,16 +249,12 @@ void set_kernels(Parameters *p){
 #else
 
   p->stencil.spt_blk_func = spt_blk_func_list[p->target_kernel];
-
   // use static openmp schedule if set for spatial blocking time steppers
   if( (p->target_ts==0 || p->target_ts==1) && (p->use_omp_stat_sched==1) ){      
     p->stencil.spt_blk_func = stat_sched_func_list[p->target_kernel];
   }
 
   p->stencil.mwd_func = mwd_list[p->mwd_type][p->target_kernel];
-
-
-
   if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
     p->stencil.mwd_func = swd_func_list[p->target_kernel];
   }
@@ -256,7 +293,7 @@ void init(Parameters *p) {
 
   if( (p->mpi_size == 1) && (p->halo_concat ==1) ){
     p->halo_concat = 0;
-    if(p->verbose==1) printf("###INFO: Halo concatenation disabled. It does not make sense in single process run\n");
+//    if(p->verbose==1) printf("###INFO: Halo concatenation disabled. It does not make sense in single process run\n");
   }
 
   p->source_point_enabled = 0;
@@ -281,6 +318,14 @@ void init(Parameters *p) {
     p->ge[i] = p->gb[i] + p->lstencil_shape[i] - 1;
   }
 
+
+  if((p->stencil.type == SOLAR)  && (p->array_padding == 1)){
+    if(p->mpi_rank == 0) fprintf(stderr,"ERROR: solar kernels do not support array padding\n");
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
+    exit(1);
+  }
+
   int padding_comp, padding_size = 0;
   if (p->array_padding == 1) {
     padding_comp = (p->lstencil_shape[0]+2*p->stencil.r)%p->alignment;
@@ -296,15 +341,15 @@ void init(Parameters *p) {
     int num_thread_groups = (int) ceil(1.0*p->num_threads / p->stencil_ctx.thread_group_size);
 
     if(p->use_omp_stat_sched==0){
-      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*p->stencil.nd*sizeof(FLOAT_PRECISION));
     } else {// tailored for the Xeon Phi
       p->stencil_ctx.bs_y = (p->cache_size*1024)/(p->stencil_ctx.thread_group_size*(1+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
     }
     // set minimum block size if cache is not sufficient
-    if(p->stencil_ctx.bs_y == 0) p->stencil_ctx.bs_y=1;
+    if(p->stencil_ctx.bs_y == 0) p->stencil_ctx.bs_y=p->stencil.r;
 
   } else {
-    p->stencil_ctx.bs_y = 1000000; // make the block larger than the domain
+    p->stencil_ctx.bs_y = p->ldomain_shape[0];
   }
 
   // set the local source point and other information
@@ -356,6 +401,7 @@ void init(Parameters *p) {
 
 void init_coeff(Parameters * p) {
   int i, k, ax;
+  unsigned long idx;
 
   switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
@@ -397,6 +443,12 @@ void init_coeff(Parameters * p) {
           p->coef[i + p->ln_domain + 6*k*p->ln_domain + (2*ax+1)*p->ln_domain] = p->g_coef[k+1];
         }
       }
+    }
+    break;
+
+  case SOLAR_COEFFICIENT:
+    for(idx=0;idx<p->ln_domain*28lu; idx++){
+      p->coef[idx] = (FLOAT_PRECISION) (1.0*idx)/(1.0*p->ln_domain);
     }
     break;
 
@@ -790,6 +842,9 @@ void print_param(Parameters p) {
   case VARIABLE_COEFFICIENT_NOSYM:
     coeff_type = "variable no-symmetry";
     break;
+  case SOLAR_COEFFICIENT:
+    coeff_type = "Solar kernel";
+    break;
   }
 
   precision = ((sizeof(FLOAT_PRECISION)==4)?"SP":"DP");
@@ -871,6 +926,9 @@ void list_kernels(Parameters *p){
         break;
       case VARIABLE_COEFFICIENT_NOSYM:
         coeff_type = "variable no-symmetry";
+        break;
+      case SOLAR_COEFFICIENT:
+        coeff_type = "Solar kernel";
         break;
       }
       if (stencil_info_list[i].name == 0) break;
