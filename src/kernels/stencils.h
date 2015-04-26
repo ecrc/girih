@@ -14,4 +14,14 @@
 #define CAT(X,Y) X##_##Y
 #define TEMPLATE(X,Y) CAT(X,Y)
 
+
+//function for the unsupported features
+void not_supported_mwd KERNEL_MWD_SIG{
+  printf("ERROR: unsupported configuration for the selected stencil\n");
+  exit(1); 
+}
+void not_supported KERNEL_SIG{
+  printf("ERROR: unsupported configuration for the selected stencil\n");
+  exit(1); 
+}
 #endif /* STENCILS_H_ */

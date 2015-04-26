@@ -132,8 +132,9 @@ void arrays_allocate(Parameters *p) {
       break;
 
     case SOLAR:
-      domain_size = p->ln_domain*12;
+      domain_size = p->ln_domain*12lu*2lu;
       male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(FLOAT_PRECISION)*domain_size); check_merr(male1);
+      p->U2 = 0;
       break;
 
    default:
@@ -162,7 +163,7 @@ void arrays_allocate(Parameters *p) {
     break;
 
   case SOLAR_COEFFICIENT:
-    coef_size = p->ln_domain*28;
+    coef_size = p->ln_domain*28lu*2lu;
     break;
 
   default:
@@ -320,10 +321,11 @@ void init(Parameters *p) {
 
 
   if((p->stencil.type == SOLAR)  && (p->array_padding == 1)){
-    if(p->mpi_rank == 0) fprintf(stderr,"ERROR: solar kernels do not support array padding\n");
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
-    exit(1);
+    if(p->mpi_rank == 0) fprintf(stdout,"WARNING: solar kernels do not support array padding\n");
+    p->array_padding == 0;
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    MPI_Finalize();
+//    exit(1);
   }
 
   int padding_comp, padding_size = 0;
@@ -447,7 +449,7 @@ void init_coeff(Parameters * p) {
     break;
 
   case SOLAR_COEFFICIENT:
-    for(idx=0;idx<p->ln_domain*28lu; idx++){
+    for(idx=0;idx<p->ln_domain*28lu*2lu; idx++){
       p->coef[idx] = (FLOAT_PRECISION) (1.0*idx)/(1.0*p->ln_domain);
     }
     break;
@@ -556,7 +558,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
 #define pU1(i,j,k)          (p->U1[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 #define pU2(i,j,k)          (p->U2[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 #define pU3(i,j,k)          (p->U3[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
-void domain_data_fill(Parameters * p){
+void domain_data_fill_std(Parameters * p){
   int i,j,k, gi, gj, gk;
   FLOAT_PRECISION r;
   int xb, xe, yb, ye, zb, ze;
@@ -645,6 +647,29 @@ void domain_data_fill(Parameters * p){
     }
   }
 }
+void domain_data_fill_solar(Parameters *p){
+  unsigned long i;
+  for(i=0; i<2*12*p->ln_domain; i++){
+    p->U1[i] = (1.0*i)/(1.0*p->ln_domain);
+  }
+}
+void domain_data_fill(Parameters *p){
+  switch(p->stencil.type){
+    case REGULAR:
+      domain_data_fill_std(p);
+      break;
+
+    case SOLAR:
+      domain_data_fill_solar(p);
+      break;
+
+   default:
+    printf("ERROR: unknown type of stencil\n");
+    exit(1);
+    break;
+  }
+}
+
 
 void performance_results(Parameters *p, double t, double t_max, double t_min, double t_ts_main_max, double t_ts_main_min){
   double max_comm, max_comp, max_wait, max_others, max_total;

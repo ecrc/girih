@@ -147,6 +147,9 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #include "stencils_list.h"
 
 
+
+#include "solar_kernels.ic"
+
 /*
  * Wrap the created functions in array
  */
@@ -169,7 +172,8 @@ spt_blk_func_t spt_blk_func_list[] = {
     iso_ref_2space_1time_var,
     iso_ref_2space_1time_var_axsym,
     iso_ref_8space_1time_var_axsym,
-    iso_ref_2space_1time_var_nosym,};
+    iso_ref_2space_1time_var_nosym,
+    solar,};
 
 spt_blk_func_t stat_sched_func_list[] = {
     stat_sched_iso_ref,
@@ -177,7 +181,8 @@ spt_blk_func_t stat_sched_func_list[] = {
     stat_sched_iso_ref_2space_1time_var,
     stat_sched_iso_ref_2space_1time_var_axsym,
     stat_sched_iso_ref_8space_1time_var_axsym,
-    stat_sched_iso_ref_2space_1time_var_nosym,};
+    stat_sched_iso_ref_2space_1time_var_nosym,
+    not_supported,};
 
 mwd_func_t swd_func_list[] = {
     swd_iso_ref,
@@ -185,7 +190,8 @@ mwd_func_t swd_func_list[] = {
     swd_iso_ref_2space_1time_var,
     swd_iso_ref_2space_1time_var_axsym,
     swd_iso_ref_8space_1time_var_axsym,
-    swd_iso_ref_2space_1time_var_nosym,};
+    swd_iso_ref_2space_1time_var_nosym,
+    not_supported_mwd,};
 
 
 mwd_func_t mwd_func_list[] = {  /* 0 */
@@ -194,7 +200,8 @@ mwd_func_t mwd_func_list[] = {  /* 0 */
     mwd_iso_ref_2space_1time_var,
     mwd_iso_ref_2space_1time_var_axsym,
     mwd_iso_ref_8space_1time_var_axsym,
-    mwd_iso_ref_2space_1time_var_nosym,};
+    mwd_iso_ref_2space_1time_var_nosym,
+    not_supported_mwd,};
 
 mwd_func_t femwd_func_list[] = { /* 1 */
     femwd_iso_ref,
@@ -202,7 +209,8 @@ mwd_func_t femwd_func_list[] = { /* 1 */
     femwd_iso_ref_2space_1time_var,
     femwd_iso_ref_2space_1time_var_axsym,
     femwd_iso_ref_8space_1time_var_axsym,
-    femwd_iso_ref_2space_1time_var_nosym,};
+    femwd_iso_ref_2space_1time_var_nosym,
+    not_supported_mwd,};
 
 mwd_func_t rsmwd_func_list[] = { /* 2 */
     rsmwd_iso_ref,
@@ -210,7 +218,8 @@ mwd_func_t rsmwd_func_list[] = { /* 2 */
     rsmwd_iso_ref_2space_1time_var,
     rsmwd_iso_ref_2space_1time_var_axsym,
     rsmwd_iso_ref_8space_1time_var_axsym,
-    rsmwd_iso_ref_2space_1time_var_nosym,};
+    rsmwd_iso_ref_2space_1time_var_nosym,
+    not_supported_mwd,};
 
 mwd_func_t rsfemwd_func_list[] = { /* 3 */
     rsfemwd_iso_ref,
@@ -218,7 +227,8 @@ mwd_func_t rsfemwd_func_list[] = { /* 3 */
     rsfemwd_iso_ref_2space_1time_var,
     rsfemwd_iso_ref_2space_1time_var_axsym,
     rsfemwd_iso_ref_8space_1time_var_axsym,
-    rsfemwd_iso_ref_2space_1time_var_nosym,};
+    rsfemwd_iso_ref_2space_1time_var_nosym,
+    not_supported_mwd,};
 
 
 
