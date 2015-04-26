@@ -152,14 +152,15 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
  */
 
 struct StencilInfo stencil_info_list[] = {
-    // parameters: name, semi-bandwidth, order in time, shape, coefficients variability
-    {"star", 4, 2, STAR, CONSTANT_COEFFICIENT},
-    {"star", 1, 1, STAR, CONSTANT_COEFFICIENT},
-    {"star", 1, 1, STAR, VARIABLE_COEFFICIENT},
-    {"star", 1, 1, STAR, VARIABLE_COEFFICIENT_AXSYM},
-    {"star", 4, 1, STAR, VARIABLE_COEFFICIENT_AXSYM},
-    {"star", 1, 1, STAR, VARIABLE_COEFFICIENT_NOSYM},
-    {0, 0, 0, 0, 0},
+    // parameters: name, semi-bandwidth, order in time, domain replicas, shape, coefficients variability
+    {"star", 4, 2, 3,  STAR, CONSTANT_COEFFICIENT, REGULAR},
+    {"star", 1, 1, 2,  STAR, CONSTANT_COEFFICIENT, REGULAR},
+    {"star", 1, 1, 4,  STAR, VARIABLE_COEFFICIENT, REGULAR},
+    {"star", 1, 1, 6,  STAR, VARIABLE_COEFFICIENT_AXSYM, REGULAR},
+    {"star", 4, 1, 15, STAR, VARIABLE_COEFFICIENT_AXSYM, REGULAR},
+    {"star", 1, 1, 9 , STAR, VARIABLE_COEFFICIENT_NOSYM, REGULAR},
+    {"star", 2, 1, 40, STAR, SOLAR_COEFFICIENT, SOLAR},
+    {0, 0, 0, 0, 0, 0, 0},
 };
 
 spt_blk_func_t spt_blk_func_list[] = {

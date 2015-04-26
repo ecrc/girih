@@ -482,6 +482,15 @@ void auto_tune_diam_nwf(Parameters *op){
 
 void set_kernels(Parameters *p){
 
+  p->stencil.name = stencil_info_list[p->target_kernel].name;
+  p->stencil.coeff = stencil_info_list[p->target_kernel].coeff;
+  p->stencil.r = stencil_info_list[p->target_kernel].r;
+  p->stencil.nd = stencil_info_list[p->target_kernel].nd;
+  p->stencil.time_order = stencil_info_list[p->target_kernel].time_order;
+  p->stencil.shape = stencil_info_list[p->target_kernel].shape;
+  p->stencil.stat_sched_func = stat_sched_func_list[p->target_kernel];
+
+
 #if USE_SPLIT_STRIDE // separate central line update
   p->stencil.spt_blk_func = iso_ref_split; // Note keeping the stat. sched. same
 
@@ -511,13 +520,6 @@ void set_kernels(Parameters *p){
     p->stencil.mwd_func = swd_func_list[p->target_kernel];
   }
 #endif
-
-  p->stencil.name = stencil_info_list[p->target_kernel].name;
-  p->stencil.coeff = stencil_info_list[p->target_kernel].coeff;
-  p->stencil.r = stencil_info_list[p->target_kernel].r;
-  p->stencil.time_order = stencil_info_list[p->target_kernel].time_order;
-  p->stencil.shape = stencil_info_list[p->target_kernel].shape;
-  p->stencil.stat_sched_func = stat_sched_func_list[p->target_kernel];
 
 }
 
@@ -1014,9 +1016,11 @@ void copy_params_struct(Parameters a, Parameters * b) {
 
   b->stencil.name = a.stencil.name;
   b->stencil.r = a.stencil.r;
+  b->stencil.nd = a.stencil.nd;
   b->stencil.time_order = a.stencil.time_order;
   b->stencil.shape = a.stencil.shape;
   b->stencil.coeff = a.stencil.coeff;
+  b->stencil.type = a.stencil.type;
   b->stencil.spt_blk_func  = a.stencil.spt_blk_func;
   b->stencil.stat_sched_func = a.stencil.stat_sched_func;
   b->stencil.mwd_func = a.stencil.mwd_func;

@@ -56,9 +56,14 @@ enum Stencil_Coefficients{
   CONSTANT_COEFFICIENT,
   VARIABLE_COEFFICIENT,
   VARIABLE_COEFFICIENT_AXSYM,
-  VARIABLE_COEFFICIENT_NOSYM
+  VARIABLE_COEFFICIENT_NOSYM,
+  SOLAR_COEFFICIENT
 };
 
+enum Stencil_Type{
+  REGULAR,
+  SOLAR
+};
 
 // Profiling
 typedef struct{
@@ -131,8 +136,11 @@ struct Stencil {
   const char *name;
   int r;
   int time_order;
+  int nd;
   enum Stencil_Shapes shape;
   enum Stencil_Coefficients coeff;
+  enum Stencil_Type type;
+
   spt_blk_func_t spt_blk_func;
   spt_blk_func_t stat_sched_func;
   mwd_func_t mwd_func;
@@ -142,8 +150,10 @@ struct StencilInfo {
   const char *name;
   int r;
   int time_order;
+  int nd;
   enum Stencil_Shapes shape;
   enum Stencil_Coefficients coeff;
+  enum Stencil_Type type;
 };
 
 // context information
