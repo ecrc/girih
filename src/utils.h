@@ -22,6 +22,7 @@ extern struct time_stepper TSList[];
 extern const char *MWD_name[];
 
 extern void dynamic_intra_diamond_ts(Parameters *p);
+extern void intra_diamond_info_init(Parameters *p);
 
 extern clu_func_t clu_func_list[];
 extern struct StencilInfo stencil_info_list[];
