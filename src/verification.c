@@ -19,15 +19,16 @@ void verify(Parameters *p){
   TSList[p->target_ts].func(p);
 
   // aggregate all subdomains into rank zero to compare with the serial results
-  FLOAT_PRECISION * restrict aggr_domain = aggregate_subdomains(*p);
-  arrays_free(p);
+  FLOAT_PRECISION * restrict aggr_domain = NULL;
+  if(p->stencil.type == REGULAR) aggr_domain = aggregate_subdomains(*p);
   // compute data serially using reference time stepper
   //    compare and report results
   if(p->mpi_rank==0) {
     verify_serial_generic(aggr_domain, *p);
-    free(aggr_domain);
+    if(p->stencil.type == REGULAR) free(aggr_domain);
   }
 
+  arrays_free(p);
   mpi_halo_finalize(p);
 }
 void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
@@ -179,8 +180,10 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
     std_kernel = &solar_kernel;
     coef_size = n_domain*28lu*2lu;
     male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male); 
-    for(idx=0;idx<coef_size; idx++){
-      coef[idx] = (FLOAT_PRECISION) (1.0*idx)/(1.0*n_domain);
+    for(f=0; f<28;f++){
+      for(idx=0;idx<n_domain*2lu; idx++){
+        coef[idx] = p.g_coef[f%10];
+      }
     }
     break;
 
@@ -230,7 +233,6 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
       for(i=0; i<n_domain*24lu;i++){
         u[i] = 0.0;
       }
-      // fill the local stencil subdomain according to the global location and pad the boundary with zeroes
       for(f=0; f<12; f++){
         for(k=0; k<nnz; k++){
           for(j=0; j<nny; j++){
@@ -263,7 +265,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
 //  u[(p.stencil.r+1)*(nnx * nny + nny + 1)] += 100.1;
 
   // compare results
-  compare_results(u, target_domain, p.alignment, p.stencil_shape[0], p.stencil_shape[1], p.stencil_shape[2], p.stencil.r);
+  compare_results(u, target_domain, p.alignment, p.stencil_shape[0], p.stencil_shape[1], p.stencil_shape[2], p.stencil.r, p);
 
 
   switch(p.stencil.type){
@@ -460,7 +462,7 @@ void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
   unsigned long ixmin, ixmax;
 
   FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
@@ -606,7 +608,7 @@ void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
   unsigned long ixmin, ixmax;
 
   FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
@@ -763,7 +765,7 @@ void solar_kernel( const int shape[3],
 
 
 
-void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO){
+void compare_results_std(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO){
   int nnx=nx+2*NHALO, nny=ny+2*NHALO, nnz=nz+2*NHALO;
   unsigned long n_domain = nnx*nny*nnz;
   int i, j, k, male;
@@ -800,6 +802,57 @@ void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict targ
   }
 
   free(snapshot_error);
+}
+void compare_results_solar(FLOAT_PRECISION *restrict u, Parameters p){
+  FLOAT_PRECISION *restrict target_domain = p.U1;
+
+  int nnx = p.ldomain_shape[0];
+  int nny = p.ldomain_shape[1];
+  int nnz = p.ldomain_shape[2];
+  unsigned long idx, n_domain = nnx*nny*nnz;
+  int f, i, j, k, male;
+  double ref_l1 = 0.0;
+  FLOAT_PRECISION diff_l1=0.0, abs_diff, max_error=0.0;
+  FLOAT_PRECISION * restrict snapshot_error;
+  male = posix_memalign((void **)&(snapshot_error), p.alignment, sizeof(FLOAT_PRECISION)*n_domain*24lu); check_merr(male);
+  for(f=0; f<12;f++){
+    for (k=0; k<nnz; k++) {
+      for (j=0; j<nny; j++) {
+        for(i=0; i<nnx; i++) {
+          idx = 2*( n_domain*f + ( k   *nny +  j   ) * nnx +   i);
+          abs_diff = fabs( u[idx] - target_domain[idx]);
+          snapshot_error[idx] = abs_diff;
+          if (abs_diff > max_error) max_error = abs_diff;
+          diff_l1 += abs_diff;
+        }
+      }
+    }
+  }
+  if ( (diff_l1 > 0.0) || (diff_l1*0 != 0) || (diff_l1 != diff_l1) ){
+    printf("Max snapshot abs. err.:%e  L1 norm:%e\n", max_error, diff_l1);
+    fprintf(stderr,"BROKEN KERNEL\n");
+
+    print_3Darray_solar("error_snapshot", snapshot_error, nnx, nny, nnz, 0);
+    print_3Darray_solar("reference_snapshot", u , nnx, nny, nnz, 0);
+    print_3Darray_solar("target_snapshot"   , target_domain, nnx, nny, nnz, 0);
+    exit(1);
+  } else {
+    printf("eMax:%.3e|eL1:%.3e", max_error, diff_l1);
+    printf("-PASSED\n");
+
+    for (k=0; k<n_domain; k++) ref_l1 += fabs(u[k]);
+    if(ref_l1 < 1e-6) printf("##WARNING: The L1 norm of the solution domain is too small (%e). This verification is not sufficient to discover errors\n", ref_l1);
+
+  }
+
+  free(snapshot_error); 
+}
+void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO, Parameters p){
+  if(p.stencil.type == REGULAR){
+     compare_results_std(u, target_domain, alignment, nx, ny, nz, NHALO);
+     return;
+  }
+  compare_results_solar(u, p);
 }
 
 
@@ -844,7 +897,7 @@ void verification_printing(Parameters vp){
 }
 
 
-FLOAT_PRECISION *restrict aggregate_subdomains_std(Parameters vp){
+FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp){
   // aggregate the domains if there are more than 1 MPI ranks
   int i, j, k, ind, sind, male;
   FLOAT_PRECISION * restrict aggr_domain;
@@ -869,53 +922,6 @@ FLOAT_PRECISION *restrict aggregate_subdomains_std(Parameters vp){
     }
   }
   return aggr_domain;
-}
-FLOAT_PRECISION *restrict aggregate_subdomains_solar(Parameters vp){
-  // aggregate the domains if there are more than 1 MPI ranks
-  unsigned long i, j, k, f, ind, sind;
-  int male;
-  int r = vp.stencil.r;
-  FLOAT_PRECISION * restrict aggr_domain;
-
-  int nnx = vp.ldomain_shape[0];
-  int nny = vp.ldomain_shape[1];
-  int nnz = vp.ldomain_shape[2];
-  unsigned long n_domain = nnx*nny*nnz;
-
-  int nx = vp.stencil_shape[0];
-  int ny = vp.stencil_shape[1];
-  int nz = vp.stencil_shape[2];
-  unsigned long n_stencil = nx*ny*nz;
-
-  if(vp.mpi_rank==0) {
-    male = posix_memalign((void **)&(aggr_domain), vp.alignment,
-        sizeof(FLOAT_PRECISION)*vp.n_stencils*24lu); check_merr(male);
-  }
-  if(vp.mpi_size > 1) {
-    // aggregate the domains
-    printf("ERROR: solar kernel verification works in shared memory only\n");
-  } else { // copy the domain without the halo points
-    for(f=0; f<12; f++){
-      for(i=0; i<vp.stencil_shape[2]; i++) {
-        for(j=0; j<vp.stencil_shape[1]; j++) {
-          for(k=0; k<vp.stencil_shape[0]; k++) {
-            ind  = n_domain*f  + 2*(((i+r)*nny +(j+r)) * nnx + (k+r));
-            sind = n_stencil*f + 2*(( i   *ny +  j   ) * nx +   k);
-            aggr_domain[sind] = vp.U1[ind];
-            aggr_domain[sind+1] = vp.U1[ind+1];
-          }
-        }
-      }
-    }
-  }
-  return aggr_domain;
-}
-
-FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp){
-
-  if(vp.stencil.type == REGULAR) return aggregate_subdomains_std(vp);
-
-  return aggregate_subdomains_solar(vp);
 }
 
 void aggregate_MPI_subdomains(Parameters vp, FLOAT_PRECISION * restrict aggr_domain){

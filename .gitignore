@@ -5,6 +5,9 @@ results/*
 scripts/verification/*pyc
 scripts/*.pyc
 scripts/sisc/*.pyc
-/src/.~
+src/.*.swp
+src/.*.swo
+src/kernels/.*.swp
+src/kernels/.*.swo
 src/.cproject
 src/.project

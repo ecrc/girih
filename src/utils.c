@@ -322,7 +322,7 @@ void init(Parameters *p) {
 
   if((p->stencil.type == SOLAR)  && (p->array_padding == 1)){
     if(p->mpi_rank == 0) fprintf(stdout,"WARNING: solar kernels do not support array padding\n");
-    p->array_padding == 0;
+    p->array_padding = 0;
 //    MPI_Barrier(MPI_COMM_WORLD);
 //    MPI_Finalize();
 //    exit(1);
@@ -1277,6 +1277,32 @@ void print_3Darray(char *filename, FLOAT_PRECISION * restrict array, int nx, int
       }
       // new line
       fprintf(fp, "\n");
+    }
+  }
+
+  fclose(fp);
+}
+
+void print_3Darray_solar(char *filename, FLOAT_PRECISION * restrict array, int nx, int ny, int nz, int halo) {
+  int f,i,j,k;
+  unsigned long idx;
+  FILE *fp;
+  if(!(fp = fopen(filename, "w")))
+    printf("ERROR: cannot open file for writing\n");
+
+  for(f=0; f<12;f++){
+    fprintf(fp, "\n\n***************** field # %d *************",f+1);
+    for (i=halo; i<nz-halo; i++) {
+      // new page
+      fprintf(fp, "\n***************** slice # %d *************\n",i+1-halo);
+      for (j=halo; j<ny-halo; j++) {
+        for (k=halo; k<nx-halo; k++) {
+          idx = 2*( (i*ny+j)*nx + k + f*nx*ny*nz);
+          fprintf(fp, "%+.4e %+.4e ", array[idx], array[idx+1]);
+        }
+        // new line
+        fprintf(fp, "\n");
+      }
     }
   }
 

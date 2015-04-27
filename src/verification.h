@@ -13,7 +13,7 @@ void verify(Parameters *);
 void aggregate_MPI_subdomains(Parameters vp, FLOAT_PRECISION * restrict aggr_array);
 void verification_printing(Parameters vp);
 FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp);
-void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO);
+void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO, Parameters p);
 void verify_serial_generic(FLOAT_PRECISION * , Parameters);
 
 void std_kernel_8space_2time( const int shape[3],
@@ -42,6 +42,7 @@ extern void copy_params_struct(Parameters a, Parameters * b);
 extern void print_param(Parameters p);
 extern void arrays_free(Parameters *);
 extern void print_3Darray(char *, FLOAT_PRECISION * restrict , int , int , int , int );
+extern void print_3Darray_solar(char *, FLOAT_PRECISION * restrict , int , int , int , int );
 extern void mpi_halo_finalize(Parameters *);
 extern void init_coeff(Parameters *);
 extern void arrays_allocate(Parameters *p);
