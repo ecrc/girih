@@ -43,25 +43,6 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
   unsigned long isub;
   FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
 
-/*  for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
-  {
-    je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
-#pragma omp parallel num_threads(stencil_ctx.thread_group_size)
-    {
-
-#pragma omp for schedule(static,1)
-      for(k=zb; k<ze; k++) {
-        for(j=jb; j<je; j++) {
-#pragma simd
-          for(i=xb; i<xe; i++) {
-          }
-        }
-      }
-
-    }
-  }*/
-
-
    // Update H-field
 #pragma omp parallel num_threads(stencil_ctx.thread_group_size) default(shared) \
                      private(jb,je,i,j,k,ixmin,ixmax,isub,stagDiffR,stagDiffI,asgn)
@@ -74,6 +55,7 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) {
             // Hy_x: csc, Ex_{y,z}: css
             isub      = i + 2 * ( -nnx * nny );
@@ -95,6 +77,7 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) {
             // Hz_x: ccs, Ex_{y,z}: css
             isub      = i + 2 * ( -nnx );
@@ -116,6 +99,7 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) {
             // Hx_y: scc, Ey_{x,z}: scs
             isub      = i + 2 * ( -nnx * nny );
@@ -137,6 +121,7 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) {
             // Hz_y: ccs, Ey_{x,z}: scs
             isub      = i + 2 * ( -1 );
@@ -158,6 +143,7 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) {
             // Hx_z: scc, Ez_{x,y}: ssc
             isub      = i + 2 * ( -nnx );
@@ -179,6 +165,7 @@ void solar_h_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) {
             // Hy_z: csc, Ez_{x,y}: ssc
             isub      = i + 2 * ( -1 );
@@ -253,6 +240,7 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
 
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) {
             // Ex_z: css, Hz_{x,y}: ccs
             isub      = i + 2 * ( +nnx );
@@ -274,6 +262,7 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) { 
             // Ey_{x,z}: scs, Hz_{x,y}: ccs
             isub      = i + 2 * ( +1 );
@@ -295,6 +284,7 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) { 
             // Ey_{x,z}: scs, Hx_{y,z}: scc
             isub      = i + 2 * ( +nnx * nny );
@@ -316,6 +306,7 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) { 
             // Ez_x: ssc, Hx_{y,z}: scc
             isub      = i + 2 * ( +nnx );
@@ -337,6 +328,7 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) { 
             // Ex_y: css, Hy_{x,z}: csc
             isub      = i + 2 * ( +nnx * nny );
@@ -358,6 +350,7 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
 
           ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
           ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
           for(i=ixmin; i<ixmax; i+=2) { 
             // Ez_y: ssc, Hy_{x,z}: csc
             isub      = i + 2 * ( +1 );
