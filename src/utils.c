@@ -343,7 +343,7 @@ void init(Parameters *p) {
     int num_thread_groups = (int) ceil(1.0*p->num_threads / p->stencil_ctx.thread_group_size);
 
     if(p->use_omp_stat_sched==0){
-      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*p->stencil.nd*sizeof(FLOAT_PRECISION));
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
     } else {// tailored for the Xeon Phi
       p->stencil_ctx.bs_y = (p->cache_size*1024)/(p->stencil_ctx.thread_group_size*(1+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
     }
