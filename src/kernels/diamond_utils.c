@@ -35,6 +35,11 @@ unsigned long get_mwf_size(Parameters *p, int t_dim){
     total_points = ( (t_order+1 + (1+6*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
     break;
 
+  case SOLAR_COEFFICIENT:
+    total_points = ( (p->stencil.nd)*wf_elements + (diam_width + diam_height )*12*p->stencil.r) * lnx * 2*sizeof(FLOAT_PRECISION);
+    break;
+
+
   default:
     printf("ERROR: unknown type of stencil\n");
     exit(1);
