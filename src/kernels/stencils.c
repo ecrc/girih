@@ -148,7 +148,7 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 
 
 
-#include "solar_kernels.ic"
+#include "solar_kernels.h"
 
 /*
  * Wrap the created functions in array
@@ -182,7 +182,7 @@ spt_blk_func_t stat_sched_func_list[] = {
     stat_sched_iso_ref_2space_1time_var_axsym,
     stat_sched_iso_ref_8space_1time_var_axsym,
     stat_sched_iso_ref_2space_1time_var_nosym,
-    not_supported,};
+    stat_sched_solar,};
 
 mwd_func_t swd_func_list[] = {
     swd_iso_ref,
