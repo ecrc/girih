@@ -28,7 +28,7 @@ MPI_Request wait_req_send_l[2], wait_req_recv_l[2], wait_req_send_r[2], wait_req
 
 
 // deprecated but can be useful for debugging
-/*void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
+void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
   int t;
   // use all the threads in the initialization of the time stepper
 //  int swp_tgs = p->stencil_ctx.thread_group_size;
@@ -47,7 +47,6 @@ MPI_Request wait_req_send_l[2], wait_req_recv_l[2], wait_req_send_r[2], wait_req
 //  p->stencil_ctx.thread_group_size = swp_tgs;
 
 }
-
 void intra_diamond_inv_trapzd_comp(Parameters *p, int it, int yb, int ye){
   int t;
   int t_dim = p->t_dim;
@@ -70,8 +69,6 @@ void intra_diamond_inv_trapzd_comp(Parameters *p, int it, int yb, int ye){
   }
 //  p->stencil_ctx.thread_group_size = swp_tgs;
 }
-
-
 void intra_diamond_comp(Parameters *p, int yb, int ye, int it, int b_inc, int e_inc){
   int t;
 
@@ -91,7 +88,7 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int it, int b_inc, int e_
     }
     it++;
   }
-}*/
+}
 
 
 
@@ -595,11 +592,104 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 }
 
 
+void dynamic_intra_diamond_prologue_std(Parameters *p){
+  // compute all the trapezoids
+  int i, yb, ye;
+  int ntg = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+#pragma omp parallel num_threads(ntg)
+  {
+    int b_inc = p->stencil.r;
+    int e_inc = p->stencil.r;
+    int tid = 0;
+#if defined(_OPENMP)
+    tid = omp_get_thread_num();
+#endif
+
+#pragma omp for schedule(dynamic) private(i,yb,ye)
+     for(i=0; i<y_len_l; i++){
+        yb = p->stencil.r + i*diam_width;
+        ye = yb + diam_width;
+        intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, p->t_dim, p->t_dim*2+1, tid);
+      }
+  }
+  // Send the trapezoid results to the left
+  if(p->t.shape[1] > 1){
+    intra_diamond_send_left (p, send_buf_l);
+    intra_diamond_recv_right(p, recv_buf_r);
+
+    intra_diamond_wait_send_left (p);
+    intra_diamond_wait_recv_right(p, recv_buf_r);
+  }
+}
+void dynamic_intra_diamond_prologue_solar(Parameters *p){
+  int i, yb, ye;
+  for(i=0; i<y_len_l; i++){
+    yb = p->stencil.r + i*diam_width;
+    ye = yb + diam_width;
+    intra_diamond_trapzd_comp(p, yb, ye);
+  }
+}
+void dynamic_intra_diamond_prologue(Parameters *p){
+  if(p->stencil.type == REGULAR){
+    dynamic_intra_diamond_prologue_std(p);
+  } else if(p->stencil.type == SOLAR){
+    dynamic_intra_diamond_prologue_solar(p);
+  }
+}
+
+
+void dynamic_intra_diamond_epilogue_std(Parameters *p){
+  int yb, ye, i;
+  int ntg = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+#pragma omp parallel num_threads(ntg)
+  {
+    int b_inc = p->stencil.r;
+    int e_inc = p->stencil.r;
+    int yb_r = p->stencil.r + diam_width/2 - p->stencil.r; 
+    int ye_r = yb_r + 2*p->stencil.r;
+    int tid = 0;
+#if defined(_OPENMP)
+    tid = omp_get_thread_num();
+#endif
+
+#pragma omp for schedule(dynamic) private(i,yb,ye)
+    for(i=0; i<y_len_l; i++){
+      yb = yb_r + i*diam_width;
+      ye = ye_r + i*diam_width;
+      intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, p->t_dim+1, tid);
+    }
+  }
+}
+void dynamic_intra_diamond_epilogue_solar(Parameters *p){
+  int yb, ye, yb_r, ye_r, i;
+  yb_r = p->stencil.r + diam_width/2 - p->stencil.r;
+  ye_r = yb_r + p->stencil.r;
+  for(i=0; i<y_len_l; i++){
+    yb = yb_r + i*diam_width;
+    ye = ye_r + i*diam_width;
+    intra_diamond_inv_trapzd_comp(p, p->nt - (p->t_dim+2), yb, ye);
+  }
+}
+void dynamic_intra_diamond_epilogue(Parameters *p){
+  if(p->stencil.type == REGULAR){
+    dynamic_intra_diamond_epilogue_std(p);
+  } else if(p->stencil.type == SOLAR){
+    dynamic_intra_diamond_epilogue_solar(p);
+  }
+}
+
+
 void dynamic_intra_diamond_ts(Parameters *p) {
 
   int t_dim = p->t_dim;
   diam_width = (t_dim+1) * 2 *p->stencil.r;
-  t_len = 2*( (p->nt-2)/((t_dim+1)*2) ) - 1;
+
+  if(p->stencil.type == REGULAR){
+    t_len = 2*( (p->nt-2)/((t_dim+1)*2) ) - 1;
+  } else if(p->stencil.type == SOLAR){
+    t_len = 2*( (p->nt-1)/((t_dim+1)*2) ) - 1;
+  }
+
   y_len_l = p->lstencil_shape[1] / (diam_width);
   y_len_r = y_len_l;
   if(p->is_last == 1) y_len_r++;
@@ -638,60 +728,15 @@ void dynamic_intra_diamond_ts(Parameters *p) {
 
   // Prologue
   t1 = MPI_Wtime();
-  // compute all the trapezoids
-  int num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
-#pragma omp parallel num_threads(num_thread_groups)
-  {
-    int b_inc = p->stencil.r;
-    int e_inc = p->stencil.r;
-    int tid = 0;
-#if defined(_OPENMP)
-    tid = omp_get_thread_num();
-#endif
-
-#pragma omp for schedule(dynamic) private(i,yb,ye)
-     for(i=0; i<y_len_l; i++){
-        yb = p->stencil.r + i*diam_width;
-        ye = yb + diam_width;
-        intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, t_dim, t_dim*2+1, tid);
-      }
-  }
-
-  // Send the trapezoid results to the left
-  if(p->t.shape[1] > 1){
-    intra_diamond_send_left (p, send_buf_l);
-    intra_diamond_recv_right(p, recv_buf_r);
-
-    intra_diamond_wait_send_left (p);
-    intra_diamond_wait_recv_right(p, recv_buf_r);
-  }
-
+  dynamic_intra_diamond_prologue(p);
   t2 = MPI_Wtime();
+
   // main loop
   dynamic_intra_diamond_main_loop(p);
   t3 = MPI_Wtime();
 
   // Epilogue
- #pragma omp parallel num_threads(num_thread_groups)
-  {
-    int b_inc = p->stencil.r;
-    int e_inc = p->stencil.r;
-    int yb_r = p->stencil.r + diam_width/2 - p->stencil.r; 
-    int ye_r = yb_r + 2*p->stencil.r;
-    int tid = 0;
-#if defined(_OPENMP)
-    tid = omp_get_thread_num();
-#endif
-
-#pragma omp for schedule(dynamic) private(i,yb,ye)
-  for(i=0; i<y_len_l; i++){
-    yb = yb_r + i*diam_width;
-    ye = ye_r + i*diam_width;
-    //intra_diamond_inv_trapzd_comp(p, p->nt - (t_dim+2), yb, ye);
-    intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, t_dim+1, tid);
-  }
-  }
-
+  dynamic_intra_diamond_epilogue(p); 
   t4 = MPI_Wtime();
 
   p->prof.ts_main += (t3-t2);
