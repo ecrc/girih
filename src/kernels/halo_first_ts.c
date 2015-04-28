@@ -148,9 +148,9 @@ static inline void halo_first_step(Parameters *p, int it, FLOAT_PRECISION * rest
   for(x=0; x<3; x++){
     if(p->t.shape[x]>1){
       // compute begin
-      p->stencil.spt_blk_func(p->ldomain_shape, start_b[x][0], start_b[x][1], start_b[x][2], start_e[x][0], start_e[x][1], start_e[x][2], p->coef, u, v, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, start_b[x][0], start_b[x][1], start_b[x][2], start_e[x][0], start_e[x][1], start_e[x][2], p->coef, u, v, p->U3, 0, p->stencil_ctx);
       // compute finish
-      p->stencil.spt_blk_func(p->ldomain_shape, finish_b[x][0], finish_b[x][1], finish_b[x][2], finish_e[x][0], finish_e[x][1], finish_e[x][2], p->coef, u, v, p->U3, p->stencil_ctx);
+      p->stencil.spt_blk_func(p->ldomain_shape, finish_b[x][0], finish_b[x][1], finish_b[x][2], finish_e[x][0], finish_e[x][1], finish_e[x][2], p->coef, u, v, p->U3, 0, p->stencil_ctx);
     }
   }
   if( (side_source==1) && (p->source_point_enabled==1)) U(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it];
@@ -161,7 +161,7 @@ static inline void halo_first_step(Parameters *p, int it, FLOAT_PRECISION * rest
 
   t3 = MPI_Wtime();
   // compute middle
-  p->stencil.spt_blk_func(p->ldomain_shape, middle_b[0], middle_b[1], middle_b[2], middle_e[0], middle_e[1], middle_e[2], p->coef, u, v, p->U3, p->stencil_ctx);
+  p->stencil.spt_blk_func(p->ldomain_shape, middle_b[0], middle_b[1], middle_b[2], middle_e[0], middle_e[1], middle_e[2], p->coef, u, v, p->U3, 0, p->stencil_ctx);
   if( (middle_source==1) && (p->source_point_enabled==1)) U(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it];
 
   t4 = MPI_Wtime();

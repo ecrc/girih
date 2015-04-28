@@ -168,13 +168,13 @@ void naive_nonblocking_ts(Parameters *p) {
   double t1,t2,t3,t4,t5;
   for(it=0; it<p->nt; it+=2){
     t1 = MPI_Wtime();
-    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, p->stencil.r, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, p->ldomain_shape[1]-p->stencil.r, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, p->stencil.r, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, p->ldomain_shape[1]-p->stencil.r, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
     if( (p->has_source==1) && (p->source_point_enabled==1)) U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it];
     t2 = MPI_Wtime();
     exchange_halo_asynch(p, p->U1, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);
 
     t3 = MPI_Wtime();
-    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, p->stencil.r, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, p->ldomain_shape[1]-p->stencil.r, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, p->stencil.r, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, p->ldomain_shape[1]-p->stencil.r, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
     if( (p->has_source==1) && (p->source_point_enabled==1)) U2(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+1];
     t4 = MPI_Wtime();
     exchange_halo_asynch(p, p->U2, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);

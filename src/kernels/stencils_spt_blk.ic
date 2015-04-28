@@ -1,6 +1,4 @@
-void FUNC_NAME( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+void FUNC_NAME KERNEL_SIG{
 
   int i,j,k, jb, je;
   int nny =shape[1];

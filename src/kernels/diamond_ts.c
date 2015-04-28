@@ -34,15 +34,13 @@ void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
 //  int swp_tgs = p->stencil_ctx.thread_group_size;
 //  p->stencil_ctx.thread_group_size = p->num_threads;
   for(t=0; t<p->t_dim+1; t++){
-    if(t%2 == 0){
-      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
-//      if(p->main_source_state[state] == 1) U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
-    }else{
-      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
-//      if(p->main_source_state[state] == 1) U2(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
-    }
-    yb += p->stencil.r;
+    // compute H-field
+    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, H_FIELD,  p->stencil_ctx);
     ye -= p->stencil.r;
+
+    // compute E-field
+    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD,  p->stencil_ctx);
+    yb += p->stencil.r;
   }
 //  p->stencil_ctx.thread_group_size = swp_tgs;
 
@@ -57,10 +55,10 @@ void intra_diamond_inv_trapzd_comp(Parameters *p, int it, int yb, int ye){
   for(t=0; t<t_dim+1; t++){
 //    printf("[%03d] inverted trapzd: state:%02d zb:%02d ze:%02d t:%03d\n", p->mpi_rank, state, zb, ze, t);
     if(it%2 == 0){
-      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+//      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
 //      if(p->main_source_state[state] == 1) U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
     }else{
-      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+//      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
 //      if(p->main_source_state[state] == 1) U2(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->source[it+t];
     }
     yb -= p->stencil.r;
@@ -74,9 +72,9 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int it, int b_inc, int e_
 
   for(t=0; t< (p->t_dim+1)*2-1; t++){
     if(it%2 == 0){
-      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+//      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
     }else{
-      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+//      p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
     }
 
     if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -437,9 +435,9 @@ void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
     {
       ze = p->stencil.r*(time_len-(t-tb));
       if(t%2 == 1){
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
       }else{
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
       }
 
       if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -483,9 +481,9 @@ void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
 
     zb = p->ldomain_shape[2]-p->stencil.r - (t-tb)*p->stencil.r;
     if(t%2 == 1){
-      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->stencil_ctx);
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
     }else{
-      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, p->stencil_ctx);
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
     }
 
   }

@@ -369,12 +369,14 @@ void solar_e_field_kernel( const int shape[3], const int xb, const int yb, const
 
 void solar( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int field, stencil_CTX stencil_ctx) {
 
 
   if(u==0) u= (FLOAT_PRECISION * restrict) v; // in odd iterations the solution domain will be passed in v array (temporary patch)
-  solar_h_field_kernel(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
-  solar_e_field_kernel(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
+  if (field == H_FIELD | field == HE_FIELDS)
+    solar_h_field_kernel(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
+  if (field == E_FIELD | field == HE_FIELDS)
+    solar_e_field_kernel(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
 }
 
 
