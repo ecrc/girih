@@ -1,0 +1,381 @@
+
+void stat_sched_solar_h_field_kernel( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
+    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, stencil_CTX stencil_ctx) {
+  int i,j,k,jb,je;
+  int nnz =shape[2];
+  int nny =shape[1];
+  int nnx =shape[0];
+  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
+  unsigned long ixmin, ixmax;
+
+  FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hzxd = &(u[1ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hxyd = &(u[2ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hzyd = &(u[3ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hxzd = &(u[4ul*ln_domain]);
+  FLOAT_PRECISION * restrict Hyzd = &(u[5ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict Exzd = &(u[6ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Eyzd = &(u[7ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Eyxd = &(u[8ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Ezxd = &(u[9ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Exyd = &(u[10ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Ezyd = &(u[11ul*ln_domain]);
+
+
+  const FLOAT_PRECISION * restrict cHyxd = &(coef[0ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHzxd = &(coef[1ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHxyd = &(coef[2ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHzyd = &(coef[3ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHxzd = &(coef[4ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cHyzd = &(coef[5ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict tHyxd = &(coef[6ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHzxd = &(coef[7ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHxyd = &(coef[8ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHzyd = &(coef[9ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHxzd = &(coef[10ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tHyzd = &(coef[11ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict Hxbndd = &(coef[12ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Hybndd = &(coef[13ul*ln_domain]);
+
+  unsigned long isub;
+  FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
+
+   // Update H-field
+#pragma omp parallel num_threads(stencil_ctx.thread_group_size) default(shared) \
+                     private(jb,je,i,j,k,ixmin,ixmax,isub,stagDiffR,stagDiffI,asgn)
+  {
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) {
+            // Hy_x: csc, Ex_{y,z}: css
+            isub      = i + 2 * ( -nnx * nny );
+            stagDiffR = Exyd[i] - Exyd[isub] + Exzd[i] - Exzd[isub];
+            stagDiffI = Exyd[i + 1] - Exyd[isub + 1] + Exzd[i + 1] - Exzd[isub + 1];
+            asgn      = Hyxd[i] * tHyxd[i] - Hyxd[i + 1] * tHyxd[i + 1] + Hybndd[i] - cHyxd[i] * stagDiffR + cHyxd[i + 1] * stagDiffI;
+            Hyxd[i + 1]  = Hyxd[i] * tHyxd[i + 1] + Hyxd[i + 1] * tHyxd[i] + Hybndd[i + 1] - cHyxd[i] * stagDiffI - cHyxd[i + 1] * stagDiffR;
+            Hyxd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) {
+            // Hz_x: ccs, Ex_{y,z}: css
+            isub      = i + 2 * ( -nnx );
+            stagDiffR = Exyd[isub] - Exyd[i] + Exzd[isub] - Exzd[i];
+            stagDiffI = Exyd[isub + 1] - Exyd[i + 1] + Exzd[isub + 1] - Exzd[i + 1];
+            asgn      = Hzxd[i] * tHzxd[i] - Hzxd[i + 1] * tHzxd[i + 1] - cHzxd[i] * stagDiffR + cHzxd[i + 1] * stagDiffI;
+            Hzxd[i + 1]  = Hzxd[i] * tHzxd[i + 1] + Hzxd[i + 1] * tHzxd[i] - cHzxd[i] * stagDiffI - cHzxd[i + 1] * stagDiffR;
+            Hzxd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) {
+            // Hx_y: scc, Ey_{x,z}: scs
+            isub      = i + 2 * ( -nnx * nny );
+            stagDiffR = Eyxd[isub] - Eyxd[i] + Eyzd[isub] - Eyzd[i];
+            stagDiffI = Eyxd[isub + 1] - Eyxd[i + 1] + Eyzd[isub + 1] - Eyzd[i + 1];
+            asgn      = Hxyd[i] * tHxyd[i] - Hxyd[i + 1] * tHxyd[i + 1] + Hxbndd[i] - cHxyd[i] * stagDiffR + cHxyd[i + 1] * stagDiffI;
+            Hxyd[i + 1]  = Hxyd[i] * tHxyd[i + 1] + Hxyd[i + 1] * tHxyd[i] + Hxbndd[i + 1] - cHxyd[i] * stagDiffI - cHxyd[i + 1] * stagDiffR;
+            Hxyd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) {
+            // Hz_y: ccs, Ey_{x,z}: scs
+            isub      = i + 2 * ( -1 );
+            stagDiffR = Eyxd[i] - Eyxd[isub] + Eyzd[i] - Eyzd[isub];
+            stagDiffI = Eyxd[i + 1] - Eyxd[isub + 1] + Eyzd[i + 1] - Eyzd[isub + 1];
+            asgn      = Hzyd[i] * tHzyd[i] - Hzyd[i + 1] * tHzyd[i + 1] - cHzyd[i] * stagDiffR + cHzyd[i + 1] * stagDiffI;
+            Hzyd[i + 1]  = Hzyd[i] * tHzyd[i + 1] + Hzyd[i + 1] * tHzyd[i] - cHzyd[i] * stagDiffI - cHzyd[i + 1] * stagDiffR;
+            Hzyd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) {
+            // Hx_z: scc, Ez_{x,y}: ssc
+            isub      = i + 2 * ( -nnx );
+            stagDiffR = Ezxd[i] - Ezxd[isub] + Ezyd[i] - Ezyd[isub];
+            stagDiffI = Ezxd[i + 1] - Ezxd[isub + 1] + Ezyd[i + 1] - Ezyd[isub + 1];
+            asgn      = Hxzd[i] * tHxzd[i] - Hxzd[i + 1] * tHxzd[i + 1] - cHxzd[i] * stagDiffR + cHxzd[i + 1] * stagDiffI;
+            Hxzd[i + 1]  = Hxzd[i] * tHxzd[i + 1] + Hxzd[i + 1] * tHxzd[i] - cHxzd[i] * stagDiffI - cHxzd[i + 1] * stagDiffR;
+            Hxzd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) {
+            // Hy_z: csc, Ez_{x,y}: ssc
+            isub      = i + 2 * ( -1 );
+            stagDiffR = Ezxd[isub] + Ezyd[isub] - Ezxd[i] - Ezyd[i];
+            stagDiffI = Ezxd[isub + 1] + Ezyd[isub + 1] - Ezxd[i + 1] - Ezyd[i + 1];
+            asgn      = Hyzd[i] * tHyzd[i] - Hyzd[i + 1] * tHyzd[i + 1] - cHyzd[i] * stagDiffR + cHyzd[i + 1] * stagDiffI;
+            Hyzd[i + 1]  = Hyzd[i] * tHyzd[i + 1] + Hyzd[i + 1] * tHyzd[i] - cHyzd[i] * stagDiffI - cHyzd[i + 1] * stagDiffR;
+            Hyzd[i]      = asgn;
+          }
+        }
+      }
+    }
+  }
+
+}
+void stat_sched_solar_e_field_kernel( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
+    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, stencil_CTX stencil_ctx) {
+  int i,j,k, jb, je;
+  int nnz =shape[2];
+  int nny =shape[1];
+  int nnx =shape[0];
+  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
+  unsigned long ixmin, ixmax;
+
+  const FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Hzxd = &(u[1ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Hxyd = &(u[2ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Hzyd = &(u[3ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Hxzd = &(u[4ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Hyzd = &(u[5ul*ln_domain]);
+
+  FLOAT_PRECISION * restrict Exzd = &(u[6ul*ln_domain]);
+  FLOAT_PRECISION * restrict Eyzd = &(u[7ul*ln_domain]);
+  FLOAT_PRECISION * restrict Eyxd = &(u[8ul*ln_domain]);
+  FLOAT_PRECISION * restrict Ezxd = &(u[9ul*ln_domain]);
+  FLOAT_PRECISION * restrict Exyd = &(u[10ul*ln_domain]);
+  FLOAT_PRECISION * restrict Ezyd = &(u[11ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict cExzd = &(coef[14ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEyzd = &(coef[15ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEyxd = &(coef[16ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEzxd = &(coef[17ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cExyd = &(coef[18ul*ln_domain]);
+  const FLOAT_PRECISION * restrict cEzyd = &(coef[19ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict tExzd = &(coef[20ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEyzd = &(coef[21ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEyxd = &(coef[22ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEzxd = &(coef[23ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tExyd = &(coef[24ul*ln_domain]);
+  const FLOAT_PRECISION * restrict tEzyd = &(coef[25ul*ln_domain]);
+
+  const FLOAT_PRECISION * restrict Exbndd = &(coef[26ul*ln_domain]);
+  const FLOAT_PRECISION * restrict Eybndd = &(coef[27ul*ln_domain]);
+
+  unsigned long isub;
+  FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
+
+  // Update E-field
+  // ---------------------------------------------------------------------------------------
+  // -----  Ex_z = Cex_tz * Ex_z + Cex_z * (N(Hz_x + Hz_y) - S(Hz_x + Hz_y) ) --------------
+  // ---------------------------------------------------------------------------------------
+#pragma omp parallel num_threads(stencil_ctx.thread_group_size) default(shared) \
+                     private(jb,je,i,j,k,ixmin,ixmax,isub,stagDiffR,stagDiffI,asgn) 
+  {
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) {
+            // Ex_z: css, Hz_{x,y}: ccs
+            isub      = i + 2 * ( +nnx );
+            stagDiffR = Hzxd[isub] - Hzxd[i] + Hzyd[isub] - Hzyd[i];
+            stagDiffI = Hzxd[isub + 1] - Hzxd[i + 1] + Hzyd[isub + 1] - Hzyd[i + 1];
+            asgn      = Exzd[i] * tExzd[i] - Exzd[i + 1] * tExzd[i + 1] + cExzd[i] * stagDiffR - cExzd[i + 1] * stagDiffI;
+            Exzd[i + 1]  = Exzd[i] * tExzd[i + 1] + Exzd[i + 1] * tExzd[i] + cExzd[i] * stagDiffI + cExzd[i + 1] * stagDiffR;
+            Exzd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) { 
+            // Ey_{x,z}: scs, Hz_{x,y}: ccs
+            isub      = i + 2 * ( +1 );
+            stagDiffR = Hzxd[i] + Hzyd[i] - Hzxd[isub] - Hzyd[isub];
+            stagDiffI = Hzxd[i + 1] + Hzyd[i + 1] - Hzxd[isub + 1] - Hzyd[isub + 1];
+            asgn      = Eyzd[i] * tEyzd[i] - Eyzd[i + 1] * tEyzd[i + 1] + cEyzd[i] * stagDiffR - cEyzd[i + 1] * stagDiffI;
+            Eyzd[i + 1]  = Eyzd[i] * tEyzd[i + 1] + Eyzd[i + 1] * tEyzd[i] + cEyzd[i] * stagDiffI + cEyzd[i + 1] * stagDiffR;
+            Eyzd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) { 
+            // Ey_{x,z}: scs, Hx_{y,z}: scc
+            isub      = i + 2 * ( +nnx * nny );
+            stagDiffR = Hxyd[isub] - Hxyd[i] + Hxzd[isub] - Hxzd[i];
+            stagDiffI = Hxyd[isub + 1] - Hxyd[i + 1] + Hxzd[isub + 1] - Hxzd[i + 1];
+            asgn      = Eyxd[i] * tEyxd[i] - Eyxd[i + 1] * tEyxd[i + 1] + Eybndd[i] + cEyxd[i] * stagDiffR - cEyxd[i + 1] * stagDiffI;
+            Eyxd[i + 1]  = Eyxd[i] * tEyxd[i + 1] + Eyxd[i + 1] * tEyxd[i] + Eybndd[i + 1] + cEyxd[i] * stagDiffI + cEyxd[i + 1] * stagDiffR;
+            Eyxd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) { 
+            // Ez_x: ssc, Hx_{y,z}: scc
+            isub      = i + 2 * ( +nnx );
+            stagDiffR = Hxyd[i] + Hxzd[i] - Hxyd[isub] - Hxzd[isub];
+            stagDiffI = Hxyd[i + 1] + Hxzd[i + 1] - Hxyd[isub + 1] - Hxzd[isub + 1];
+            asgn      = Ezxd[i] * tEzxd[i] - Ezxd[i + 1] * tEzxd[i + 1] + cEzxd[i] * stagDiffR - cEzxd[i + 1] * stagDiffI;
+            Ezxd[i + 1]  = Ezxd[i] * tEzxd[i + 1] + Ezxd[i + 1] * tEzxd[i] + cEzxd[i] * stagDiffI + cEzxd[i + 1] * stagDiffR;
+            Ezxd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) { 
+            // Ex_y: css, Hy_{x,z}: csc
+            isub      = i + 2 * ( +nnx * nny );
+            stagDiffR = Hyxd[i] - Hyxd[isub] + Hyzd[i] - Hyzd[isub];
+            stagDiffI = Hyxd[i + 1] - Hyxd[isub + 1] + Hyzd[i + 1] - Hyzd[isub + 1];
+            asgn      = Exyd[i] * tExyd[i] - Exyd[i + 1] * tExyd[i + 1] + Exbndd[i] + cExyd[i] * stagDiffR - cExyd[i + 1] * stagDiffI;
+            Exyd[i + 1]  = Exyd[i] * tExyd[i + 1] + Exyd[i + 1] * tExyd[i] + Exbndd[i + 1] + cExyd[i] * stagDiffI + cExyd[i + 1] * stagDiffR;
+            Exyd[i]      = asgn;
+          }
+        }
+      }
+    }
+
+    for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y){ // blocking in Y
+      je = (jb+stencil_ctx.bs_y)<(ye)?(jb+stencil_ctx.bs_y):(ye);
+  #pragma omp for schedule(static)
+      for(k=zb; k<ze; k++) {
+        for(j=jb; j<je; j++) {
+
+          ixmin  = 2 * ( ( k * nny + j ) *  nnx + xb);
+          ixmax  = 2 * ( ( k * nny + j ) *  nnx + xe);
+#pragma simd
+          for(i=ixmin; i<ixmax; i+=2) { 
+            // Ez_y: ssc, Hy_{x,z}: csc
+            isub      = i + 2 * ( +1 );
+            stagDiffR = Hyxd[isub] - Hyxd[i] + Hyzd[isub] - Hyzd[i];
+            stagDiffI = Hyxd[isub + 1] - Hyxd[i + 1] + Hyzd[isub + 1] - Hyzd[i + 1];
+            asgn      = Ezyd[i] * tEzyd[i] - Ezyd[i + 1] * tEzyd[i + 1] + cEzyd[i] * stagDiffR - cEzyd[i + 1] * stagDiffI;
+            Ezyd[i + 1]  = Ezyd[i] * tEzyd[i + 1] + Ezyd[i + 1] * tEzyd[i] + cEzyd[i] * stagDiffI + cEzyd[i + 1] * stagDiffR;
+            Ezyd[i]      = asgn;
+          }      
+        }
+      } 
+    }
+  }
+
+}
+
+void stat_sched_solar( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
+    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
+    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+
+
+  if(u==0) u= (FLOAT_PRECISION * restrict) v; // in odd iterations the solution domain will be passed in v array (temporary patch)
+  solar_h_field_kernel(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
+  solar_e_field_kernel(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
+}
+
+
+
