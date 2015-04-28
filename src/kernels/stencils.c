@@ -191,7 +191,7 @@ mwd_func_t swd_func_list[] = {
     swd_iso_ref_2space_1time_var_axsym,
     swd_iso_ref_8space_1time_var_axsym,
     swd_iso_ref_2space_1time_var_nosym,
-    not_supported_mwd,};
+    swd_solar,};
 
 
 mwd_func_t mwd_func_list[] = {  /* 0 */

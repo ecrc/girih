@@ -73,28 +73,23 @@ void intra_diamond_inv_trapzd_comp(Parameters *p, int yb, int ye){
 void intra_diamond_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc){
   int t;
 
-  // compute the first E-field (This version does not work on the left half diamond as it starts with H-field)
-  p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
-                          p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
-  ye += e_inc;
-
-  for(t=0; t< p->t_dim*2+1; t++){
-    // compute H-field
-    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, 
-                            p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
-    if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
-      yb -= b_inc;
-    }else{ // trapezoid  (or upper half of the diamond)
-      ye -= e_inc;
-    }
-
+  for(t=0; t< (p->t_dim+1)*2; t++){
     // compute E-field
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, 
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
-    if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
+    if(t <= p->t_dim){ // inverted trapezoid (or lower half of the diamond)
       ye += e_inc;
     }else{ // trapezoid  (or upper half of the diamond)
       yb += b_inc;
+    }
+ 
+    // compute H-field
+    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, 
+                            p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
+    if(t < p->t_dim){ // inverted trapezoid (or lower half of the diamond)
+      yb -= b_inc;
+    }else{ // trapezoid  (or upper half of the diamond)
+      ye -= e_inc;
     }
   }
 }
@@ -371,64 +366,8 @@ static inline void update_state(int y_coord, Parameters *p){
   }
 }*/
  
-static inline void intra_diamond_get_info_std(Parameters *p, int y_coord, int tid, int t_coord, double *diam_size, int *yb, int *ye, int *b_inc, int *e_inc){
-  if( (p->is_last == 1) && (y_coord == y_len_l-1) && (t_coord%2 == 0) ){ // right most process & left-half diamond
-    // left half computations
-    *yb = p->stencil.r + p->lstencil_shape[1] - p->stencil.r;
-    *ye = *yb + p->stencil.r;
-    *b_inc = p->stencil.r;
-    *e_inc = 0;
-    *diam_size = 0.5;
-  }else if( (p->is_last == 1) && (y_coord == y_len_r-1) && (t_coord%2 == 0) ){ // right most process & right-half diamond
-    // right half computations
-    *b_inc = 0;
-    *e_inc = p->stencil.r;
-    if(p->t.shape[1] > 1)
-      *yb = p->stencil.r + p->lstencil_shape[1] + 2*p->stencil.r;
-    else // serial code case
-      *yb = p->stencil.r;
-    *ye = *yb + p->stencil.r;
-    *diam_size = 0.5;
-  }else{ // full diamond computation
-    if(t_coord%2 == 0)// row shifted to the right
-      *yb = p->stencil.r + diam_width - p->stencil.r + y_coord*diam_width;
-    else// row shifted to the left
-      *yb = p->stencil.r + diam_width/2 - p->stencil.r+ y_coord*diam_width;
-    *ye = *yb + 2*p->stencil.r;
-    *b_inc = p->stencil.r;
-    *e_inc = p->stencil.r;
-    *diam_size = 1.0;
-  }
-}
-static inline void intra_diamond_get_info_solar(Parameters *p, int y_coord, int tid, int t_coord, double *diam_size, int *yb, int *ye, int *b_inc, int *e_inc){
-  if( (p->is_last == 1) && (y_coord == y_len_l-1) && (t_coord%2 == 0) ){ // right most process & left-half diamond
-    // left half computations
-    *yb = p->stencil.r + p->lstencil_shape[1] - p->stencil.r;
-    *ye = *yb + p->stencil.r;
-    *b_inc = p->stencil.r;
-    *e_inc = 0;
-    *diam_size = 0.5;
-  }else if( (p->is_last == 1) && (y_coord == y_len_r-1) && (t_coord%2 == 0) ){ // right most process & right-half diamond
-    // right half computations
-    *b_inc = 0;
-    *e_inc = p->stencil.r;
-    if(p->t.shape[1] > 1)
-      *yb = p->stencil.r + p->lstencil_shape[1] + 2*p->stencil.r;
-    else // serial code case
-      *yb = p->stencil.r;
-    *ye = *yb;// + p->stencil.r;
-    *diam_size = 0.5;
-  }else{ // full diamond computation
-    if(t_coord%2 == 0)// row shifted to the right
-      *yb = p->stencil.r + diam_width   - p->stencil.r + y_coord*diam_width;
-    else// row shifted to the left
-      *yb = p->stencil.r + diam_width/2 - p->stencil.r + y_coord*diam_width;
-    *ye = *yb + p->stencil.r;
-    *b_inc = p->stencil.r;
-    *e_inc = p->stencil.r;
-    *diam_size = 1.0;
-  }
-}
+
+
 
 static inline void intra_diamond_comm(Parameters *p, int y_coord, int t_coord){
   // Start exchanging computed halo data
@@ -458,16 +397,14 @@ static inline void intra_diamond_comm(Parameters *p, int y_coord, int t_coord){
 }
 
 
-void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tb, int te, int tid){
+void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tb, int te, int tid){
   int t, z, zb, ze;
   int yb, ye;
   int time_len = te-tb;
-
   double t1, t2, t3;
 
   // wavefront prologue
   t1 = MPI_Wtime();
-
   yb = yb_r;
   ye = ye_r;
   zb = p->stencil.r;
@@ -487,10 +424,8 @@ void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
         yb += b_inc;
         ye -= e_inc;
       }
-
     }
   }
-
 
   t2 = MPI_Wtime();
   // main wavefront loop
@@ -498,19 +433,15 @@ void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
   ye = ye_r;
   zb = (te-tb)*p->stencil.r;
   ze = p->ldomain_shape[2]-p->stencil.r;
-
   p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
         p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, tb, te, p->stencil_ctx, tid);
-
   t3 = MPI_Wtime();
-
 
   // wavefront epilogue
   yb = yb_r;
   ye = ye_r;
   ze = p->ldomain_shape[2]-p->stencil.r;
   for(t=tb+1; t< te; t++){
-
     if((t-1)< p->t_dim){ // lower half of the diamond
       yb -= b_inc;
       ye += e_inc;
@@ -518,40 +449,171 @@ void intra_diamond_mwd_comp(Parameters *p, int yb_r, int ye_r, int b_inc, int e_
       yb += b_inc;
       ye -= e_inc;
     }
-
     zb = p->ldomain_shape[2]-p->stencil.r - (t-tb)*p->stencil.r;
     if(t%2 == 1){
       p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
     }else{
       p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
     }
-
   }
-
 
   p->stencil_ctx.t_wf_prologue[tid] += t2-t1;
   p->stencil_ctx.t_wf_main[tid]     += t3-t2;
   p->stencil_ctx.t_wf_epilogue[tid] += MPI_Wtime() - t3;
 }
+void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tb, int te, int tid){
+  int t, z, zb, ze;
+  int yb, ye;
+  int time_len = te-tb;
+  double t1, t2, t3;
+
+  // wavefront prologue
+  t1 = MPI_Wtime();
+  yb = yb_r;
+  ye = ye_r;
+  zb = p->stencil.r;
+  for(t=tb; t< te-1; t++){
+    {
+      ze = p->stencil.r*(time_len-(t-tb));
+      if(t%2 == 1){
+        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
+      }else{
+        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
+      }
+
+      if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
+        yb -= b_inc;
+        ye += e_inc;
+      }else{ // trapezoid  (or upper half of the diamond)
+        yb += b_inc;
+        ye -= e_inc;
+      }
+    }
+  }
+
+  t2 = MPI_Wtime();
+  // main wavefront loop
+  yb = yb_r;
+  ye = ye_r;
+  zb = (te-tb)*p->stencil.r;
+  ze = p->ldomain_shape[2]-p->stencil.r;
+  p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
+        p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, tb, te, p->stencil_ctx, tid);
+  t3 = MPI_Wtime();
+
+  // wavefront epilogue
+  yb = yb_r;
+  ye = ye_r;
+  ze = p->ldomain_shape[2]-p->stencil.r;
+  for(t=tb+1; t< te; t++){
+    if((t-1)< p->t_dim){ // lower half of the diamond
+      yb -= b_inc;
+      ye += e_inc;
+    }else{ // upper half of the diamond
+      yb += b_inc;
+      ye -= e_inc;
+    }
+    zb = p->ldomain_shape[2]-p->stencil.r - (t-tb)*p->stencil.r;
+    if(t%2 == 1){
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
+    }else{
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
+    }
+  }
+
+  p->stencil_ctx.t_wf_prologue[tid] += t2-t1;
+  p->stencil_ctx.t_wf_main[tid]     += t3-t2;
+  p->stencil_ctx.t_wf_epilogue[tid] += MPI_Wtime() - t3;
+}
+static inline void intra_diamond_get_info_std(Parameters *p, int y_coord, int tid, int t_coord, int *yb, int *ye, int *b_inc, int *e_inc){
+    double diam_size;
+  if( (p->is_last == 1) && (y_coord == y_len_l-1) && (t_coord%2 == 0) ){ // right most process & left-half diamond
+    // left half computations
+    *yb = p->stencil.r + p->lstencil_shape[1] - p->stencil.r;
+    *ye = *yb + p->stencil.r;
+    *b_inc = p->stencil.r;
+    *e_inc = 0;
+    diam_size = 0.5;
+  }else if( (p->is_last == 1) && (y_coord == y_len_r-1) && (t_coord%2 == 0) ){ // right most process & right-half diamond
+    // right half computations
+    *b_inc = 0;
+    *e_inc = p->stencil.r;
+    if(p->t.shape[1] > 1)
+      *yb = p->stencil.r + p->lstencil_shape[1] + 2*p->stencil.r;
+    else // serial code case
+      *yb = p->stencil.r;
+    *ye = *yb + p->stencil.r;
+    diam_size = 0.5;
+  }else{ // full diamond computation
+    if(t_coord%2 == 0)// row shifted to the right
+      *yb = p->stencil.r + diam_width - p->stencil.r + y_coord*diam_width;
+    else// row shifted to the left
+      *yb = p->stencil.r + diam_width/2 - p->stencil.r+ y_coord*diam_width;
+    *ye = *yb + 2*p->stencil.r;
+    *b_inc = p->stencil.r;
+    *e_inc = p->stencil.r;
+    diam_size = 1.0;
+  }
+  p->stencil_ctx.wf_num_resolved_diamonds[tid] += diam_size;
+}
+void intra_diamond_mwd_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc, int tb, int te, int tid){
+  if(p->stencil.type == REGULAR){
+    intra_diamond_mwd_comp_std(p, yb, ye, b_inc, e_inc, tb, te, tid);
+  }else if(p->stencil.type == SOLAR) {
+    intra_diamond_mwd_comp_solar(p, yb, ye, b_inc, e_inc, tb, te, tid);
+//    intra_diamond_comp(p, yb, ye, b_inc, e_inc);
+  }
+}
+
+
+static inline void intra_diamond_get_info_solar(Parameters *p, int y_coord, int tid, int t_coord, int *yb, int *ye, int *b_inc, int *e_inc){
+    double diam_size;
+  if( (p->is_last == 1) && (y_coord == y_len_l-1) && (t_coord%2 == 0) ){ // right most process & left-half diamond
+    // left half computations
+    *yb = p->stencil.r + p->lstencil_shape[1] - p->stencil.r;
+    *ye = *yb + p->stencil.r;
+    *b_inc = p->stencil.r;
+    *e_inc = 0;
+    diam_size = 0.5;
+  }else if( (p->is_last == 1) && (y_coord == y_len_r-1) && (t_coord%2 == 0) ){ // right most process & right-half diamond
+    // right half computations
+    *b_inc = 0;
+    *e_inc = p->stencil.r;
+    if(p->t.shape[1] > 1)
+      *yb = p->stencil.r + p->lstencil_shape[1] + 2*p->stencil.r;
+    else // serial code case
+      *yb = p->stencil.r;
+    *ye = *yb;// + p->stencil.r;
+    diam_size = 0.5;
+  }else{ // full diamond computation
+    if(t_coord%2 == 0)// row shifted to the right
+      *yb = p->stencil.r + diam_width   - p->stencil.r + y_coord*diam_width;
+    else// row shifted to the left
+      *yb = p->stencil.r + diam_width/2 - p->stencil.r + y_coord*diam_width;
+    *ye = *yb + p->stencil.r;
+    *b_inc = p->stencil.r;
+    *e_inc = p->stencil.r;
+    diam_size = 1.0;
+  }
+  p->stencil_ctx.wf_num_resolved_diamonds[tid] += diam_size;
+}
+static inline void intra_diamond_comp_using_location(Parameters *p, int y_coord, int tid, int t_coord){
+ int yb, ye, b_inc, e_inc;
+ if(p->stencil.type == REGULAR){
+    intra_diamond_get_info_std(p, y_coord, tid, t_coord, &yb, &ye, &b_inc, &e_inc);
+    intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, p->t_dim*2+1, tid);
+  }else if(p->stencil.type == SOLAR) {
+    intra_diamond_get_info_solar(p, y_coord, tid, t_coord, &yb, &ye, &b_inc, &e_inc);
+    intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, (p->t_dim+1)*2, tid);
+  }
+}
 
 
 static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
   int t_coord = st.t_pos[y_coord];
-  int yb, ye;
-  int b_inc, e_inc;
-  double diam_size;
-//  t1 = MPI_Wtime();
   double t1, t2;
 
-
-  if(p->stencil.type == REGULAR){
-    intra_diamond_get_info_std(p, y_coord, tid, t_coord, &diam_size, &yb, &ye, &b_inc, &e_inc);
-    intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, p->t_dim*2+1, tid);
-  }else if(p->stencil.type == SOLAR) {
-    intra_diamond_get_info_solar(p, y_coord, tid, t_coord, &diam_size, &yb, &ye, &b_inc, &e_inc);
-    intra_diamond_comp(p, yb, ye, b_inc, e_inc);
-  }
-p->stencil_ctx.wf_num_resolved_diamonds[tid] += diam_size;
+  intra_diamond_comp_using_location(p, y_coord, tid, t_coord);
 
   t1 = MPI_Wtime();
   intra_diamond_comm(p, y_coord, t_coord);
