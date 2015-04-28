@@ -1,5 +1,8 @@
 #include "data_structures.h"
+#include "utils.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 unsigned long get_mwf_size(Parameters *p, int t_dim){
   unsigned long diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
@@ -448,7 +451,13 @@ void intra_diamond_info_init(Parameters *p){
     
     // number of Stencil updates in the prologue and epilogue (trapezoid and inverted trapezoid)
 //    p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((diam_width*diam_width)/4 - (diam_width/2));
-    p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
+
+    if(p->stencil.type == REGULAR){
+      p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
+    }else if(p->stencil.type == SOLAR){
+      p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * diam_concurrency) 
+                                         *((p->t_dim+1)*(p->t_dim+1)*2)*p->stencil.r;
+    }
 
     if(p->source_point_enabled == 1){
       p->source_point_enabled = 0;
@@ -476,7 +485,11 @@ void intra_diamond_info_init(Parameters *p){
     }
 
     // round the number of time steps to the nearest valid number
-    remain = (nt-2)%((p->t_dim+1)*2);
+    if(p->stencil.type == REGULAR){
+      remain = (nt-2)%((p->t_dim+1)*2);
+    }else if(p->stencil.type == SOLAR){
+      remain = (nt-1)%((p->t_dim+1)*2);
+    }
     if(remain != 0){
       nt2 = nt + (p->t_dim+1)*2 - remain;
       if(nt2 != nt){
