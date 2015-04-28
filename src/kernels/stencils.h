@@ -5,6 +5,7 @@
 
 #include "data_structures.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 #define U(i,j,k)         (u[((k)*(nny)+(j))*(nnx)+(i)])
 #define V(i,j,k)         (v[((k)*(nny)+(j))*(nnx)+(i)])

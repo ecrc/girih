@@ -12,8 +12,9 @@ void print_3Darray(char *, FLOAT_PRECISION * restrict , int , int , int , int );
 void copy_params_struct(Parameters a, Parameters * b);
 void domain_data_fill(Parameters * p);
 void mpi_halo_finalize(Parameters *p);
+void arrays_free(Parameters *p);
 
-
+#include <stdio.h>
 //extern void domain_decompose(Parameters *p);
 extern void mpi_halo_init(Parameters *);
 extern void domain_decompose(Parameters *p);
