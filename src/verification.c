@@ -182,7 +182,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
     male = posix_memalign((void **)&(coef), p.alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male); 
     for(f=0; f<28;f++){
       for(idx=0;idx<n_domain*2lu; idx++){
-        coef[idx] = p.g_coef[f%10];
+        coef[idx+f*n_domain*2lu] = p.g_coef[(idx+f*n_domain*2lu)%10];
       }
     }
     break;
@@ -240,7 +240,7 @@ void verify_serial_generic(FLOAT_PRECISION * target_domain, Parameters p) {
               idx = 2*((k*nny+j)*nnx + i +n_domain*f);
               r = 1.0/(3.0) * (1.0*i/p.stencil_shape[0] + 1.0*j/p.stencil_shape[1]  + 1.0*k/p.stencil_shape[2]);
               u[idx] = r*1.845703;
-              u[idx+1] = r*1.845703;
+              u[idx+1] = r*1.845703/3.0;
             }
           }
         }

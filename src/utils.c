@@ -451,7 +451,7 @@ void init_coeff(Parameters * p) {
   case SOLAR_COEFFICIENT:
     for(f=0; f<28;f++){
       for(idx=0;idx<p->ln_domain*2lu; idx++){
-        p->coef[idx] = p->g_coef[f%10];
+        p->coef[idx+f*p->ln_domain*2lu] = p->g_coef[(idx+f*p->ln_domain*2lu)%10];
       }
     }
     break;
@@ -681,7 +681,7 @@ void domain_data_fill_solar(Parameters *p){
           r = 1.0/(3.0) * (1.0*gi/p->stencil_shape[0] + 1.0*gj/p->stencil_shape[1]  + 1.0*gk/p->stencil_shape[2]);
 
             p->U1[2*((k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + i +p->ln_domain*f)] = r*1.845703;
-            p->U1[2*((k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + i +p->ln_domain*f)+1] = r*1.845703;
+            p->U1[2*((k*p->ldomain_shape[1]+j)*p->ldomain_shape[0] + i +p->ln_domain*f)+1] = r*1.845703/3.0;
         }
       }
     }
