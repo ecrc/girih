@@ -35,11 +35,13 @@ void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
 //  p->stencil_ctx.thread_group_size = p->num_threads;
   for(t=0; t<p->t_dim+1; t++){
     // compute H-field
+//printf("Prologue H -- t:%d yb:%d ye:%d\n", t, yb, ye);
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, H_FIELD,  p->stencil_ctx);
     ye -= p->stencil.r;
 
     // compute E-field
+//printf("Prologue E -- t:%d yb:%d ye:%d\n", t, yb, ye);
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD,  p->stencil_ctx);
     yb += p->stencil.r;
@@ -48,22 +50,25 @@ void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
 
 }
 void intra_diamond_inv_trapzd_comp(Parameters *p, int yb, int ye){
-  int t;
+  int t=0;
   int t_dim = p->t_dim;
   // use all the threads in the initialization of the time stepper
 //  int swp_tgs = p->stencil_ctx.thread_group_size;
 //  p->stencil_ctx.thread_group_size = p->num_threads;
 
+//printf("Epilogue E -- t:%d yb:%d ye:%d\n", t, yb, ye);
   // update the first E field of the prologue
   p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
                           p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD,  p->stencil_ctx);
   ye += p->stencil.r;
 
   for(t=0; t<t_dim; t++){
+//printf("Epilogue H -- t:%d yb:%d ye:%d\n", t, yb, ye);
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, H_FIELD,  p->stencil_ctx);
     yb -= p->stencil.r;
 
+//printf("Epilogue E -- t:%d yb:%d ye:%d\n", t, yb, ye);
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD,  p->stencil_ctx);
     ye += p->stencil.r;
@@ -73,8 +78,10 @@ void intra_diamond_inv_trapzd_comp(Parameters *p, int yb, int ye){
 void intra_diamond_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc){
   int t;
 
+//printf("Main b_inc:%d e_inc:%d\n", b_inc, e_inc);
   for(t=0; t< (p->t_dim+1)*2; t++){
     // compute E-field
+//printf("Main E -- t:%d yb:%d ye:%d\n", t, yb, ye);
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, 
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
     if(t <= p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -84,6 +91,7 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc){
     }
  
     // compute H-field
+//printf("Main H -- t:%d yb:%d ye:%d\n", t, yb, ye);
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, 
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
     if(t < p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -560,8 +568,8 @@ void intra_diamond_mwd_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc,
   if(p->stencil.type == REGULAR){
     intra_diamond_mwd_comp_std(p, yb, ye, b_inc, e_inc, tb, te, tid);
   }else if(p->stencil.type == SOLAR) {
-    intra_diamond_mwd_comp_solar(p, yb, ye, b_inc, e_inc, tb, te, tid);
-//    intra_diamond_comp(p, yb, ye, b_inc, e_inc);
+//    intra_diamond_mwd_comp_solar(p, yb, ye, b_inc, e_inc, tb, te, tid);
+    intra_diamond_comp(p, yb, ye, b_inc, e_inc);
   }
 }
 
@@ -788,7 +796,7 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   if(p->stencil.type == REGULAR){
     t_len = 2*( (p->nt-2)/((t_dim+1)*2) ) - 1;
   } else if(p->stencil.type == SOLAR){
-    t_len = 2*( (p->nt-1)/((t_dim+1)*2) ) - 1;
+    t_len = 2*( (p->nt)/((t_dim+1)*2) ) - 1;
   }
 
   y_len_l = p->lstencil_shape[1] / (diam_width);

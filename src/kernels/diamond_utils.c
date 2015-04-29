@@ -493,7 +493,7 @@ void intra_diamond_info_init(Parameters *p){
     if(p->stencil.type == REGULAR){
       remain = (nt-2)%((p->t_dim+1)*2);
     }else if(p->stencil.type == SOLAR){
-      remain = (nt-1)%((p->t_dim+1)*2);
+      remain = (nt)%((p->t_dim+1)*2);
     }
     if(remain != 0){
       nt2 = nt + (p->t_dim+1)*2 - remain;
