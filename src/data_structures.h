@@ -67,7 +67,7 @@ enum Stencil_Type{
 
 // Fields in solar kernel grid cell
 enum Solar_Fields{
-  HE_FIELDS,
+  ALL_FIELDS,
   H_FIELD,
   E_FIELD,
 };

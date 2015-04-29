@@ -315,9 +315,9 @@ static inline void solar_naive( const int shape[3], const int xb, const int yb, 
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int field, stencil_CTX stencil_ctx) {
 
-  if (field == H_FIELD | field == HE_FIELDS)
+  if (field == H_FIELD | field == ALL_FIELDS)
     solar_h_field_kernel_naive(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
-  if (field == E_FIELD | field == HE_FIELDS)
+  if (field == E_FIELD | field == ALL_FIELDS)
     solar_e_field_kernel_naive(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
 }
 
