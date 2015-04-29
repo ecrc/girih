@@ -417,21 +417,19 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   ye = ye_r;
   zb = p->stencil.r;
   for(t=tb; t< te-1; t++){
-    {
-      ze = p->stencil.r*(time_len-(t-tb));
-      if(t%2 == 1){
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
-      }else{
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
-      }
+    ze = p->stencil.r*(time_len-(t-tb));
+    if(t%2 == 1){
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, ALL_FIELDS, p->stencil_ctx);
+    }else{
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, ALL_FIELDS, p->stencil_ctx);
+    }
 
-      if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
-        yb -= b_inc;
-        ye += e_inc;
-      }else{ // trapezoid  (or upper half of the diamond)
-        yb += b_inc;
-        ye -= e_inc;
-      }
+    if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
+      yb -= b_inc;
+      ye += e_inc;
+    }else{ // trapezoid  (or upper half of the diamond)
+      yb += b_inc;
+      ye -= e_inc;
     }
   }
 
@@ -459,9 +457,9 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     }
     zb = p->ldomain_shape[2]-p->stencil.r - (t-tb)*p->stencil.r;
     if(t%2 == 1){
-      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, ALL_FIELDS, p->stencil_ctx);
     }else{
-      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, ALL_FIELDS, p->stencil_ctx);
     }
   }
 
@@ -481,22 +479,21 @@ void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, 
   ye = ye_r;
   zb = p->stencil.r;
   for(t=tb; t< te-1; t++){
-    {
-      ze = p->stencil.r*(time_len-(t-tb));
-      if(t%2 == 1){
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
-      }else{
-        p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
-      }
+    ze = p->stencil.r*(time_len-(t-tb));
 
-      if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
-        yb -= b_inc;
-        ye += e_inc;
-      }else{ // trapezoid  (or upper half of the diamond)
-        yb += b_inc;
-        ye -= e_inc;
-      }
-    }
+    // compute E-field
+//printf("Main E -- t:%d yb:%d ye:%d\n", t, yb, ye);
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+                                         ye, ze, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
+    if(t <= p->t_dim) ye += e_inc; // lower half of the diamond
+    else              yb += b_inc; // upper half of the diamond
+
+    // compute H-field
+//printf("Main H -- t:%d yb:%d ye:%d\n", t, yb, ye);
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+                                         ye, ze, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
+    if(t < p->t_dim) yb -= b_inc; // lower half of the diamond
+    else             ye -= e_inc; // upper half of the diamond 
   }
 
   t2 = MPI_Wtime();
@@ -513,26 +510,36 @@ void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, 
   yb = yb_r;
   ye = ye_r;
   ze = p->ldomain_shape[2]-p->stencil.r;
+  // Update E shift
+  if(tb <= p->t_dim) ye += e_inc; // lower half of the diamond
+  else               yb += b_inc; // upper half of the diamond
+  // Update H shift
+  if(tb < p->t_dim) yb -= b_inc; // lower half of the diamond
+  else              ye -= e_inc; // upper half of the diamond 
   for(t=tb+1; t< te; t++){
-    if((t-1)< p->t_dim){ // lower half of the diamond
-      yb -= b_inc;
-      ye += e_inc;
-    }else{ // upper half of the diamond
-      yb += b_inc;
-      ye -= e_inc;
-    }
     zb = p->ldomain_shape[2]-p->stencil.r - (t-tb)*p->stencil.r;
-    if(t%2 == 1){
-      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, 0, p->stencil_ctx);
-    }else{
-      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, 0, p->stencil_ctx);
-    }
+
+    // compute E-field
+//printf("Main E -- t:%d yb:%d ye:%d\n", t, yb, ye);
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+                                         ye, ze, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
+    if(t <= p->t_dim) ye += e_inc; // lower half of the diamond
+    else              yb += b_inc; // upper half of the diamond
+
+    // compute H-field
+//printf("Main H -- t:%d yb:%d ye:%d\n", t, yb, ye);
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+                                         ye, ze, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
+    if(t < p->t_dim) yb -= b_inc; // lower half of the diamond
+    else             ye -= e_inc; // upper half of the diamond 
   }
 
   p->stencil_ctx.t_wf_prologue[tid] += t2-t1;
   p->stencil_ctx.t_wf_main[tid]     += t3-t2;
   p->stencil_ctx.t_wf_epilogue[tid] += MPI_Wtime() - t3;
 }
+
+
 static inline void intra_diamond_get_info_std(Parameters *p, int y_coord, int tid, int t_coord, int *yb, int *ye, int *b_inc, int *e_inc){
     double diam_size;
   if( (p->is_last == 1) && (y_coord == y_len_l-1) && (t_coord%2 == 0) ){ // right most process & left-half diamond
@@ -568,8 +575,9 @@ void intra_diamond_mwd_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc,
   if(p->stencil.type == REGULAR){
     intra_diamond_mwd_comp_std(p, yb, ye, b_inc, e_inc, tb, te, tid);
   }else if(p->stencil.type == SOLAR) {
-//    intra_diamond_mwd_comp_solar(p, yb, ye, b_inc, e_inc, tb, te, tid);
-    intra_diamond_comp(p, yb, ye, b_inc, e_inc);
+//printf("tb %d te %d\n",tb,te);
+    intra_diamond_mwd_comp_solar(p, yb, ye, b_inc, e_inc, tb, te, tid);
+//    intra_diamond_comp(p, yb, ye, b_inc, e_inc);
   }
 }
 
