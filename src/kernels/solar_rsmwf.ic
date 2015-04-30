@@ -1,0 +1,152 @@
+#ifndef STATUS
+#define STATUS(i)  (status[((i)*(CL))])
+#endif
+
+void rsmwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
+    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
+    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
+
+  int i, j, k, t, yb, ye, zi, kt, ib, ie, kb, ke;
+  int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, th_nwf, tgs, q, r;
+  int nny =shape[1];
+  int nnx =shape[0];
+  unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
+  int time_blk = t_dim*2+1; //temporal block size
+  double t_start;
+  
+  bs_x = stencil_ctx.bs_x;
+  tgs = stencil_ctx.thread_group_size;
+  nwf = stencil_ctx.num_wf;
+  th_nwf = nwf/tgs;
+  const int CL=128/sizeof(unsigned long);
+  volatile unsigned long *status;
+  posix_memalign((void **)&status, 128, CL*tgs*sizeof(unsigned long));
+  for(i=0; i<tgs; i++){
+    STATUS(i)=0;
+  }
+  int volatile current_z=0;
+
+#pragma omp parallel default(none) shared(shape, stencil_ctx, current_z, status, roc2, ln_domain, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, tb, te, t_dim, b_inc, e_inc, NHALO) \
+        firstprivate(u, v) \
+        private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kb, ke, kt, t, k, j, i, thb, the, q, r, t_start) \
+        num_threads(stencil_ctx.thread_group_size)
+  {
+    tid = 0;
+    gtid = 0;
+#if defined(_OPENMP)
+    tid = omp_get_thread_num();
+    gtid = tid + mtid * tgs;
+#endif
+    int left_tid = tid-1;
+    if(tid==0) left_tid = tgs-1;
+
+    FLOAT_PRECISION * restrict u_r = u;
+    FLOAT_PRECISION * restrict v_r = v;
+ 
+    for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
+      ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
+ 
+      thb = th_nwf*tid;
+      the = th_nwf*(tid+1);
+//      printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
+      for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
+
+        if(tid == tgs-1) current_z = zi; // to respect dependencies across frontlines
+
+        if(ze-zi < nwf){ 
+          q = (int)((ze-zi)/tgs);
+          r = (ze-zi)%tgs;
+          if(tid < r) {
+            thb = tid * (q+1);
+            the = thb + (q+1);
+          }else {
+            thb = r * (q+1) + (tid - r) * q;
+            the =thb + q;
+          }
+        }
+
+        yb = yb_r;
+        ye = ye_r;
+
+        ib = ib_r;
+        ie = ie_r;
+
+        kt = zi;
+        for(t=tb; t< te; t++){ // Diamond blocking in time
+
+
+          kb = kt+thb;
+          ke = kt+the;
+          // compute E-field (except at first and last time steps of right-half diamond)
+          if(yb<ye) solar_e_field_kernel_naive(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx);
+          // Update block size in Y
+          if(t <= t_dim) ye += e_inc; // lower half of the diamond
+          else         yb += b_inc; // upper half of the diamond
+
+//          t_start = MPI_Wtime();
+//#pragma omp barrier
+//          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+//if(STATUS(tid) > STATUS(left_tid)) printf("################################################### [%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
+//printf("[%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
+          //update current thread time step status
+          STATUS(tid)++;
+          // spin-wait ensure respecting data dependencies across threads
+          t_start = MPI_Wtime();
+          if(tid == 0){ // wait for dependencies across frontlines
+            while( (zi > current_z) & (STATUS(tid) > (STATUS(left_tid)+2*time_blk)) ){
+              asm("");
+            }
+          }
+          else{ // wait for dependencies within the frontline
+            while(STATUS(tid) > STATUS(left_tid)){
+              asm("");
+            }
+          }
+          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
+
+
+          // compute H-field
+          if(yb<ye) solar_h_field_kernel_naive(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx);
+          // Update block size in Y
+          if(t < t_dim) yb -= b_inc; // lower half of the diamond
+          else         ye -= e_inc; // upper half of the diamond 
+
+
+//          t_start = MPI_Wtime();
+//#pragma omp barrier
+//          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
+//if(STATUS(tid) > STATUS(left_tid)) printf("################################################### [%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
+//printf("[%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
+          //update current thread time step status
+          STATUS(tid)++;
+          // spin-wait ensure respecting data dependencies across threads
+          t_start = MPI_Wtime();
+          if(tid == 0){ // wait for dependencies across frontlines
+            while( (zi > current_z) & (STATUS(tid) > (STATUS(left_tid)+2*time_blk)) ){
+              asm("");
+            }
+          }
+          else{ // wait for dependencies within the frontline
+            while(STATUS(tid) > STATUS(left_tid)){
+              asm("");
+            }
+          }
+          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+
+
+          // Update block size in X
+          if (ib != xb) ib-=NHALO; 
+          if (ie != xe) ie-=NHALO;
+          kt -= NHALO;
+
+
+        } // diamond blocking in time (time loop)
+      } // wavefront loop
+      #pragma omp barrier
+    } // blocking in x
+  } // parallel region
+
+  free((void*)status);
+}

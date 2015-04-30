@@ -5,6 +5,6 @@
 #include "solar_1wf.ic"
 #include "solar_mwf.ic"
 #include "solar_femwf.ic"
-//#include "solar_rsmwf.ic"
+#include "solar_rsmwf.ic"
 //#include "solar_rsfemwf.ic"
 
