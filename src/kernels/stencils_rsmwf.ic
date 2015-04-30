@@ -11,7 +11,7 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   int nny =shape[1];
   int nnx =shape[0];
   unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
-  int time_blk = t_dim*2+1; //temporal block size
+  int time_blk = te-tb; //temporal block size
   double t_start;
   
   bs_x = stencil_ctx.bs_x;
@@ -123,6 +123,7 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
         } // diamond blocking in time (time loop)
+//      #pragma omp barrier
       } // wavefront loop
       #pragma omp barrier
     } // blocking in x
