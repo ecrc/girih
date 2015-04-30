@@ -4,17 +4,20 @@ def main():
     import sys
     from verification_utils import run_verification
 
-    dim_list = [[32, 128,  128,1],
-                [32, 256,  32, 3]]
+    dim_list = [[32, 160,  128,1],
+                [32, 256,  64, 3]]
 
     print "Verifying different wavefront paralellization stratigies" 
     # Different MWD approaches
 
-    for kernel in [0,1,5]:
+    for kernel in [6, 0, 1, 5]:
         for nx, ny, nz, t in dim_list:
-            for mwd_t in range(3):
-                run_verification(nx=nx, ny=ny, nz=nz, ts=2, kernel=kernel, t_dim=t, mwd_type=mwd_t)
-
+            for mwd_t in [0, 1]:
+                print "mwd_type: ",mwd_t
+                for tgs in [1, 2, 5, 10]:
+                    if (not(tgs==1 and mwd_t!=1)):
+                        run_verification(nx=nx, ny=ny, nz=nz, ts=2, kernel=kernel, t_dim=t, mwd_type=mwd_t, tgs=tgs, num_threads=10)
+#    return
     print "Verifying MPI configurations"
     # Selected MPI topologies
     top_list= [[1,1,1],
