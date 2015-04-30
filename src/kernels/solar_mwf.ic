@@ -58,30 +58,6 @@ void mwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
 
         kt = zi;
         for(t=tb; t< te; t++){ // Diamond blocking in time
-/*          if(t%2 == 0){ //swap pointers
-            u = v_r; v = u_r;
-          } else{
-            u = u_r; v = v_r;
-          }
-
-          for(k=kt+thb; k<kt+the; k++){
-            for(j=yb; j<ye; j++) {
-    #pragma simd
-              for(i=ib; i<ie; i++) {
-                FUNC_BODY()
-              }
-            }
-          }
-
-          // Update block size in Y
-          if(t< t_dim){ // lower half of the diamond
-            yb -= b_inc;
-            ye += e_inc;
-          }else{ // upper half of the diamond
-            yb += b_inc;
-            ye -= e_inc;
-          }
-*/
           kb = kt+thb; 
           ke = kt+the;
           // compute E-field (except at first and last time steps of right-half diamond)
