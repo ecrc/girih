@@ -501,11 +501,11 @@ void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
   FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
 
   // Update H-field
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) {
         // Hy_x: csc, Ex_{y,z}: css
         isub      = i + 2 * ( -nnx * nny );
@@ -518,11 +518,11 @@ void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) {
         // Hz_x: ccs, Ex_{y,z}: css
         isub      = i + 2 * ( -nnx );
@@ -535,11 +535,11 @@ void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) {
         // Hx_y: scc, Ey_{x,z}: scs
         isub      = i + 2 * ( -nnx * nny );
@@ -552,11 +552,11 @@ void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) {
         // Hz_y: ccs, Ey_{x,z}: scs
         isub      = i + 2 * ( -1 );
@@ -569,11 +569,11 @@ void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) {
         // Hx_z: scc, Ez_{x,y}: ssc
         isub      = i + 2 * ( -nnx );
@@ -586,11 +586,11 @@ void solar_h_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) {
         // Hy_z: csc, Ez_{x,y}: ssc
         isub      = i + 2 * ( -1 );
@@ -649,11 +649,11 @@ void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
   // ---------------------------------------------------------------------------------------
   // -----  Ex_z = Cex_tz * Ex_z + Cex_z * (N(Hz_x + Hz_y) - S(Hz_x + Hz_y) ) --------------
   // ---------------------------------------------------------------------------------------
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
 
       for(i=ixmin; i<ixmax; i+=2) {
         // Ex_z: css, Hz_{x,y}: ccs
@@ -667,11 +667,11 @@ void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) { 
         // Ey_{x,z}: scs, Hz_{x,y}: ccs
         isub      = i + 2 * ( +1 );
@@ -684,11 +684,11 @@ void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) { 
         // Ey_{x,z}: scs, Hx_{y,z}: scc
         isub      = i + 2 * ( +nnx * nny );
@@ -701,11 +701,11 @@ void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) { 
         // Ez_x: ssc, Hx_{y,z}: scc
         isub      = i + 2 * ( +nnx );
@@ -718,11 +718,11 @@ void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) { 
         // Ex_y: css, Hy_{x,z}: csc
         isub      = i + 2 * ( +nnx * nny );
@@ -735,11 +735,11 @@ void solar_e_field_ref( const int shape[3], const FLOAT_PRECISION * restrict coe
     }
   }
 
-  for(k=2; k<nnz-2; k++) {
-    for(j=2; j<nny-2; j++) {
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
 
-      ixmin  = 2 * ( ( k * nny + j ) * nnx + 2);
-      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-2);
+      ixmin  = 2 * ( ( k * nny + j ) * nnx+1);
+      ixmax  = 2 * ( ( k * nny + j ) * nnx + nnx-1);
       for(i=ixmin; i<ixmax; i+=2) { 
         // Ez_y: ssc, Hy_{x,z}: csc
         isub      = i + 2 * ( +1 );

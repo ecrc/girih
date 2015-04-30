@@ -162,7 +162,7 @@ struct StencilInfo stencil_info_list[] = {
     {"star", 1, 1, 6,  STAR, VARIABLE_COEFFICIENT_AXSYM, REGULAR},
     {"star", 4, 1, 15, STAR, VARIABLE_COEFFICIENT_AXSYM, REGULAR},
     {"star", 1, 1, 9 , STAR, VARIABLE_COEFFICIENT_NOSYM, REGULAR},
-    {"star", 2, 1, 40, STAR, SOLAR_COEFFICIENT, SOLAR},
+    {"star", 1, 1, 40, STAR, SOLAR_COEFFICIENT, SOLAR},
     {0, 0, 0, 0, 0, 0, 0},
 };
 
