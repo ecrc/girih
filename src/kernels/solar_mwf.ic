@@ -90,6 +90,9 @@ void mwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
           if(t <= t_dim) ye += e_inc; // lower half of the diamond
           else         yb += b_inc; // upper half of the diamond
 
+          t_start = MPI_Wtime();
+#pragma omp barrier
+          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
           // compute H-field
           if(yb<ye) solar_h_field_kernel_naive(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx);
           // Update block size in Y
