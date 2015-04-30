@@ -3,4 +3,5 @@
 
 #include "solar_naive_no_omp.ic" // Contains the basic computations for the MWD solvers
 #include "solar_1wf.ic"
+#include "solar_mwf.ic"
 
