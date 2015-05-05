@@ -1,6 +1,3 @@
-#ifndef STATUS
-#define STATUS(i)  (status[((i)*(CL))])
-#endif
 void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
@@ -10,7 +7,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
   int nny =shape[1];
   int nnx =shape[0];
   unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
-  int time_blk = t_dim*2+1; //temporal block size
+  int time_blk = te-tb; //t_dim*2+1; //temporal block size
   double t_start;
   
   bs_x = stencil_ctx.bs_x;
@@ -20,7 +17,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
   volatile unsigned long *status;
   posix_memalign((void **)&status, 128, CL*tgs*sizeof(unsigned long));
   for(i=0; i<tgs; i++){
-    STATUS(i)=0;
+    status[i*CL]=0;
   }
 //  int volatile current_z=0;
 
@@ -35,8 +32,9 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
     tid = omp_get_thread_num();
     gtid = tid + mtid * tgs;
 #endif
-    int left_tid = (tid+tgs-1)%tgs;
-    int right_tid = (tid+1)%tgs;
+    int left_tid_idx = ((tid+tgs-1)%tgs)*CL;
+    int right_tid_idx = ((tid+1)%tgs)*CL;
+    int tid_idx = tid*CL;
 
     FLOAT_PRECISION * restrict u_r = u;
     FLOAT_PRECISION * restrict v_r = v;
@@ -70,6 +68,41 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
           } else{
             u = u_r; v = v_r;
           }
+
+          // spin-wait for data dependencies if not first time step and not last wavefront with remainder
+          if((t>0) && (nwf == stencil_ctx.num_wf)) {
+            t_start = MPI_Wtime();
+            int kth = kt-NHALO;
+            for(k=kth; k<kth+nwf; k++){
+              if( (k/th_nwf)%tgs == tid ) {
+
+                // left neighbor dependency
+                if(k>=kth+2*NHALO){ // left neighbor in same frontline 
+                  if( ((k-NHALO)/th_nwf)%tgs != tid ){ // left data belong to the left thread
+                    while(status[tid_idx] > status[left_tid_idx]){
+                      asm("");
+                    }
+                  }
+                }else { // left neighbor belongs to previous frontlint
+                  if( ((k-NHALO)/th_nwf)%tgs != tid ){ // left data belong to the left thread
+                    while(status[tid_idx] > (status[left_tid_idx]+time_blk)){
+                      asm("");
+                    }
+                  }
+                } // left neighbor dependency
+
+                // right data dependency
+                if( ((k+NHALO)/th_nwf)%tgs != tid ){ // right data belong to the right thread
+                  while(status[tid_idx] > status[right_tid_idx]){
+                    asm("");
+                  }
+                } // right data dependency
+
+              }
+            }
+            stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+          }
+
           
           for(k=kt; k<kt+nwf; k++){
             if( ((k-NHALO)/th_nwf)%tgs == tid ) {
@@ -83,7 +116,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
           }
 
           //update current thread time step status
-          STATUS(tid)++;
+          status[tid_idx]++;
 
           // Update block size in Y
           if(t< t_dim){ // lower half of the diamond
@@ -99,43 +132,13 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
           if (ie != xe) ie-=NHALO;
           kt -= NHALO;
 
-          // spin-wait for data dependencies
-          t_start = MPI_Wtime();
-          int kth = kt-NHALO;
-          for(k=kth; k<kth+nwf; k++){
-            if( (k/th_nwf)%tgs == tid ) {
-
-              // left neighbor dependency
-              if(k>=(kth+2)*NHALO){ // left neighbor in same frontline 
-                if( ((k-NHALO)/th_nwf)%tgs != tid ){ // left data belong to the left thread
-                  while(STATUS(tid) > STATUS(left_tid)){
-                    asm("");
-                  }
-                }
-              }else { // left neighbor belongs to previous frontlint
-                if( ((k-NHALO)/th_nwf)%tgs != tid ){ // left data belong to the left thread
-                  while(STATUS(tid) > (STATUS(left_tid)+time_blk)){
-                    asm("");
-                  }
-                }
-              } // left neighbor dependency
-
-              // right data dependency
-              if( ((k+NHALO)/th_nwf)%tgs != tid ){ // right data belong to the right thread
-                while(STATUS(tid) > STATUS(right_tid)){
-                  asm("");
-                }
-              } // right data dependency
-
-            }
+          if(nwf != stencil_ctx.num_wf){ // Last frontline update has remainder
+            t_start = MPI_Wtime();
+            #pragma omp barrier
+            stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
           }
-          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
         } // diamond blocking in time (time loop)
-        if( (ze != zi+nwf) & (ze-(zi+nwf) < nwf)){ // Last frontline update has remainder
-          #pragma omp barrier
-        }
-
       } // wavefront loop
 #pragma omp barrier
     } // blocking in x
