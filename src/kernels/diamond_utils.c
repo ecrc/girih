@@ -433,7 +433,11 @@ void intra_diamond_info_init(Parameters *p){
     // Check for size validity in the direction of the wavefront
     if( (p->wavefront != 0) && (p->stencil_ctx.thread_group_size != 1) ){ // multi-thread group
 
-      min_z = (p->t_dim*2)*p->stencil.r+1 + p->stencil_ctx.num_wf -1;
+      if(p->stencil.type==REGULAR)
+        min_z = (p->t_dim*2)*p->stencil.r+1 + p->stencil_ctx.num_wf -1;
+      else if (p->stencil.type==SOLAR)
+        min_z = (p->t_dim*2+1)*p->stencil.r+1 + p->stencil_ctx.num_wf -1;
+
       if(p->stencil_shape[2] < min_z){
         if(p->mpi_rank ==0) fprintf(stderr,"ERROR: The multi-core wavefront requires a minimum size of %d at the Z direction in the current configurations\n", min_z);
 
