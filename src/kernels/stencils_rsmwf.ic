@@ -78,8 +78,8 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
           }
  
           // spin-wait ensure respecting data dependencies across threads
-          t_start = MPI_Wtime();
           if(t!=0){
+            t_start = MPI_Wtime();
             if(tid == 0){ // wait for dependencies across frontlines
               while( (zi > current_z) & (status[tid_idx]+1 > (status[left_tid_idx]+time_blk)) ){
                 asm("");
@@ -90,8 +90,8 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                 asm("");
               }
             }
+            stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
           }
-          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
          
           for(k=kt+thb; k<kt+the; k++){
