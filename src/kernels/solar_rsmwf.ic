@@ -1,7 +1,3 @@
-#ifndef STATUS
-#define STATUS(i)  (status[((i)*(CL))])
-#endif
-
 void rsmwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
     FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
@@ -22,7 +18,7 @@ void rsmwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
   volatile unsigned long *status;
   posix_memalign((void **)&status, 128, CL*tgs*sizeof(unsigned long));
   for(i=0; i<tgs; i++){
-    STATUS(i)=0;
+    status[i*CL]=0;
   }
   int volatile current_z=0;
 
@@ -37,8 +33,8 @@ void rsmwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
     tid = omp_get_thread_num();
     gtid = tid + mtid * tgs;
 #endif
-    int left_tid = tid-1;
-    if(tid==0) left_tid = tgs-1;
+    int left_tid_idx = ((tid+tgs-1)%tgs)*CL;
+    int tid_idx = tid*CL;
 
     FLOAT_PRECISION * restrict u_r = u;
     FLOAT_PRECISION * restrict v_r = v;
@@ -77,64 +73,86 @@ void rsmwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
 
           kb = kt+thb;
           ke = kt+the;
+
+          // spin-wait ensure respecting data dependencies across threads
+          if(t!=0){
+            t_start = MPI_Wtime();
+            if(tid == 0){ // wait for dependencies across frontlines
+              while( (zi > current_z) & (status[tid_idx]+1 > (status[left_tid_idx]+2*time_blk)) ){
+                asm("");
+              }
+            }
+            else{ // wait for dependencies within the frontline
+              while(status[tid_idx]+1 > status[left_tid_idx]){
+                asm("");
+              }
+            }
+            stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+          }
           // compute E-field (except at first and last time steps of right-half diamond)
           if(yb<ye) solar_e_field_kernel_naive(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx);
           // Update block size in Y
           if(t <= t_dim) ye += e_inc; // lower half of the diamond
           else         yb += b_inc; // upper half of the diamond
+         //update current thread time step status
+          status[tid_idx]++;
 
-//          t_start = MPI_Wtime();
-//#pragma omp barrier
-//          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
-//if(STATUS(tid) > STATUS(left_tid)) printf("################################################### [%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
-//printf("[%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
-          //update current thread time step status
-          STATUS(tid)++;
-          // spin-wait ensure respecting data dependencies across threads
+
+
+
+/*          // spin-wait ensure respecting data dependencies across threads
           t_start = MPI_Wtime();
           if(tid == 0){ // wait for dependencies across frontlines
-            while( (zi > current_z) & (STATUS(tid) > (STATUS(left_tid)+2*time_blk)) ){
+            while( (zi > current_z) & (status[tid_idx] > (status[left_tid_idx]+2*time_blk)) ){
               asm("");
             }
           }
           else{ // wait for dependencies within the frontline
-            while(STATUS(tid) > STATUS(left_tid)){
+            while(status[tid_idx] > status[left_tid_idx]){
               asm("");
             }
           }
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+*/
 
 
-
+          // spin-wait ensure respecting data dependencies across threads
+          t_start = MPI_Wtime();
+          if(tid == 0){ // wait for dependencies across frontlines
+            while( (zi > current_z) & (status[tid_idx]+1 > (status[left_tid_idx]+time_blk)) ){
+              asm("");
+            }
+          }
+          else{ // wait for dependencies within the frontline
+            while(status[tid_idx]+1 > status[left_tid_idx]){
+              asm("");
+            }
+          }
+          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
           // compute H-field
           if(yb<ye) solar_h_field_kernel_naive(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx);
           // Update block size in Y
           if(t < t_dim) yb -= b_inc; // lower half of the diamond
           else         ye -= e_inc; // upper half of the diamond 
+         //update current thread time step status
+          status[tid_idx]++;
 
 
-//          t_start = MPI_Wtime();
-//#pragma omp barrier
-//          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
-//if(STATUS(tid) > STATUS(left_tid)) printf("################################################### [%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
-//printf("[%d] t:%d  st:%d  lst:%d\n", tid, t, STATUS(tid), STATUS(left_tid));
-          //update current thread time step status
-          STATUS(tid)++;
-          // spin-wait ensure respecting data dependencies across threads
+/*          // spin-wait ensure respecting data dependencies across threads
           t_start = MPI_Wtime();
           if(tid == 0){ // wait for dependencies across frontlines
-            while( (zi > current_z) & (STATUS(tid) > (STATUS(left_tid)+2*time_blk)) ){
+            while( (zi > current_z) & (status[tid_idx] > (status[left_tid_idx]+2*time_blk)) ){
               asm("");
             }
           }
           else{ // wait for dependencies within the frontline
-            while(STATUS(tid) > STATUS(left_tid)){
+            while(status[tid_idx] > status[left_tid_idx]){
               asm("");
             }
           }
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
-
+*/
 
           // Update block size in X
           if (ib != xb) ib-=NHALO; 
