@@ -3,7 +3,7 @@ def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
   import subprocess
   from string import Template
   from scripts.utils import ensure_dir    
-  from scripts import conf
+  from scripts.conf import conf
 
   job_template=Template(
 """$set_threads$th; $mpirun_cmd $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --verify $verify | tee $outpath""")
