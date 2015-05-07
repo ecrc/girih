@@ -1,0 +1,3 @@
+
+machine_conf = {'set_threads': 'export OMP_NUM_THREADS=', 'mpirun_cmd':'', 'pinning_cmd':'likwid-perfctr', 'pinning_args': ' -m -s 0x03 --'}
+machine_info = {'n_cores':10, 'cache_size':25000, 'hostname': 'IVB_10core'}

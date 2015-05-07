@@ -6,7 +6,7 @@ def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
   from scripts import conf
 
   job_template=Template(
-"""$set_threads$th; $mpirun_cmd -np $np $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --verify $verify | tee $outpath""")
+"""$set_threads$th; $mpirun_cmd $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --verify $verify | tee $outpath""")
 
   # set default arguments
   defaults = {'dry_run':0, 'is_dp':1, 'tgs':1, 'cs':8192, 'mwdt':1, 'npx':1, 'npy':1, 'npz':1, 'nwf':-1,
@@ -33,7 +33,10 @@ def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
     exec_path = os.path.join(os.path.abspath("."),"build/mwd_kernel")
   
   # set the processes number
-  defaults['np'] = defaults['npx']*defaults['npy']*defaults['npz']
+  if defaults['mpirun_cmd'] != '':
+    np = defaults['npx']*defaults['npy']*defaults['npz']
+    defaults['mpirun_cmd'] = defaults['mpirun_cmd'] + " -np %d "%np
+
   job_cmd = job_template.substitute(nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel, ts=ts, outpath=outpath, 
                                     exec_path=exec_path, **defaults)
  
