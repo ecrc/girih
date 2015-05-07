@@ -6,7 +6,7 @@ def run_verification(nx, ny, nz, ts, t_dim=3, npx=1, npy=1, npz=1, kernel=0, dp=
     from string import Template
 
     # Compute the required number of time steps for the wave to propogate from to the whole domain
-    stencil_radius=[4,1,1,1,4,1] # IMPORTANT: this list has to match the stencil kernels list of the code
+    stencil_radius=[4,1,1,1,4,1,1] # IMPORTANT: this list has to match the stencil kernels list of the code
     nt = max(10, nx/stencil_radius[kernel]/2)
 
     binary="./build"    
