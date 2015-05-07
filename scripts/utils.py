@@ -1,32 +1,44 @@
-def run_test(kernel, ts, nx, ny, nz, nt, exe_cmd, outfile, target_dir, is_dp=1, dry_run=0, **kwargs):
+def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
   import os
   import subprocess
   from string import Template
   from scripts.utils import ensure_dir    
+  from scripts import conf
 
   job_template=Template(
-"""$exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --verify $verify | tee $outfile""")
+"""$set_threads$th; $mpirun_cmd -np $np $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --verify $verify | tee $outpath""")
 
+  # set default arguments
+  defaults = {'dry_run':0, 'is_dp':1, 'tgs':1, 'cs':8192, 'mwdt':1, 'npx':1, 'npy':1, 'npz':1, 'nwf':1,
+              'bsx':1000000, 'ntests':2, 'alignment':16, 'verify':0, 'verbose':1, 'th': 1}
+  # set the default run commands and arguments of the machine
+  defaults.update(conf.machine_conf)
+
+  # override the default arguments using the user specified ones
+  defaults.update(kwargs)
+
+  # create default file name if not set by the user:
+  if 'outfile' not in kwargs.keys():
+    defaults['outfile'] =  '_'.join(["%s_%s"%(k,v) for k,v in defaults.items()]).replace(" ","_").replace("-","_")
+
+  # set the output path
   target_dir = os.path.join(os.path.abspath("."),target_dir)
   ensure_dir(target_dir)
-  outpath = os.path.join(target_dir,outfile)
+  outpath = os.path.join(target_dir,defaults['outfile'])
 
-  if(is_dp==1):
+  # set the executable
+  if(defaults['is_dp']==1):
     exec_path = os.path.join(os.path.abspath("."),"build_dp/mwd_kernel")
   else:
     exec_path = os.path.join(os.path.abspath("."),"build/mwd_kernel")
-
-  defaults = {'is_dp':1, 'tgs':1, 'cs':8192, 'mwdt':1, 'npx':1, 'npy':1, 'npz':1, 'nwf':1,
-              'bsx':1e6, 'ntests':2, 'alignment':16, 'verify':0, 'verbose':1}
-  defaults.update(kwargs)
-  job_cmd = job_template.substitute(nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel, ts=ts, outfile=outpath, 
-                                    exec_path=exec_path, target_dir=target_dir, **defaults)
-
-
-  job_cmd = exe_cmd + job_cmd
+  
+  # set the processes number
+  defaults['np'] = defaults['npx']*defaults['npy']*defaults['npz']
+  job_cmd = job_template.substitute(nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel, ts=ts, outpath=outpath, 
+                                    exec_path=exec_path, **defaults)
  
   print job_cmd
-  if(dry_run==0): sts = subprocess.call(job_cmd, shell=True)
+  if(defaults['dry_run']==0): sts = subprocess.call(job_cmd, shell=True)
 
   return job_cmd
 
