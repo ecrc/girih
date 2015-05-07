@@ -9,7 +9,7 @@ def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
 """$set_threads$th; $mpirun_cmd -np $np $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --verify $verify | tee $outpath""")
 
   # set default arguments
-  defaults = {'dry_run':0, 'is_dp':1, 'tgs':1, 'cs':8192, 'mwdt':1, 'npx':1, 'npy':1, 'npz':1, 'nwf':1,
+  defaults = {'dry_run':0, 'is_dp':1, 'tgs':1, 'cs':8192, 'mwdt':1, 'npx':1, 'npy':1, 'npz':1, 'nwf':-1,
               'bsx':1000000, 'ntests':2, 'alignment':16, 'verify':0, 'verbose':1, 'th': 1}
   # set the default run commands and arguments of the machine
   defaults.update(conf.machine_conf)
@@ -67,7 +67,7 @@ def create_project_tarball(dest_dir, fname):
   import tarfile, glob
   import os
 
-  nl = ["src/kernels/*.c", "src/*.c", "src/*.h", "scripts/*.py", "scripts/*/*.py", "make.inc", "Makefile"]
+  nl = ["src/kernels/*", "src/*.c", "src/*.h", "scripts/*.py", "scripts/*/*.py", "make.inc", "Makefile"]
   nl = [glob.glob(n) for n in nl]
   nl = [n for nn in nl for n in nn]
 
