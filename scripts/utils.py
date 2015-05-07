@@ -1,3 +1,34 @@
+def run_test(kernel, ts, nx, ny, nz, nt, exe_cmd, outfile, target_dir, is_dp=1, dry_run=0, **kwargs):
+  import os
+  import subprocess
+  from string import Template
+  from scripts.utils import ensure_dir    
+
+  job_template=Template(
+"""$exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --verify $verify | tee $outfile""")
+
+  target_dir = os.path.join(os.path.abspath("."),target_dir)
+  ensure_dir(target_dir)
+  outpath = os.path.join(target_dir,outfile)
+
+  if(is_dp==1):
+    exec_path = os.path.join(os.path.abspath("."),"build_dp/mwd_kernel")
+  else:
+    exec_path = os.path.join(os.path.abspath("."),"build/mwd_kernel")
+
+  defaults = {'is_dp':1, 'tgs':1, 'cs':8192, 'mwdt':1, 'npx':1, 'npy':1, 'npz':1, 'nwf':1,
+              'bsx':1e6, 'ntests':2, 'alignment':16, 'verify':0, 'verbose':1}
+  defaults.update(kwargs)
+  job_cmd = job_template.substitute(nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel, ts=ts, outfile=outpath, 
+                                    exec_path=exec_path, target_dir=target_dir, **defaults)
+
+
+  job_cmd = exe_cmd + job_cmd
+ 
+  print job_cmd
+  if(dry_run==0): sts = subprocess.call(job_cmd, shell=True)
+
+  return job_cmd
 
 def select_fields(data, rows=[], cols=[]):
 
