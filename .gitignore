@@ -2,6 +2,7 @@ tmp/*
 build/*
 build_dp/*
 results/*
+results
 scripts/verification/*pyc
 scripts/*.pyc
 scripts/sisc/*.pyc
