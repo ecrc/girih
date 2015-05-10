@@ -8,7 +8,7 @@ void set_centered_source(Parameters *);
 void init_coeff(Parameters *);
 void arrays_allocate(Parameters *p);
 void reset_timers(Profile * p);
-void print_3Darray(char *, FLOAT_PRECISION * restrict , int , int , int , int );
+void print_3Darray(char *, real_t * restrict , int , int , int , int );
 void copy_params_struct(Parameters a, Parameters * b);
 void domain_data_fill(Parameters * p);
 void mpi_halo_finalize(Parameters *p);

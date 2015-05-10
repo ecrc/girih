@@ -2,8 +2,8 @@
 
 // ISO stencils spatial blocking
 void iso_ref_split( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
   int j,k, jb, je;
 
   CLU_CTX clu_ctx;
@@ -30,8 +30,8 @@ void iso_ref_split( const int shape[3], const int xb, const int yb, const int zb
 
 // 1WD kernel
 void swd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid){
+    const real_t * restrict coef, real_t * restrict u,
+    real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid){
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie, ib_r, ie_r, bs_x;
   int nny =shape[1];
@@ -100,8 +100,8 @@ void swd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const 
 
 
 void mwd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
+    const real_t * restrict coef, real_t * restrict u,
+    real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
 
   double t_start;
   int i, j, k, t, zi, kt, yb, ye, tid, not_done, gtid, thb, the, q, r, ib, ie, ib_r, ie_r;

@@ -10,39 +10,39 @@
 
 void verify(Parameters *);
 
-void aggregate_MPI_subdomains(Parameters vp, FLOAT_PRECISION * restrict aggr_array);
+void aggregate_MPI_subdomains(Parameters vp, real_t * restrict aggr_array);
 void verification_printing(Parameters vp);
-FLOAT_PRECISION *restrict aggregate_subdomains(Parameters vp);
-void compare_results(FLOAT_PRECISION *restrict u, FLOAT_PRECISION *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO, Parameters p);
-void verify_serial_generic(FLOAT_PRECISION * , Parameters);
+real_t *restrict aggregate_subdomains(Parameters vp);
+void compare_results(real_t *restrict u, real_t *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO, Parameters p);
+void verify_serial_generic(real_t * , Parameters);
 
 void std_kernel_8space_2time( const int shape[3],
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 void std_kernel_2space_1time( const int shape[3],
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 void std_kernel_2space_1time_var( const int shape[3],
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 void std_kernel_2space_1time_var_axsym( const int shape[3],
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 void std_kernel_8space_1time_var_axsym( const int shape[3],
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 void std_kernel_2space_1time_var_nosym( const int shape[3],
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 void solar_kernel( const int shape[3],
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2);
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 
 extern void copy_params_struct(Parameters a, Parameters * b);
 extern void print_param(Parameters p);
 extern void arrays_free(Parameters *);
-extern void print_3Darray(char *, FLOAT_PRECISION * restrict , int , int , int , int );
-extern void print_3Darray_solar(char *, FLOAT_PRECISION * restrict , int , int , int , int );
+extern void print_3Darray(char *, real_t * restrict , int , int , int , int );
+extern void print_3Darray_solar(char *, real_t * restrict , int , int , int , int );
 extern void mpi_halo_finalize(Parameters *);
 extern void init_coeff(Parameters *);
 extern void arrays_allocate(Parameters *p);

@@ -7,7 +7,7 @@
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-U(i,j,k) = ((FLOAT_PRECISION) (2.0))*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*(coef[0]*V(i,j,k) \
+U(i,j,k) = ((real_t) (2.0))*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*(coef[0]*V(i,j,k) \
 +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
 +coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
 +coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1)) \

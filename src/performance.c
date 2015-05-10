@@ -24,7 +24,7 @@ void performance_test(Parameters * p){
   init_coeff(p);
   domain_data_fill(p);
   if(p->source_point_enabled == 1)
-    for(i=0; i<p->nt; i++) p->source[i] = (FLOAT_PRECISION) i;
+    for(i=0; i<p->nt; i++) p->source[i] = (real_t) i;
 
   // run the performance experiments of the target kernel
   if (p->mpi_rank == 0) {

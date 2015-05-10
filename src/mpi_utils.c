@@ -10,7 +10,7 @@ extern void copyv(int *a, int * b, int n);
 #define SRC_BUF(i,j,k)         (src_buf[((k)*(src_size[1])+(j))*(src_size[0])+(i)])
 #define DST_BUF(i,j,k)         (dst_buf[((k)*(dst_size[1])+(j))*(dst_size[0])+(i)])
 
-void sub_array_copy(const FLOAT_PRECISION * restrict src_buf, FLOAT_PRECISION * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs){
+void sub_array_copy(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs){
     int *ds = dst_size;
     int i,j,k;
 #pragma omp parallel
@@ -26,7 +26,7 @@ void sub_array_copy(const FLOAT_PRECISION * restrict src_buf, FLOAT_PRECISION * 
   }
 }
 
-void sub_array_copy_tg(const FLOAT_PRECISION * restrict src_buf, FLOAT_PRECISION * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int tgs){ 
+void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int tgs){ 
     int *ds = dst_size;
     int i,j,k;
 #pragma omp parallel num_threads(tgs)
@@ -110,13 +110,13 @@ void standard_mpi_halo_init(Parameters *p){
     p->h[0].send_b[1]= p->stencil.r; p->h[0].send_e[1]= p->stencil.r;
     p->h[0].send_b[2]= p->stencil.r; p->h[0].send_e[2]= p->stencil.r;
 
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[0].recv_hb)); CHKERR(ierr);
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].recv_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[0].recv_he)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].recv_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[0].recv_hb)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].recv_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[0].recv_he)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[0].recv_hb)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[0].recv_he)); CHKERR(ierr);
 
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].send_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[0].send_hb)); CHKERR(ierr);
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].send_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[0].send_he)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].send_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[0].send_hb)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[0].shape, p->h[0].send_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[0].send_he)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[0].send_hb)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[0].send_he)); CHKERR(ierr);
 
@@ -137,13 +137,13 @@ void standard_mpi_halo_init(Parameters *p){
     p->h[1].send_b[1]= p->stencil.r; p->h[1].send_e[1]= p->ldomain_shape[1]-2*p->stencil.r;
     p->h[1].send_b[2]= p->stencil.r; p->h[1].send_e[2]= p->stencil.r;
 
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[1].recv_hb)); CHKERR(ierr);
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].recv_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[1].recv_he)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].recv_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[1].recv_hb)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].recv_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[1].recv_he)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[1].recv_hb)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[1].recv_he)); CHKERR(ierr);
 
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].send_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[1].send_hb)); CHKERR(ierr);
-    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].send_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[1].send_he)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].send_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[1].send_hb)); CHKERR(ierr);
+    ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[1].shape, p->h[1].send_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[1].send_he)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[1].send_hb)); CHKERR(ierr);
     ierr = MPI_Type_commit(&(p->h[1].send_he)); CHKERR(ierr);
 
@@ -172,10 +172,10 @@ void standard_mpi_halo_init(Parameters *p){
     p->h[2].recv_e[2] = xy_plain * (p->ldomain_shape[2]-p->stencil.r);
 
     if(p->h[2].is_contiguous == 0){
-      ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[2].shape, p->h[2].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->h[2].halo)); CHKERR(ierr);
+      ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->h[2].shape, p->h[2].recv_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->h[2].halo)); CHKERR(ierr);
     } else{ // contiguous type is required
       z_halo_size = p->h[2].shape[0] * p->h[2].shape[1] * p->h[2].shape[2];
-      ierr = MPI_Type_contiguous(z_halo_size, MPI_FLOAT_PRECISION, &(p->h[2].halo)); CHKERR(ierr);
+      ierr = MPI_Type_contiguous(z_halo_size, MPI_real_t, &(p->h[2].halo)); CHKERR(ierr);
     }
     ierr = MPI_Type_commit(&(p->h[2].halo)); CHKERR(ierr);
 
@@ -236,13 +236,13 @@ void intra_diamond_mpi_halo_init(Parameters *p) {
     }
   }
 
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hu[1].recv_hb)); CHKERR(ierr);
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].recv_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hu[1].recv_he)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].recv_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->hu[1].recv_hb)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].recv_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->hu[1].recv_he)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hu[1].recv_hb)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hu[1].recv_he)); CHKERR(ierr);
 
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].send_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hu[1].send_hb)); CHKERR(ierr);
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].send_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hu[1].send_he)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].send_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->hu[1].send_hb)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hu[1].shape, p->hu[1].send_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->hu[1].send_he)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hu[1].send_hb)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hu[1].send_he)); CHKERR(ierr);
 
@@ -292,13 +292,13 @@ void intra_diamond_mpi_halo_init(Parameters *p) {
     }
   }
 
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].recv_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hv[1].recv_hb)); CHKERR(ierr);
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].recv_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hv[1].recv_he)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].recv_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->hv[1].recv_hb)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].recv_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->hv[1].recv_he)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hv[1].recv_hb)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hv[1].recv_he)); CHKERR(ierr);
 
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].send_b, MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hv[1].send_hb)); CHKERR(ierr);
-  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].send_e  , MPI_ORDER_FORTRAN, MPI_FLOAT_PRECISION, &(p->hv[1].send_he)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].send_b, MPI_ORDER_FORTRAN, MPI_real_t, &(p->hv[1].send_hb)); CHKERR(ierr);
+  ierr = MPI_Type_create_subarray(3, p->ldomain_shape, p->hv[1].shape, p->hv[1].send_e  , MPI_ORDER_FORTRAN, MPI_real_t, &(p->hv[1].send_he)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hv[1].send_hb)); CHKERR(ierr);
   ierr = MPI_Type_commit(&(p->hv[1].send_he)); CHKERR(ierr);
 

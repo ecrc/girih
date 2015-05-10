@@ -35,11 +35,11 @@
 #endif
 
 #if DP
-#define FLOAT_PRECISION double
-#define MPI_FLOAT_PRECISION MPI_DOUBLE
+typedef double real_t;
+#define MPI_real_t MPI_DOUBLE
 #else
-#define FLOAT_PRECISION float
-#define MPI_FLOAT_PRECISION MPI_FLOAT
+typedef float real_t;
+#define MPI_real_t MPI_FLOAT
 #endif
 
 #define CHKERR(error_stat) {elen=0; estr[0]='d';}//do{ if(error_stat != MPI_SUCCESS){MPI_Error_string(ierr,estr,&elen); fprintf(stderr,estr); MPI_Finalize();} } while(0)
@@ -106,8 +106,8 @@ typedef struct{
 }CLU_CTX;
 
 #define CLU_SIG (const CLU_CTX clu_ctx, const int xb, const int xe, const int j, const int k, \
-const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
-const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2)
+const real_t * restrict coef, real_t * restrict u, \
+const real_t * restrict v, const real_t * restrict roc2)
 
 typedef void (*clu_func_t)CLU_SIG;
 
@@ -131,10 +131,10 @@ typedef struct{
 
 // Kernels and time steppers data structures
 #define KERNEL_SIG     ( const int shape[3], const int xb, const int yb,  const int zb, const int xe, const int ye, const int ze,\
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int field, stencil_CTX stencil_ctx)
+    const real_t * restrict coef, real_t * restrict u, const real_t * restrict v, const real_t * restrict roc2, int field, stencil_CTX stencil_ctx)
 #define KERNEL_MWD_SIG ( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze, \
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, \
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid)
+    const real_t * restrict coef, real_t * restrict u, \
+    real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid)
 
 typedef void (*spt_blk_func_t)KERNEL_SIG;
 typedef void (*mwd_func_t)KERNEL_MWD_SIG;
@@ -180,8 +180,8 @@ typedef struct{
 //  int stencil_radius, is_constant_coefficient;
 //  enum Stencil_Types stencil_type;
 
-  FLOAT_PRECISION * restrict U1, * restrict U2, * restrict U3, * restrict source;
-  FLOAT_PRECISION * restrict coef;
+  real_t * restrict U1, * restrict U2, * restrict U3, * restrict source;
+  real_t * restrict coef;
 
   // Holds the value of cache blocking across Y axis
   stencil_CTX stencil_ctx;
@@ -209,7 +209,7 @@ typedef struct{
   struct Stencil stencil;
 
   // list of coefficients to be used in stencil operators
-  FLOAT_PRECISION g_coef[11];
+  real_t g_coef[11];
 
   int array_padding;
 

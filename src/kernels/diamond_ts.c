@@ -8,7 +8,7 @@
 #define ST_BUSY (0)
 #define ST_NOT_BUSY (1)
 
-extern void sub_array_copy_tg(const FLOAT_PRECISION * restrict src_buf, FLOAT_PRECISION * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
+extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
 
 typedef struct{
 volatile  int *t_pos;
@@ -22,7 +22,7 @@ Diam_Sched_State st;
 int y_len_l, y_len_r;
 int t_len;
 int mpi_size;
-FLOAT_PRECISION *send_buf_l, *recv_buf_l, *send_buf_r, *recv_buf_r;
+real_t *send_buf_l, *recv_buf_l, *send_buf_r, *recv_buf_r;
 MPI_Request wait_req_send_l[2], wait_req_recv_l[2], wait_req_send_r[2], wait_req_recv_r[2];
 
 
@@ -112,7 +112,7 @@ static inline void intra_diamond_strided_send_left(Parameters *p){
   ierr = MPI_Isend(p->U1, 1, p->hu[1].send_hb, p->t.down, 0, p->t.cart_comm, &(wait_req_send_l[0])); CHKERR(ierr);
   ierr = MPI_Isend(p->U2, 1, p->hv[1].send_hb, p->t.down, 0, p->t.cart_comm, &(wait_req_send_l[1])); CHKERR(ierr);
 }
-static inline void intra_diamond_concat_send_left(Parameters *p, FLOAT_PRECISION *send_buf){
+static inline void intra_diamond_concat_send_left(Parameters *p, real_t *send_buf){
   // concatenate the halo data then communicate contiguous data
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
@@ -128,9 +128,9 @@ static inline void intra_diamond_concat_send_left(Parameters *p, FLOAT_PRECISION
     sub_array_copy_tg(p->U2, send_buf, p->ldomain_shape, p->hu[1].shape, p->hu[1].shape, p->hv[1].send_b, h_offs, p->stencil_ctx.thread_group_size);
   }
   // send the data out
-  ierr = MPI_Isend(send_buf, 2*h_size, MPI_FLOAT_PRECISION, p->t.down , 0, p->t.cart_comm, &(wait_req_send_l[0])); CHKERR(ierr);
+  ierr = MPI_Isend(send_buf, 2*h_size, MPI_real_t, p->t.down , 0, p->t.cart_comm, &(wait_req_send_l[0])); CHKERR(ierr);
 }
-static inline void intra_diamond_send_left(Parameters *p, FLOAT_PRECISION *send_buf){
+static inline void intra_diamond_send_left(Parameters *p, real_t *send_buf){
   if(p->halo_concat == 0){
     intra_diamond_strided_send_left(p);
   } else{
@@ -154,7 +154,7 @@ static inline void intra_diamond_strided_send_right(Parameters *p){
   ierr = MPI_Isend(p->U1, 1, p->hu[1].send_he, p->t.up, 0, p->t.cart_comm, &(wait_req_send_r[0])); CHKERR(ierr);
   ierr = MPI_Isend(p->U2, 1, p->hv[1].send_he, p->t.up, 0, p->t.cart_comm, &(wait_req_send_r[1])); CHKERR(ierr);
 }
-static inline void intra_diamond_concat_send_right(Parameters *p, FLOAT_PRECISION *send_buf){
+static inline void intra_diamond_concat_send_right(Parameters *p, real_t *send_buf){
   // concatenate the halo data then communicate contiguous data
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
@@ -170,9 +170,9 @@ static inline void intra_diamond_concat_send_right(Parameters *p, FLOAT_PRECISIO
     sub_array_copy_tg(p->U2, send_buf, p->ldomain_shape, p->hu[1].shape, p->hu[1].shape, p->hv[1].send_e, h_offs, p->stencil_ctx.thread_group_size);
   }
   // send the data out
-  ierr = MPI_Isend(send_buf, 2*h_size, MPI_FLOAT_PRECISION, p->t.up , 0, p->t.cart_comm, &(wait_req_send_r[0])); CHKERR(ierr);
+  ierr = MPI_Isend(send_buf, 2*h_size, MPI_real_t, p->t.up , 0, p->t.cart_comm, &(wait_req_send_r[0])); CHKERR(ierr);
 }
-static inline void intra_diamond_send_right(Parameters *p, FLOAT_PRECISION *send_buf){
+static inline void intra_diamond_send_right(Parameters *p, real_t *send_buf){
   if(p->halo_concat == 0){
     intra_diamond_strided_send_right(p);
   } else{
@@ -195,15 +195,15 @@ static inline void intra_diamond_strided_recv_left(Parameters *p){
   ierr = MPI_Irecv(p->U1, 1, p->hu[1].recv_hb, p->t.down, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_l[0])); CHKERR(ierr);
   ierr = MPI_Irecv(p->U2, 1, p->hv[1].recv_hb, p->t.down, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_l[1])); CHKERR(ierr);
 }
-static inline void intra_diamond_recv_left(Parameters *p, FLOAT_PRECISION *recv_buf){
+static inline void intra_diamond_recv_left(Parameters *p, real_t *recv_buf){
   if(p->halo_concat == 0){
     intra_diamond_strided_recv_left(p);
   } else{
      // receive left side
-    ierr = MPI_Irecv(recv_buf, 2*p->hu[1].size, MPI_FLOAT_PRECISION, p->t.down , MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_l[0])); CHKERR(ierr);
+    ierr = MPI_Irecv(recv_buf, 2*p->hu[1].size, MPI_real_t, p->t.down , MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_l[0])); CHKERR(ierr);
  }
 }
-static inline void intra_diamond_concat_wait_recv_left(Parameters *p, FLOAT_PRECISION *recv_buf){
+static inline void intra_diamond_concat_wait_recv_left(Parameters *p, real_t *recv_buf){
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
   int *offs;
@@ -221,7 +221,7 @@ static inline void intra_diamond_concat_wait_recv_left(Parameters *p, FLOAT_PREC
     sub_array_copy_tg(recv_buf, p->U2, p->hu[1].shape, p->ldomain_shape, p->hu[1].shape, h_offs, p->hv[1].recv_b, p->stencil_ctx.thread_group_size);
   }
 }
-static inline void intra_diamond_wait_recv_left(Parameters *p, FLOAT_PRECISION *recv_buf){
+static inline void intra_diamond_wait_recv_left(Parameters *p, real_t *recv_buf){
   MPI_Status wait_stat[2];
   MPI_Status wait_stat1;
   if(p->halo_concat == 0){
@@ -237,15 +237,15 @@ static inline void intra_diamond_strided_recv_right(Parameters *p){
   ierr = MPI_Irecv(p->U1, 1, p->hu[1].recv_he, p->t.up, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_r[0])); CHKERR(ierr);
   ierr = MPI_Irecv(p->U2, 1, p->hv[1].recv_he, p->t.up, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_r[1])); CHKERR(ierr);
 }
-static inline void intra_diamond_recv_right(Parameters *p, FLOAT_PRECISION *recv_buf){
+static inline void intra_diamond_recv_right(Parameters *p, real_t *recv_buf){
   if(p->halo_concat == 0){
     intra_diamond_strided_recv_right(p);
   } else{
     // receive right side
-    ierr = MPI_Irecv(recv_buf, 2*p->hu[1].size, MPI_FLOAT_PRECISION, p->t.up , MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_r[0])); CHKERR(ierr);
+    ierr = MPI_Irecv(recv_buf, 2*p->hu[1].size, MPI_real_t, p->t.up , MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_r[0])); CHKERR(ierr);
   }
 }
-static inline void intra_diamond_concat_wait_recv_right(Parameters *p, FLOAT_PRECISION *recv_buf){
+static inline void intra_diamond_concat_wait_recv_right(Parameters *p, real_t *recv_buf){
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
   int *offs;
@@ -263,7 +263,7 @@ static inline void intra_diamond_concat_wait_recv_right(Parameters *p, FLOAT_PRE
     sub_array_copy_tg(recv_buf, p->U2, p->hu[1].shape, p->ldomain_shape, p->hu[1].shape, h_offs, p->hv[1].recv_e, p->stencil_ctx.thread_group_size);
   }
 }
-static inline void intra_diamond_wait_recv_right(Parameters *p, FLOAT_PRECISION *recv_buf){
+static inline void intra_diamond_wait_recv_right(Parameters *p, real_t *recv_buf){
   MPI_Status wait_stat[2];
   if(p->halo_concat == 0){
     ierr = MPI_Waitall(2, wait_req_recv_r, wait_stat); CHKERR(ierr); // receive wait
@@ -833,10 +833,10 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   if (p->halo_concat ==1){
     // assuming same halo size for both U and V buffers
     comm_buf_size = 2 * p->hu[1].shape[0] * p->hu[1].shape[1] * p->hu[1].shape[2];
-    posix_memalign((void **)&(recv_buf_l), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
-    posix_memalign((void **)&(recv_buf_r), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
-    posix_memalign((void **)&(send_buf_l), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
-    posix_memalign((void **)&(send_buf_r), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
+    posix_memalign((void **)&(recv_buf_l), p->alignment, sizeof(real_t)*comm_buf_size);
+    posix_memalign((void **)&(recv_buf_r), p->alignment, sizeof(real_t)*comm_buf_size);
+    posix_memalign((void **)&(send_buf_l), p->alignment, sizeof(real_t)*comm_buf_size);
+    posix_memalign((void **)&(send_buf_r), p->alignment, sizeof(real_t)*comm_buf_size);
   }
 
 #if defined(_OPENMP)

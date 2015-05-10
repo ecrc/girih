@@ -7,8 +7,8 @@
 
 // ISO stencil 8th-order-in-space-2nd-order-in-time with constant coefficient
 void iso_ref( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -17,7 +17,7 @@ void iso_ref( const int shape[3], const int xb, const int yb, const int zb, cons
   int  n, nz, nj;
   nz = ze -zb;
 
-  FLOAT_PRECISION lap;
+  real_t lap;
 
 
   for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
@@ -65,8 +65,8 @@ void iso_ref( const int shape[3], const int xb, const int yb, const int zb, cons
 
 // ISO stencil 2nd-order-in-space-1st-order-in-time with constant coefficient
 void iso_ref_2space_1time( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -106,8 +106,8 @@ void iso_ref_2space_1time( const int shape[3], const int xb, const int yb, const
 
 // ISO stencil 2nd-order-in-space-1st-order-in-time with variable coefficient
 void iso_ref_2space_1time_var( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -148,8 +148,8 @@ void iso_ref_2space_1time_var( const int shape[3], const int xb, const int yb, c
 
 // ISO stencil 2nd-order-in-space-1st-order-in-time with variable coefficient
 void iso_ref_2space_1time_var_axsym( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -189,8 +189,8 @@ void iso_ref_2space_1time_var_axsym( const int shape[3], const int xb, const int
 
 // ISO stencil 8th-order-in-space-1st-order-in-time with variable axis symmetric coefficient
 void iso_ref_8space_1time_var_axsym( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -238,8 +238,8 @@ void iso_ref_8space_1time_var_axsym( const int shape[3], const int xb, const int
 
 // ISO stencil 2nd-order-in-space-1st-order-in-time with variable coefficient
 void iso_ref_2space_1time_var_nosym( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
 
   int i,j,k, jb, je;
   int nny =shape[1];

@@ -20,23 +20,23 @@ unsigned long get_mwf_size(Parameters *p, int t_dim){
 
   switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
-    total_points = ( (t_order+1)             *wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1)             *wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
     break;
 
   case VARIABLE_COEFFICIENT:
-    total_points = ( (t_order+1 + (1+p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1 + (1+p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
     break;
 
   case VARIABLE_COEFFICIENT_AXSYM:
-    total_points = ( (t_order+1 + (1+3*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1 + (1+3*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
     break;
 
   case VARIABLE_COEFFICIENT_NOSYM:
-    total_points = ( (t_order+1 + (1+6*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(FLOAT_PRECISION);
+    total_points = ( (t_order+1 + (1+6*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
     break;
 
   case SOLAR_COEFFICIENT:
-    total_points = ( (p->stencil.nd)*wf_elements + (diam_width + diam_height )*12*p->stencil.r) * lnx * 2*sizeof(FLOAT_PRECISION);
+    total_points = ( (p->stencil.nd)*wf_elements + (diam_width + diam_height )*12*p->stencil.r) * lnx * 2*sizeof(real_t);
     break;
 
 

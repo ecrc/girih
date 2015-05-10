@@ -79,10 +79,10 @@ void param_default(Parameters *p) {
   p->h[2].size = 0;
 
   // Initialize the default stencil coefficients values
-  FLOAT_PRECISION coef[] = {-0.28472, 0.16000, -0.02000, 0.00254,
+  real_t coef[] = {-0.28472, 0.16000, -0.02000, 0.00254,
       -0.00018, -0.18472, 0.19, -0.0500, 0.00554, -0.0009, 0.00354};
   int i;
-  for(i=0; i<11; i++) p->g_coef[i] = (FLOAT_PRECISION) coef[i];
+  for(i=0; i<11; i++) p->g_coef[i] = (real_t) coef[i];
 
   // profiling information
   reset_timers(&(p->prof));
@@ -122,18 +122,18 @@ void arrays_allocate(Parameters *p) {
 
   switch(p->stencil.type){
     case REGULAR:
-      male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
-      male1 = posix_memalign((void **)&(p->U2), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
+      male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(real_t)*p->ln_domain); check_merr(male1);
+      male1 = posix_memalign((void **)&(p->U2), p->alignment, sizeof(real_t)*p->ln_domain); check_merr(male1);
       if(p->stencil.time_order == 2)
-        male1 = posix_memalign((void **)&(p->U3), p->alignment, sizeof(FLOAT_PRECISION)*p->ln_domain); check_merr(male1);
+        male1 = posix_memalign((void **)&(p->U3), p->alignment, sizeof(real_t)*p->ln_domain); check_merr(male1);
       if(p->source_point_enabled==1)
-        male0 = posix_memalign((void **)&(p->source), p->alignment, sizeof(FLOAT_PRECISION)*p->nt); check_merr(male0);
+        male0 = posix_memalign((void **)&(p->source), p->alignment, sizeof(real_t)*p->nt); check_merr(male0);
       domain_size = 2*p->ln_domain;
       break;
 
     case SOLAR:
       domain_size = p->ln_domain*12lu*2lu;
-      male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(FLOAT_PRECISION)*domain_size); check_merr(male1);
+      male1 = posix_memalign((void **)&(p->U1), p->alignment, sizeof(real_t)*domain_size); check_merr(male1);
       p->U2 = 0;
       break;
 
@@ -172,14 +172,14 @@ void arrays_allocate(Parameters *p) {
     break;
   }
 
-  male2 = posix_memalign((void **)&(p->coef), p->alignment, sizeof(FLOAT_PRECISION)*coef_size); check_merr(male2);
+  male2 = posix_memalign((void **)&(p->coef), p->alignment, sizeof(real_t)*coef_size); check_merr(male2);
 
   if (p->verbose == 1){
     if( (p->mpi_rank ==0)  || (p->mpi_rank == p->mpi_size-1))
     printf("[rank=%d] alloc. dom(err=%d):%fGiB coef(err=%d):%fGiB total:%fGiB\n", p->mpi_rank,
-            male1, sizeof(FLOAT_PRECISION)*domain_size*1.0/(1024*1024*1024),
-            male2, sizeof(FLOAT_PRECISION)*coef_size*1.0/(1024*1024*1024),
-            sizeof(FLOAT_PRECISION)*(coef_size+ domain_size)*1.0/(1024*1024*1024));
+            male1, sizeof(real_t)*domain_size*1.0/(1024*1024*1024),
+            male2, sizeof(real_t)*coef_size*1.0/(1024*1024*1024),
+            sizeof(real_t)*(coef_size+ domain_size)*1.0/(1024*1024*1024));
   }
 }
 
@@ -343,9 +343,9 @@ void init(Parameters *p) {
     int num_thread_groups = (int) ceil(1.0*p->num_threads / p->stencil_ctx.thread_group_size);
 
     if(p->use_omp_stat_sched==0){
-      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(real_t));
     } else {// tailored for the Xeon Phi
-      p->stencil_ctx.bs_y = (p->cache_size*1024)/(p->stencil_ctx.thread_group_size*(1+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(FLOAT_PRECISION));
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/(p->stencil_ctx.thread_group_size*(1+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(real_t));
     }
     // set minimum block size if cache is not sufficient
     if(p->stencil_ctx.bs_y == 0) p->stencil_ctx.bs_y=p->stencil.r;
@@ -562,7 +562,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
 #define pU3(i,j,k)          (p->U3[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 void domain_data_fill_std(Parameters * p){
   int i,j,k, gi, gj, gk;
-  FLOAT_PRECISION r;
+  real_t r;
   int xb, xe, yb, ye, zb, ze;
   for(i=0; i<p->ln_domain;i++){
     p->U1[i] = 0.0;
@@ -652,7 +652,7 @@ void domain_data_fill_std(Parameters * p){
 void domain_data_fill_solar(Parameters *p){
 
   unsigned long f, i,j,k, gi, gj, gk;
-  FLOAT_PRECISION r;
+  real_t r;
   int xb, xe, yb, ye, zb, ze;
   for(i=0; i<p->ln_domain*24lu;i++){
     p->U1[i] = 0.0;
@@ -818,7 +818,7 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
   ////////////////////////////////////////////////////////////////
   // print the performance results
   if (p->mpi_rank == 0) {
-    printf("Total memory allocation per MPI rank: %lu MiB\n", sizeof(FLOAT_PRECISION)*p->ln_domain*3/1024/1024);
+    printf("Total memory allocation per MPI rank: %lu MiB\n", sizeof(real_t)*p->ln_domain*3/1024/1024);
     printf("Total time(s): %e\n", t*p->n_tests);
     printf("time/test(s): %e\n", t);
 
@@ -960,7 +960,7 @@ void print_param(Parameters p) {
     break;
   }
 
-  precision = ((sizeof(FLOAT_PRECISION)==4)?"SP":"DP");
+  precision = ((sizeof(real_t)==4)?"SP":"DP");
 
   printf("\n******************************************************\n");
   printf("Parameters settings\n");
@@ -1262,7 +1262,7 @@ void parse_args (int argc, char** argv, Parameters * p)
   }
 }
 
-void print_3Darray(char *filename, FLOAT_PRECISION * restrict array, int nx, int ny, int nz, int halo) {
+void print_3Darray(char *filename, real_t * restrict array, int nx, int ny, int nz, int halo) {
   int i,j,k;
   FILE *fp;
   if(!(fp = fopen(filename, "w")))
@@ -1283,7 +1283,7 @@ void print_3Darray(char *filename, FLOAT_PRECISION * restrict array, int nx, int
   fclose(fp);
 }
 
-void print_3Darray_solar(char *filename, FLOAT_PRECISION * restrict array, int nx, int ny, int nz, int halo) {
+void print_3Darray_solar(char *filename, real_t * restrict array, int nx, int ny, int nz, int halo) {
   int f,i,j,k;
   unsigned long idx;
   FILE *fp;

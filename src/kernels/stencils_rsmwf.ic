@@ -1,6 +1,6 @@
 void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
+    const real_t * restrict coef, real_t * restrict u,
+    real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie;
   int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, th_nwf, tgs, q, r;
@@ -36,8 +36,8 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     int left_tid_idx = ((tid+tgs-1)%tgs)*CL;
     int tid_idx = tid*CL;
 
-    FLOAT_PRECISION * restrict u_r = u;
-    FLOAT_PRECISION * restrict v_r = v;
+    real_t * restrict u_r = u;
+    real_t * restrict v_r = v;
  
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);

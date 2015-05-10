@@ -9,9 +9,9 @@
 #define U1(i,j,k)         (p->U1[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 #define U2(i,j,k)         (p->U2[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 
-extern void sub_array_copy(const FLOAT_PRECISION * restrict src_buf, FLOAT_PRECISION * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs);
+extern void sub_array_copy(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs);
 
-static inline void exchange_halo_srtided_asynch(Parameters *p, FLOAT_PRECISION * restrict u) {
+static inline void exchange_halo_srtided_asynch(Parameters *p, real_t * restrict u) {
   MPI_Request wait_req[3][4];
   MPI_Status wait_stat[3][4];
   int i;
@@ -54,7 +54,7 @@ static inline void exchange_halo_srtided_asynch(Parameters *p, FLOAT_PRECISION *
   for(i=0; i<3; i++)
     if (p->t.shape[i] > 1) ierr = MPI_Waitall(4, wait_req[i], wait_stat[i]); CHKERR(ierr);
 }
-static inline void exchange_halo_concat_asynch(Parameters *p, FLOAT_PRECISION * restrict u, FLOAT_PRECISION * restrict x_send_buf, FLOAT_PRECISION * restrict x_recv_buf, FLOAT_PRECISION * restrict y_send_buf, FLOAT_PRECISION * restrict y_recv_buf) {
+static inline void exchange_halo_concat_asynch(Parameters *p, real_t * restrict u, real_t * restrict x_send_buf, real_t * restrict x_recv_buf, real_t * restrict y_send_buf, real_t * restrict y_recv_buf) {
   MPI_Request wait_req[3][4];
   MPI_Status wait_stat[4];
   int i;
@@ -63,13 +63,13 @@ static inline void exchange_halo_concat_asynch(Parameters *p, FLOAT_PRECISION * 
 
   // Asynch receive in X
   if (p->t.shape[0] > 1) {
-    ierr = MPI_Irecv(x_recv_buf                 , p->h[0].size, MPI_FLOAT_PRECISION, p->t.left , MPI_ANY_TAG, p->t.cart_comm, &(wait_req[0][0])); CHKERR(ierr);
-    ierr = MPI_Irecv(&(x_recv_buf[p->h[0].size]), p->h[0].size, MPI_FLOAT_PRECISION, p->t.right, MPI_ANY_TAG, p->t.cart_comm, &(wait_req[0][1])); CHKERR(ierr);
+    ierr = MPI_Irecv(x_recv_buf                 , p->h[0].size, MPI_real_t, p->t.left , MPI_ANY_TAG, p->t.cart_comm, &(wait_req[0][0])); CHKERR(ierr);
+    ierr = MPI_Irecv(&(x_recv_buf[p->h[0].size]), p->h[0].size, MPI_real_t, p->t.right, MPI_ANY_TAG, p->t.cart_comm, &(wait_req[0][1])); CHKERR(ierr);
   }
   // Asynch receive in Y
   if (p->t.shape[1] > 1) {
-    ierr = MPI_Irecv(y_recv_buf                 , p->h[1].size, MPI_FLOAT_PRECISION, p->t.down , MPI_ANY_TAG, p->t.cart_comm, &(wait_req[1][0])); CHKERR(ierr);
-    ierr = MPI_Irecv(&(y_recv_buf[p->h[1].size]), p->h[1].size, MPI_FLOAT_PRECISION, p->t.up, MPI_ANY_TAG, p->t.cart_comm, &(wait_req[1][1])); CHKERR(ierr);
+    ierr = MPI_Irecv(y_recv_buf                 , p->h[1].size, MPI_real_t, p->t.down , MPI_ANY_TAG, p->t.cart_comm, &(wait_req[1][0])); CHKERR(ierr);
+    ierr = MPI_Irecv(&(y_recv_buf[p->h[1].size]), p->h[1].size, MPI_real_t, p->t.up, MPI_ANY_TAG, p->t.cart_comm, &(wait_req[1][1])); CHKERR(ierr);
   }
   // Asynch receive in Z
   if (p->t.shape[2] > 1) {
@@ -82,22 +82,22 @@ static inline void exchange_halo_concat_asynch(Parameters *p, FLOAT_PRECISION * 
   if (p->t.shape[0] > 1) {
     if( p->t.left != MPI_PROC_NULL)
       sub_array_copy(u, &(x_send_buf[p->h[0].size]), p->ldomain_shape, p->h[0].shape, p->h[0].shape, p->h[0].send_b, z_offs);
-    ierr = MPI_Isend(&(x_send_buf[p->h[0].size]), p->h[0].size, MPI_FLOAT_PRECISION, p->t.left , 0, p->t.cart_comm, &(wait_req[0][2])); CHKERR(ierr);
+    ierr = MPI_Isend(&(x_send_buf[p->h[0].size]), p->h[0].size, MPI_real_t, p->t.left , 0, p->t.cart_comm, &(wait_req[0][2])); CHKERR(ierr);
 
     if( p->t.right != MPI_PROC_NULL)
       sub_array_copy(u, x_send_buf, p->ldomain_shape, p->h[0].shape, p->h[0].shape, p->h[0].send_e, z_offs);
-    ierr = MPI_Isend(x_send_buf, p->h[0].size, MPI_FLOAT_PRECISION, p->t.right, 0, p->t.cart_comm, &(wait_req[0][3])); CHKERR(ierr);
+    ierr = MPI_Isend(x_send_buf, p->h[0].size, MPI_real_t, p->t.right, 0, p->t.cart_comm, &(wait_req[0][3])); CHKERR(ierr);
   }
   // Asynch send in Y
   if (p->t.shape[1] > 1) {
     if( p->t.down != MPI_PROC_NULL)
       sub_array_copy(u, &(y_send_buf[p->h[1].size]), p->ldomain_shape, p->h[1].shape, p->h[1].shape, p->h[1].send_b, z_offs);
-    ierr = MPI_Isend(&(y_send_buf[p->h[1].size]), p->h[1].size, MPI_FLOAT_PRECISION, p->t.down , 0, p->t.cart_comm, &(wait_req[1][2])); CHKERR(ierr);
+    ierr = MPI_Isend(&(y_send_buf[p->h[1].size]), p->h[1].size, MPI_real_t, p->t.down , 0, p->t.cart_comm, &(wait_req[1][2])); CHKERR(ierr);
 
 
     if( p->t.up != MPI_PROC_NULL)
       sub_array_copy(u, y_send_buf, p->ldomain_shape, p->h[1].shape, p->h[1].shape, p->h[1].send_e, z_offs);
-    ierr = MPI_Isend(y_send_buf, p->h[1].size, MPI_FLOAT_PRECISION, p->t.up, 0, p->t.cart_comm, &(wait_req[1][3])); CHKERR(ierr);
+    ierr = MPI_Isend(y_send_buf, p->h[1].size, MPI_real_t, p->t.up, 0, p->t.cart_comm, &(wait_req[1][3])); CHKERR(ierr);
   }
   // Asynch send in Z
   if (p->t.shape[2] > 1) {
@@ -135,7 +135,7 @@ static inline void exchange_halo_concat_asynch(Parameters *p, FLOAT_PRECISION * 
   // Wait communication across Z to complete
   if (p->t.shape[2] > 1) ierr = MPI_Waitall(4, wait_req[2], wait_stat); CHKERR(ierr);
 }
-static inline void exchange_halo_asynch(Parameters *p, FLOAT_PRECISION * restrict u, FLOAT_PRECISION * restrict x_send_buf, FLOAT_PRECISION * restrict x_recv_buf, FLOAT_PRECISION * restrict y_send_buf, FLOAT_PRECISION * restrict y_recv_buf) {
+static inline void exchange_halo_asynch(Parameters *p, real_t * restrict u, real_t * restrict x_send_buf, real_t * restrict x_recv_buf, real_t * restrict y_send_buf, real_t * restrict y_recv_buf) {
   if(p->halo_concat == 1){
     exchange_halo_concat_asynch(p, u, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);
   } else {
@@ -148,20 +148,20 @@ void naive_nonblocking_ts(Parameters *p) {
   int it;
 
   // create buffers to aggregate halo data for communication
-  FLOAT_PRECISION *x_send_buf, *x_recv_buf, *y_send_buf, *y_recv_buf;
+  real_t *x_send_buf, *x_recv_buf, *y_send_buf, *y_recv_buf;
   int comm_buf_size;
   if (p->halo_concat == 1){
     if (p->t.shape[0] > 1){
       // assuming same halo size for both U and V buffers
       comm_buf_size = 2 * p->h[0].size;
-      posix_memalign((void **)&(x_recv_buf), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
-      posix_memalign((void **)&(x_send_buf), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
+      posix_memalign((void **)&(x_recv_buf), p->alignment, sizeof(real_t)*comm_buf_size);
+      posix_memalign((void **)&(x_send_buf), p->alignment, sizeof(real_t)*comm_buf_size);
     }
     if (p->t.shape[1] > 1){
       // assuming same halo size for both U and V buffers
       comm_buf_size = 2 * p->h[1].size;
-      posix_memalign((void **)&(y_recv_buf), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
-      posix_memalign((void **)&(y_send_buf), p->alignment, sizeof(FLOAT_PRECISION)*comm_buf_size);
+      posix_memalign((void **)&(y_recv_buf), p->alignment, sizeof(real_t)*comm_buf_size);
+      posix_memalign((void **)&(y_send_buf), p->alignment, sizeof(real_t)*comm_buf_size);
     }
   }
 

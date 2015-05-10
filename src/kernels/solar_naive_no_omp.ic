@@ -1,6 +1,6 @@
 
 static inline void solar_h_field_kernel_naive( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u, stencil_CTX stencil_ctx) {
   int i,j,k;
   int nnz =shape[2];
   int nny =shape[1];
@@ -8,40 +8,40 @@ static inline void solar_h_field_kernel_naive( const int shape[3], const int xb,
   unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
   unsigned long ixmin, ixmax;
 
-  FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
-  FLOAT_PRECISION * restrict Hzxd = &(u[1ul*ln_domain]);
-  FLOAT_PRECISION * restrict Hxyd = &(u[2ul*ln_domain]);
-  FLOAT_PRECISION * restrict Hzyd = &(u[3ul*ln_domain]);
-  FLOAT_PRECISION * restrict Hxzd = &(u[4ul*ln_domain]);
-  FLOAT_PRECISION * restrict Hyzd = &(u[5ul*ln_domain]);
+  real_t * restrict Hyxd = &(u[0ul*ln_domain]);
+  real_t * restrict Hzxd = &(u[1ul*ln_domain]);
+  real_t * restrict Hxyd = &(u[2ul*ln_domain]);
+  real_t * restrict Hzyd = &(u[3ul*ln_domain]);
+  real_t * restrict Hxzd = &(u[4ul*ln_domain]);
+  real_t * restrict Hyzd = &(u[5ul*ln_domain]);
 
-  const FLOAT_PRECISION * restrict Exzd = &(u[6ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Eyzd = &(u[7ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Eyxd = &(u[8ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Ezxd = &(u[9ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Exyd = &(u[10ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Ezyd = &(u[11ul*ln_domain]);
+  const real_t * restrict Exzd = &(u[6ul*ln_domain]);
+  const real_t * restrict Eyzd = &(u[7ul*ln_domain]);
+  const real_t * restrict Eyxd = &(u[8ul*ln_domain]);
+  const real_t * restrict Ezxd = &(u[9ul*ln_domain]);
+  const real_t * restrict Exyd = &(u[10ul*ln_domain]);
+  const real_t * restrict Ezyd = &(u[11ul*ln_domain]);
 
 
-  const FLOAT_PRECISION * restrict cHyxd = &(coef[0ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cHzxd = &(coef[1ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cHxyd = &(coef[2ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cHzyd = &(coef[3ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cHxzd = &(coef[4ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cHyzd = &(coef[5ul*ln_domain]);
+  const real_t * restrict cHyxd = &(coef[0ul*ln_domain]);
+  const real_t * restrict cHzxd = &(coef[1ul*ln_domain]);
+  const real_t * restrict cHxyd = &(coef[2ul*ln_domain]);
+  const real_t * restrict cHzyd = &(coef[3ul*ln_domain]);
+  const real_t * restrict cHxzd = &(coef[4ul*ln_domain]);
+  const real_t * restrict cHyzd = &(coef[5ul*ln_domain]);
 
-  const FLOAT_PRECISION * restrict tHyxd = &(coef[6ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tHzxd = &(coef[7ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tHxyd = &(coef[8ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tHzyd = &(coef[9ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tHxzd = &(coef[10ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tHyzd = &(coef[11ul*ln_domain]);
+  const real_t * restrict tHyxd = &(coef[6ul*ln_domain]);
+  const real_t * restrict tHzxd = &(coef[7ul*ln_domain]);
+  const real_t * restrict tHxyd = &(coef[8ul*ln_domain]);
+  const real_t * restrict tHzyd = &(coef[9ul*ln_domain]);
+  const real_t * restrict tHxzd = &(coef[10ul*ln_domain]);
+  const real_t * restrict tHyzd = &(coef[11ul*ln_domain]);
 
-  const FLOAT_PRECISION * restrict Hxbndd = &(coef[12ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Hybndd = &(coef[13ul*ln_domain]);
+  const real_t * restrict Hxbndd = &(coef[12ul*ln_domain]);
+  const real_t * restrict Hybndd = &(coef[13ul*ln_domain]);
 
   unsigned long isub;
-  FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
+  real_t stagDiffR, stagDiffI, asgn;
 
   // Update H-field
   for(k=zb; k<ze; k++) {
@@ -154,7 +154,7 @@ static inline void solar_h_field_kernel_naive( const int shape[3], const int xb,
 
 }
 static inline void solar_e_field_kernel_naive( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u, stencil_CTX stencil_ctx) {
   int i,j,k;
   int nnz =shape[2];
   int nny =shape[1];
@@ -162,39 +162,39 @@ static inline void solar_e_field_kernel_naive( const int shape[3], const int xb,
   unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
   unsigned long ixmin, ixmax;
 
-  const FLOAT_PRECISION * restrict Hyxd = &(u[0ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Hzxd = &(u[1ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Hxyd = &(u[2ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Hzyd = &(u[3ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Hxzd = &(u[4ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Hyzd = &(u[5ul*ln_domain]);
+  const real_t * restrict Hyxd = &(u[0ul*ln_domain]);
+  const real_t * restrict Hzxd = &(u[1ul*ln_domain]);
+  const real_t * restrict Hxyd = &(u[2ul*ln_domain]);
+  const real_t * restrict Hzyd = &(u[3ul*ln_domain]);
+  const real_t * restrict Hxzd = &(u[4ul*ln_domain]);
+  const real_t * restrict Hyzd = &(u[5ul*ln_domain]);
 
-  FLOAT_PRECISION * restrict Exzd = &(u[6ul*ln_domain]);
-  FLOAT_PRECISION * restrict Eyzd = &(u[7ul*ln_domain]);
-  FLOAT_PRECISION * restrict Eyxd = &(u[8ul*ln_domain]);
-  FLOAT_PRECISION * restrict Ezxd = &(u[9ul*ln_domain]);
-  FLOAT_PRECISION * restrict Exyd = &(u[10ul*ln_domain]);
-  FLOAT_PRECISION * restrict Ezyd = &(u[11ul*ln_domain]);
+  real_t * restrict Exzd = &(u[6ul*ln_domain]);
+  real_t * restrict Eyzd = &(u[7ul*ln_domain]);
+  real_t * restrict Eyxd = &(u[8ul*ln_domain]);
+  real_t * restrict Ezxd = &(u[9ul*ln_domain]);
+  real_t * restrict Exyd = &(u[10ul*ln_domain]);
+  real_t * restrict Ezyd = &(u[11ul*ln_domain]);
 
-  const FLOAT_PRECISION * restrict cExzd = &(coef[14ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cEyzd = &(coef[15ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cEyxd = &(coef[16ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cEzxd = &(coef[17ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cExyd = &(coef[18ul*ln_domain]);
-  const FLOAT_PRECISION * restrict cEzyd = &(coef[19ul*ln_domain]);
+  const real_t * restrict cExzd = &(coef[14ul*ln_domain]);
+  const real_t * restrict cEyzd = &(coef[15ul*ln_domain]);
+  const real_t * restrict cEyxd = &(coef[16ul*ln_domain]);
+  const real_t * restrict cEzxd = &(coef[17ul*ln_domain]);
+  const real_t * restrict cExyd = &(coef[18ul*ln_domain]);
+  const real_t * restrict cEzyd = &(coef[19ul*ln_domain]);
 
-  const FLOAT_PRECISION * restrict tExzd = &(coef[20ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tEyzd = &(coef[21ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tEyxd = &(coef[22ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tEzxd = &(coef[23ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tExyd = &(coef[24ul*ln_domain]);
-  const FLOAT_PRECISION * restrict tEzyd = &(coef[25ul*ln_domain]);
+  const real_t * restrict tExzd = &(coef[20ul*ln_domain]);
+  const real_t * restrict tEyzd = &(coef[21ul*ln_domain]);
+  const real_t * restrict tEyxd = &(coef[22ul*ln_domain]);
+  const real_t * restrict tEzxd = &(coef[23ul*ln_domain]);
+  const real_t * restrict tExyd = &(coef[24ul*ln_domain]);
+  const real_t * restrict tEzyd = &(coef[25ul*ln_domain]);
 
-  const FLOAT_PRECISION * restrict Exbndd = &(coef[26ul*ln_domain]);
-  const FLOAT_PRECISION * restrict Eybndd = &(coef[27ul*ln_domain]);
+  const real_t * restrict Exbndd = &(coef[26ul*ln_domain]);
+  const real_t * restrict Eybndd = &(coef[27ul*ln_domain]);
 
   unsigned long isub;
-  FLOAT_PRECISION stagDiffR, stagDiffI, asgn;
+  real_t stagDiffR, stagDiffI, asgn;
 
   // Update E-field
   // ---------------------------------------------------------------------------------------
@@ -312,8 +312,8 @@ static inline void solar_e_field_kernel_naive( const int shape[3], const int xb,
 }
 
 static inline void solar_naive( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const FLOAT_PRECISION * restrict coef, FLOAT_PRECISION * restrict u,
-    const FLOAT_PRECISION * restrict v, const FLOAT_PRECISION * restrict roc2, int field, stencil_CTX stencil_ctx) {
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2, int field, stencil_CTX stencil_ctx) {
 
   if (field == H_FIELD | field == ALL_FIELDS)
     solar_h_field_kernel_naive(shape, xb, yb, zb, xe, ye, ze, coef, u, stencil_ctx);
