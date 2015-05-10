@@ -6,6 +6,7 @@ def main():
 
   k_l = set()
   mwdt_l = set()
+  use_prof = True 
   for k in raw_data:
     k_l.add(get_stencil_num(k))
     # add mwd type
@@ -18,12 +19,14 @@ def main():
     elif('relaxed' in mwd):
       k['mwdt'] = 2
     if(k['mwdt']>=0): mwdt_l.add(k['mwdt'])
+    if 'Sustained Memory BW' not in k.keys(): use_prof=False
   k_l = list(k_l)
   mwdt_l = list(mwdt_l)
 
+
   for k in k_l:
     for mwdt in mwdt_l:
-      plot_lines(raw_data, k, mwdt, use_prof=True)
+      plot_lines(raw_data, k, mwdt, use_prof=use_prof)
 
         
 def plot_lines(raw_data, stencil_kernel, mwdt, use_prof=True, is_dp=1):
@@ -150,7 +153,7 @@ def plot_lines(raw_data, stencil_kernel, mwdt, use_prof=True, is_dp=1):
   elif mwdt==3:
     mwd_str = 'fers'
 
-  title = '_inc_grid_size_1socket_mwdt_'+mwd_str
+  title = '_inc_grid_size_mwdt_'+mwd_str
   if stencil_kernel == 0:
     title = '25_pt_const' + title
   elif stencil_kernel == 1:

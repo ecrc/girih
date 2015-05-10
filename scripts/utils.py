@@ -101,4 +101,25 @@ def load_csv(data_file):
     data = [k for k in data]
   return data
 
+def get_stencil_num(k):
+  # add the stencil operator
+  if  'Solar' in k['Stencil Kernel coefficients']:
+    return 6
+  
+  if  k['Stencil Kernel coefficients'] in 'constant':
+    if  int(k['Stencil Kernel semi-bandwidth'])==4:
+      stencil = 0
+    else:
+      stencil = 1
+  elif  'no-symmetry' in k['Stencil Kernel coefficients']:
+    stencil = 5
+  elif  'sym' in k['Stencil Kernel coefficients']:
+    if int(k['Stencil Kernel semi-bandwidth'])==1:
+      stencil = 3
+    else:
+      stencil = 4
+  else:
+    stencil = 2
+  return stencil
+
 
