@@ -15,7 +15,7 @@ volatile  int *t_pos;
   int *state;
 } Diam_Sched_State;
 volatile int *avail_list;
-volatile unsigned long int head, tail;
+volatile uint64_t head, tail;
 
 int diam_width;
 Diam_Sched_State st;
@@ -640,9 +640,9 @@ static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
 
 void dynamic_intra_diamond_main_loop(Parameters *p){
   int not_complete, th_y_coord, i;
-  unsigned long int il;
+  uint64_t il;
   int num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
-  unsigned long int diam_size = y_len_l*(t_len-1)/2 + y_len_r*((t_len-1)/2 +1);
+  uint64_t diam_size = y_len_l*(t_len-1)/2 + y_len_r*((t_len-1)/2 +1);
   int tid;
   double t1;
 

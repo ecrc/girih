@@ -118,7 +118,7 @@ void reset_wf_timers(Parameters * p){
 
 void arrays_allocate(Parameters *p) {
   int male0, male1, male2;
-  unsigned long coef_size, domain_size;
+  uint64_t coef_size, domain_size;
 
   switch(p->stencil.type){
     case REGULAR:
@@ -282,7 +282,7 @@ void init(Parameters *p) {
   int q, r, i;
 
   set_kernels(p);
-  p->n_stencils = p->stencil_shape[0] * p->stencil_shape[1] * p->stencil_shape[2];
+  p->n_stencils =  ((uint64_t) 1)* p->stencil_shape[0] * p->stencil_shape[1] * p->stencil_shape[2];
 
 
   if(p->stencil.r > 10){
@@ -337,6 +337,7 @@ void init(Parameters *p) {
   p->ldomain_shape[1] = p->lstencil_shape[1]+2*p->stencil.r;
   p->ldomain_shape[2] = p->lstencil_shape[2]+2*p->stencil.r;
 
+
   // calculate the block size in Y to satisfy the layer condition at the spatially blocked code
   if (p->cache_size >0){
 
@@ -365,9 +366,8 @@ void init(Parameters *p) {
     break;
   }
 
-  p->ln_domain = p->ldomain_shape[0] * p->ldomain_shape[1]* p->ldomain_shape[2];
-  p->ln_stencils = p->lstencil_shape[0] * p->lstencil_shape[1] * p->lstencil_shape[2];
-
+  p->ln_domain = ((uint64_t) 1)* p->ldomain_shape[0] * p->ldomain_shape[1]* p->ldomain_shape[2];
+  p->ln_stencils = ((uint64_t) 1)* p->lstencil_shape[0] * p->lstencil_shape[1] * p->lstencil_shape[2];
 
   if(p->debug ==1){
     MPI_Barrier(MPI_COMM_WORLD);
@@ -402,8 +402,8 @@ void init(Parameters *p) {
 
 
 void init_coeff(Parameters * p) {
-  int i, k, ax;
-  unsigned long idx, f;
+  uint64_t i, k, ax;
+  uint64_t idx, f;
 
   switch(p->stencil.coeff){
   case CONSTANT_COEFFICIENT:
@@ -561,7 +561,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
 #define pU2(i,j,k)          (p->U2[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 #define pU3(i,j,k)          (p->U3[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 void domain_data_fill_std(Parameters * p){
-  int i,j,k, gi, gj, gk;
+  uint64_t i,j,k, gi, gj, gk;
   real_t r;
   int xb, xe, yb, ye, zb, ze;
   for(i=0; i<p->ln_domain;i++){
@@ -651,7 +651,7 @@ void domain_data_fill_std(Parameters * p){
 }
 void domain_data_fill_solar(Parameters *p){
 
-  unsigned long f, i,j,k, gi, gj, gk;
+  uint64_t f, i,j,k, gi, gj, gk;
   real_t r;
   int xb, xe, yb, ye, zb, ze;
   for(i=0; i<p->ln_domain*24lu;i++){
@@ -766,11 +766,11 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
 
 
   int i;
-  unsigned long total_stencils;
+  uint64_t total_stencils;
   int num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
 
   // look for NANs and zero results
-  int k, zeroes_p, n_zeroes=0, nans=0;
+  uint64_t k, zeroes_p, n_zeroes=0, nans=0;
   for (k=0; k<p->ln_domain; k++){
     // check for nan and -inf/inf
     nans += (p->U1[k] * 0) != 0;
@@ -784,12 +784,12 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
   zeroes_p = 100*n_zeroes/p->ln_domain;
   if(zeroes_p > 90){
     printf("\n******************************************************\n");
-    printf("##WARNING[rank:%d]: %d%% of the sub domain contains zeroes. This might result in inaccurate performance results\n", p->mpi_rank, zeroes_p);
+    printf("##WARNING[rank:%d]: %lu%% of the sub domain contains zeroes. This might result in inaccurate performance results\n", p->mpi_rank, zeroes_p);
     printf("******************************************************\n\n");
   }
   if(nans > 0){
     printf("\n******************************************************\n");
-    printf("##WARNING[rank:%d]: %d nan and/or -inf/inf values in the final sub domain solution. This might result in inaccurate performance results\n", p->mpi_rank, nans);
+    printf("##WARNING[rank:%d]: %lu nan and/or -inf/inf values in the final sub domain solution. This might result in inaccurate performance results\n", p->mpi_rank, nans);
     printf("******************************************************\n\n");
   }
 
@@ -860,7 +860,7 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
 //      printf("Total RANK0 MStencil/s  MAX: %f  \n", p->ln_stencils/(1e6*t_min));
 
       printf("******************************************************\n");
-      total_stencils = ((unsigned long) p->ln_stencils * (unsigned long) p->nt - p->idiamond_pro_epi_logue_updates)/(1e6);
+      total_stencils = ((uint64_t) p->ln_stencils * (uint64_t) p->nt - p->idiamond_pro_epi_logue_updates)/(1e6);
       printf("MWD main-loop RANK0 MStencil/s  MIN: %f\n", total_stencils*1.0/(t_ts_main_max));
       printf("MWD main-loop RANK0 MStencil/s  MAX: %f\n", total_stencils*1.0/(t_ts_main_min));
 
@@ -1285,7 +1285,7 @@ void print_3Darray(char *filename, real_t * restrict array, int nx, int ny, int 
 
 void print_3Darray_solar(char *filename, real_t * restrict array, int nx, int ny, int nz, int halo) {
   int f,i,j,k;
-  unsigned long idx;
+  uint64_t idx;
   FILE *fp;
   if(!(fp = fopen(filename, "w")))
     printf("ERROR: cannot open file for writing\n");

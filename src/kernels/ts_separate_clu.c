@@ -10,7 +10,7 @@ void iso_ref_split( const int shape[3], const int xb, const int yb, const int zb
   clu_ctx.nnx = shape[0];
   clu_ctx.nny = shape[1];
   clu_ctx.nnz = shape[2];
-  clu_ctx.ln_domain = shape[0]*shape[1]*shape[2];
+  clu_ctx.ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
   {
@@ -44,7 +44,7 @@ void swd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const 
   clu_ctx.nnx = shape[0];
   clu_ctx.nny = shape[1];
   clu_ctx.nnz = shape[2];
-  clu_ctx.ln_domain = shape[0]*shape[1]*shape[2];
+  clu_ctx.ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   if (zb+nwf >= ze) nwf = ze-zb;
   bs_x = stencil_ctx.bs_x;
@@ -128,7 +128,7 @@ void mwd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const 
     clu_ctx.nnx = shape[0];
     clu_ctx.nny = shape[1];
     clu_ctx.nnz = shape[2];
-    clu_ctx.ln_domain = shape[0]*shape[1]*shape[2];
+    clu_ctx.ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
 
     ib_r = xb;

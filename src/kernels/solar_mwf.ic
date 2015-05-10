@@ -6,7 +6,7 @@ void mwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
   int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, th_nwf, tgs, q, r;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   double t_start;
   
   bs_x = stencil_ctx.bs_x;

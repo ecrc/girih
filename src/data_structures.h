@@ -43,6 +43,9 @@ typedef float real_t;
 #endif
 
 #define CHKERR(error_stat) {elen=0; estr[0]='d';}//do{ if(error_stat != MPI_SUCCESS){MPI_Error_string(ierr,estr,&elen); fprintf(stderr,estr); MPI_Finalize();} } while(0)
+
+#include <stdint.h>
+
 int ierr;
 char estr[MPI_MAX_ERROR_STRING]; int elen; // for MPI error hadling macro
 
@@ -102,7 +105,7 @@ typedef struct{
 
 typedef struct{
   int nnx, nny, nnz;
-  unsigned long ln_domain;
+  uint64_t ln_domain;
 }CLU_CTX;
 
 #define CLU_SIG (const CLU_CTX clu_ctx, const int xb, const int xe, const int j, const int k, \
@@ -166,7 +169,7 @@ struct StencilInfo {
 // context information
 typedef struct{
   int alignment, verbose, stencil_shape[3];
-  unsigned long n_stencils, ln_domain, ln_stencils;
+  uint64_t n_stencils, ln_domain, ln_stencils;
   int target_ts, target_kernel;
   int mpi_rank, mpi_size;
   int n_tests, nt;
@@ -199,8 +202,8 @@ typedef struct{
   Halo hu[3], hv[3];
 
   int wavefront;
-  unsigned long idiamond_pro_epi_logue_updates;
-  unsigned long wf_blk_size, wf_larger_blk_size;
+  uint64_t idiamond_pro_epi_logue_updates;
+  uint64_t wf_blk_size, wf_larger_blk_size;
 
   Halo h[3]; // Halo information for X,Y, and Z directions
   mpi_topology t;

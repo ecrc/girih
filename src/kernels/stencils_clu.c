@@ -3,7 +3,7 @@
 #define U(i)         (u_s[(i)])
 #define V(i,j,k)     (v_s[((k)*(clu_ctx.nny)+(j))*(clu_ctx.nnx)+(i)])
 #define ROC2(i)      (roc2_s[(i)])
-#define COEF(m,i,j,k) (coef[((k)*(clu_ctx.nny)+(j))*(clu_ctx.nnx)+(i)+(((unsigned long) (clu_ctx.ln_domain))*(m))])
+#define COEF(m,i,j,k) (coef[((k)*(clu_ctx.nny)+(j))*(clu_ctx.nnx)+(i)+(((uint64_t) (clu_ctx.ln_domain))*(m))])
 
 // 1-stide of ISO stencil 8th-order-in-space-2nd-order-in-time with constant coefficient
 void iso_ref_clu_8space_2time CLU_SIG{

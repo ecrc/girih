@@ -5,7 +5,7 @@ void swd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
   int i, j, k, t, yb, ye, zi, kt, ib, ie, kb, ke, ib_r, ie_r, bs_x, nwf;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   real_t * restrict u_r = u;
   real_t * restrict v_r = v;
   

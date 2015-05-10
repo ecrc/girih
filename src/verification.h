@@ -6,7 +6,7 @@
 #define TARGET_DOMAIN(i,j,k)   (target_domain[((k)*(ny)+(j))*(nx)+(i)])
 #define SNAPSHOT_ERROR(i,j,k)     (snapshot_error[((k)*(nny)+(j))*(nnx)+(i)])
 
-#define COEF(m,i,j,k) (coef[((k)*(nny)+(j))*(nnx)+(i)+(((unsigned long) (ln_domain))*(m))])
+#define COEF(m,i,j,k) (coef[((k)*(nny)+(j))*(nnx)+(i)+((ln_domain)*(m))])
 
 void verify(Parameters *);
 

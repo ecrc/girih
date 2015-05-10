@@ -6,7 +6,7 @@ void rsmwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
   int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, th_nwf, tgs, q, r;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   int time_blk = t_dim*2+1; //temporal block size
   double t_start;
   
@@ -14,9 +14,9 @@ void rsmwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
   tgs = stencil_ctx.thread_group_size;
   nwf = stencil_ctx.num_wf;
   th_nwf = nwf/tgs;
-  const int CL=128/sizeof(unsigned long);
-  volatile unsigned long *status;
-  posix_memalign((void **)&status, 128, CL*tgs*sizeof(unsigned long));
+  const int CL=128/sizeof(uint64_t);
+  volatile uint64_t *status;
+  posix_memalign((void **)&status, 128, CL*tgs*sizeof(uint64_t));
   for(i=0; i<tgs; i++){
     status[i*CL]=0;
   }

@@ -5,8 +5,8 @@ void stat_sched_solar_h_field_kernel( const int shape[3], const int xb, const in
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
-  unsigned long ixmin, ixmax;
+  uint64_t ln_domain = ((uint64_t) 1)* 2ul*shape[0]*shape[1]*shape[2];
+  uint64_t ixmin, ixmax;
 
   real_t * restrict Hyxd = &(u[0ul*ln_domain]);
   real_t * restrict Hzxd = &(u[1ul*ln_domain]);
@@ -40,7 +40,7 @@ void stat_sched_solar_h_field_kernel( const int shape[3], const int xb, const in
   const real_t * restrict Hxbndd = &(coef[12ul*ln_domain]);
   const real_t * restrict Hybndd = &(coef[13ul*ln_domain]);
 
-  unsigned long isub;
+  uint64_t isub;
   real_t stagDiffR, stagDiffI, asgn;
 
    // Update H-field
@@ -187,8 +187,8 @@ void stat_sched_solar_e_field_kernel( const int shape[3], const int xb, const in
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
-  unsigned long ixmin, ixmax;
+  uint64_t ln_domain = ((uint64_t) 1)* 2ul*shape[0]*shape[1]*shape[2];
+  uint64_t ixmin, ixmax;
 
   const real_t * restrict Hyxd = &(u[0ul*ln_domain]);
   const real_t * restrict Hzxd = &(u[1ul*ln_domain]);
@@ -221,7 +221,7 @@ void stat_sched_solar_e_field_kernel( const int shape[3], const int xb, const in
   const real_t * restrict Exbndd = &(coef[26ul*ln_domain]);
   const real_t * restrict Eybndd = &(coef[27ul*ln_domain]);
 
-  unsigned long isub;
+  uint64_t isub;
   real_t stagDiffR, stagDiffI, asgn;
 
   // Update E-field

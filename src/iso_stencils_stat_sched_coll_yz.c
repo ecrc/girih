@@ -3,7 +3,7 @@
 #define U(i,j,k)         (u[((k)*(nny)+(j))*(nnx)+(i)])
 #define V(i,j,k)         (v[((k)*(nny)+(j))*(nnx)+(i)])
 #define ROC2(i,j,k)   (roc2[((k)*(nny)+(j))*(nnx)+(i)])
-#define COEF(m,i,j,k) (coef[((k)*(nny)+(j))*(nnx)+(i)+(((unsigned long) (ln_domain))*(m))])
+#define COEF(m,i,j,k) (coef[((k)*(nny)+(j))*(nnx)+(i)+((ln_domain)*(m))])
 
 // ISO stencil 8th-order-in-space-2nd-order-in-time with constant coefficient
 void iso_ref( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
@@ -112,7 +112,7 @@ void iso_ref_2space_1time_var( const int shape[3], const int xb, const int yb, c
   int i,j,k, jb, je;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   int  n, nz, nj;
   nz = ze -zb;
@@ -154,7 +154,7 @@ void iso_ref_2space_1time_var_axsym( const int shape[3], const int xb, const int
   int i,j,k, jb, je;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   int  n, nz, nj;
   nz = ze -zb;
@@ -195,7 +195,7 @@ void iso_ref_8space_1time_var_axsym( const int shape[3], const int xb, const int
   int i,j,k, jb, je;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   int  n, nz, nj;
   nz = ze -zb;
@@ -244,7 +244,7 @@ void iso_ref_2space_1time_var_nosym( const int shape[3], const int xb, const int
   int i,j,k, jb, je;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   int  n, nz, nj;
   nz = ze -zb;

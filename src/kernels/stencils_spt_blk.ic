@@ -3,7 +3,7 @@ void FUNC_NAME KERNEL_SIG{
   int i,j,k, jb, je;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
   {

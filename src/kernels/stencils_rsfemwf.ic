@@ -6,16 +6,16 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
   int ib_r, ie_r, bs_x, nwf, tid, gtid, th_nwf, tgs, q, r;
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long  ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   int time_blk = te-tb; //t_dim*2+1; //temporal block size
   double t_start;
   
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
 
-  const int CL=128/sizeof(unsigned long);
-  volatile unsigned long *status;
-  posix_memalign((void **)&status, 128, CL*tgs*sizeof(unsigned long));
+  const int CL=128/sizeof(uint64_t);
+  volatile uint64_t *status;
+  posix_memalign((void **)&status, 128, CL*tgs*sizeof(uint64_t));
   for(i=0; i<tgs; i++){
     status[i*CL]=0;
   }

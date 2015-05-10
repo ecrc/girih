@@ -39,12 +39,12 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
       const real_t * restrict, const real_t * restrict);
 
   real_t * restrict u, * restrict v, * restrict roc2, * restrict coef;
-  unsigned long it, i, j , k, f, ax;
+  uint64_t it, i, j , k, f, ax;
   int nnx = p.stencil_shape[0]+2*p.stencil.r;
   int nny = p.stencil_shape[1]+2*p.stencil.r;
   int nnz = p.stencil_shape[2]+2*p.stencil.r;
-  unsigned long n_domain = nnx*nny*nnz;
-  unsigned long domain_size;
+  uint64_t n_domain = ((uint64_t) 1)* nnx*nny*nnz;
+  uint64_t domain_size;
 
   switch(p.stencil.type){
     case REGULAR:
@@ -70,7 +70,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   // allocate the the coefficients according to the stencil type
   // initialize the coefficients
   // select the desired stencil operator function
-  unsigned long coef_size, idx;
+  uint64_t coef_size, idx;
   switch(p.stencil.coeff){
   case CONSTANT_COEFFICIENT:
     coef_size = 11;
@@ -361,7 +361,7 @@ void std_kernel_2space_1time_var( const int shape[3],
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   for(k=1; k<nnz-1; k++) {
     for(j=1; j<nny-1; j++) {
@@ -384,7 +384,7 @@ void std_kernel_2space_1time_var_axsym( const int shape[3],
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   for(k=1; k<nnz-1; k++) {
     for(j=1; j<nny-1; j++) {
@@ -407,7 +407,7 @@ void std_kernel_8space_1time_var_axsym( const int shape[3],
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
 
   for(k=4; k<nnz-4; k++) {
     for(j=4; j<nny-4; j++) {
@@ -439,7 +439,7 @@ void std_kernel_2space_1time_var_nosym( const int shape[3],
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = shape[0]*shape[1]*shape[2];
+  uint64_t ln_domain = ((uint64_t) 1)*shape[0]*shape[1]*shape[2];
 
   for(k=1; k<nnz-1; k++) {
     for(j=1; j<nny-1; j++) {
@@ -462,8 +462,8 @@ void solar_h_field_ref( const int shape[3], const real_t * restrict coef, real_t
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
-  unsigned long ixmin, ixmax;
+  uint64_t ln_domain = ((uint64_t) 1)*2ul*shape[0]*shape[1]*shape[2];
+  uint64_t ixmin, ixmax;
 
   real_t * restrict Hyxd = &(u[0ul*ln_domain]);
   real_t * restrict Hzxd = &(u[1ul*ln_domain]);
@@ -497,7 +497,7 @@ void solar_h_field_ref( const int shape[3], const real_t * restrict coef, real_t
   const real_t * restrict Hxbndd = &(coef[12ul*ln_domain]);
   const real_t * restrict Hybndd = &(coef[13ul*ln_domain]);
 
-  unsigned long isub;
+  uint64_t isub;
   real_t stagDiffR, stagDiffI, asgn;
 
   // Update H-field
@@ -608,8 +608,8 @@ void solar_e_field_ref( const int shape[3], const real_t * restrict coef, real_t
   int nnz =shape[2];
   int nny =shape[1];
   int nnx =shape[0];
-  unsigned long ln_domain = 2ul*shape[0]*shape[1]*shape[2];
-  unsigned long ixmin, ixmax;
+  uint64_t ln_domain = ((uint64_t) 1)* 2ul*shape[0]*shape[1]*shape[2];
+  uint64_t ixmin, ixmax;
 
   real_t * restrict Hyxd = &(u[0ul*ln_domain]);
   real_t * restrict Hzxd = &(u[1ul*ln_domain]);
@@ -642,7 +642,7 @@ void solar_e_field_ref( const int shape[3], const real_t * restrict coef, real_t
   const real_t * restrict Exbndd = &(coef[26ul*ln_domain]);
   const real_t * restrict Eybndd = &(coef[27ul*ln_domain]);
 
-  unsigned long isub;
+  uint64_t isub;
   real_t stagDiffR, stagDiffI, asgn;
 
   // Update E-field
@@ -767,8 +767,8 @@ void solar_kernel( const int shape[3],
 
 void compare_results_std(real_t *restrict u, real_t *restrict target_domain, int alignment, int nx, int ny, int nz, int NHALO){
   int nnx=nx+2*NHALO, nny=ny+2*NHALO, nnz=nz+2*NHALO;
-  unsigned long n_domain = nnx*nny*nnz;
-  int i, j, k, male;
+  uint64_t n_domain = ((uint64_t) 1)* nnx*nny*nnz;
+  uint64_t i, j, k, male;
 
   double ref_l1 = 0.0;
   real_t diff_l1=0.0, abs_diff, max_error=0.0;
@@ -809,8 +809,8 @@ void compare_results_solar(real_t *restrict u, Parameters p){
   int nnx = p.ldomain_shape[0];
   int nny = p.ldomain_shape[1];
   int nnz = p.ldomain_shape[2];
-  unsigned long idx, n_domain = nnx*nny*nnz;
-  int f, i, j, k, male;
+  uint64_t k, idx, n_domain = ((uint64_t) 1)* nnx*nny*nnz;
+  int f, i, j, male;
   double ref_l1 = 0.0;
   real_t diff_l1=0.0, abs_diff, max_error=0.0;
   real_t * restrict snapshot_error;

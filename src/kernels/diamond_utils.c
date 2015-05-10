@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-unsigned long get_mwf_size(Parameters *p, int t_dim){
-  unsigned long diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
+uint64_t get_mwf_size(Parameters *p, int t_dim){
+  uint64_t diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
 
   t_order = p->stencil.time_order;
   diam_width = (t_dim+1)*2*p->stencil.r;
@@ -62,7 +62,7 @@ double run_tuning_test(Parameters *tp){
     reps *= (int) ceil(3.0/t);
   } while(t < 2.0);
 
-  unsigned long lups = (tp->ln_stencils*tp->nt - tp->idiamond_pro_epi_logue_updates);
+  uint64_t lups = (tp->ln_stencils*tp->nt - tp->idiamond_pro_epi_logue_updates);
   obt_perf =  lups/tp->prof.ts_main;
 
   printf("%06.2f]  time:%es  lups:%lu  cache block size:%lukiB  reps:%d\n",
@@ -86,7 +86,7 @@ void auto_tune_diam_nwf(Parameters *op){
 
   double exp_perf, cur_perf, prev_nwf_perf, prev_diam_perf;
   int i, lt_dim, max_t_dim, prev_max_nwf, diam_width, prev_t_dim;
-  unsigned long wf_size, ntg;
+  uint64_t wf_size, ntg;
   int tgs = tp.stencil_ctx.thread_group_size;
   int cache_size_cond, int_diam_cond, wf_len_cond, cuncurrency_cond, diam_concurrency;
   int diam_height;
@@ -105,7 +105,7 @@ void auto_tune_diam_nwf(Parameters *op){
       diam_height = lt_dim*2*tp.stencil.r+1 + tp.stencil_ctx.num_wf-1;
 
       wf_size = get_mwf_size(&tp, lt_dim);
-      cache_size_cond = wf_size*ntg < (unsigned long) (MAX_CACHE_SIZE*1024);
+      cache_size_cond = wf_size*ntg < (uint64_t) (MAX_CACHE_SIZE*1024);
 
       cuncurrency_cond = (tp.stencil_shape[1]/diam_width) >= ntg;
       int_diam_cond = tp.stencil_shape[1]%diam_width == 0;
@@ -156,7 +156,7 @@ void auto_tune_diam_nwf(Parameters *op){
       wf_size = get_mwf_size(&tp, tp.t_dim);
       diam_concurrency = tp.stencil_shape[1]/diam_width;
 
-      cache_size_cond = wf_size*ntg > (unsigned long) (tp.cache_size*1024);
+      cache_size_cond = wf_size*ntg > (uint64_t) (tp.cache_size*1024);
       cuncurrency_cond = diam_concurrency >= ntg;
       int_diam_cond = tp.stencil_shape[1]%diam_width == 0;
   //    printf("i:%d, diam_width %d,  cuncurrency_cond %d, cache_size_cond %d, int_diam_cond %d, wf_len_cond %d, cache_blk_size: %lu kB\n",
@@ -168,11 +168,11 @@ void auto_tune_diam_nwf(Parameters *op){
         prev_nwf_perf = -1;
         tp.stencil_ctx.num_wf = tgs; // start with smallest possible number of updates
         if( (tp.mwd_type == 2) | (tp.mwd_type == 3) ) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
-        tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
+        tp.idiamond_pro_epi_logue_updates = (uint64_t) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
         while(1){
           wf_size = get_mwf_size(&tp, tp.t_dim);
-          cache_size_cond = wf_size*ntg > (unsigned long) (tp.cache_size*1024);
+          cache_size_cond = wf_size*ntg > (uint64_t) (tp.cache_size*1024);
           diam_height = tp.t_dim*2*tp.stencil.r+1 +tp.stencil_ctx.num_wf-1;
           wf_len_cond = diam_height <= tp.stencil_shape[2];
 
@@ -230,7 +230,7 @@ void auto_tune_diam_nwf(Parameters *op){
     diam_width =  ((tp.t_dim+1)*2)*tp.stencil.r;
     diam_concurrency = tp.stencil_shape[1]/diam_width;
     prev_nwf_perf = -1;
-    tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
+    tp.idiamond_pro_epi_logue_updates = (uint64_t) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
     while(1){
       diam_height = tp.t_dim*2*tp.stencil.r+1 +tp.stencil_ctx.num_wf-1;
@@ -272,7 +272,7 @@ void auto_tune_diam_nwf(Parameters *op){
 
   //simple tuning of blocking in X
   diam_concurrency = tp.stencil_shape[1]/((tp.t_dim+1)*2*tp.stencil.r);
-  tp.idiamond_pro_epi_logue_updates = (unsigned long) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (unsigned long) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
+  tp.idiamond_pro_epi_logue_updates = (uint64_t) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
   int prev_bs_x, base_bs_x;
   double div=1.0;
   if (tp.stencil_ctx.bs_x > tp.stencil_shape[0]/tp.t.shape[0]){//no blocking set by user
@@ -313,7 +313,7 @@ void intra_diamond_info_init(Parameters *p){
   int nt2, remain, min_z;
   int nt = p->nt;
   int diam_concurrency, num_thread_groups;
-  unsigned long diam_width;
+  uint64_t diam_width;
 
 
     p->wf_larger_blk_size = 0;
@@ -459,12 +459,12 @@ void intra_diamond_info_init(Parameters *p){
     p->stencil_ctx.t_group_wait = (double *) malloc(sizeof(double)*num_thread_groups);
     
     // number of Stencil updates in the prologue and epilogue (trapezoid and inverted trapezoid)
-//    p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((diam_width*diam_width)/4 - (diam_width/2));
+//    p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (uint64_t) (2*diam_concurrency) * ((diam_width*diam_width)/4 - (diam_width/2));
 
     if(p->stencil.type == REGULAR){
-      p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (unsigned long) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
+      p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (uint64_t) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
     }else if(p->stencil.type == SOLAR){
-      p->idiamond_pro_epi_logue_updates = (unsigned long) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * diam_concurrency) 
+      p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * diam_concurrency) 
                                          *((p->t_dim+1)*(p->t_dim+1)*2)*p->stencil.r;
     }
 
