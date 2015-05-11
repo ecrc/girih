@@ -5,20 +5,18 @@ def igs_test(target_dir, exp_name, tgs_l, th):
   import itertools
 
   dry_run = 0
-  is_dp=1
+  is_dp=0
 
   cs = machine_info['cache_size']/4
   kr = [4,1,1,1,4,1,1]
   k_time_scale = [1,1,1,1,2,2,20]
 
-  #points = list(range(40, 961, 40)) + list(range(32, 1025, 32))
-  #points = list(range(32, 1025, 64)) + [1024]
-  points = list(range(32, 1025, 128))
+  points = list(range(1056, 5000, 128))
   points = sorted(list(set(points)))
   if is_dp ==1:
     kernels_limits = [1057, 1057, 0, 0, 545, 680, 289]
   else:
-    kernels_limits = [1350, 0, 0, 0, 800, 0, 0]
+    kernels_limits = [1350, 0, 0, 0, 801, 0, 0]
 
   if(machine_info['hostname']=='Haswell_18core'):
     if is_dp == 1:
@@ -26,9 +24,7 @@ def igs_test(target_dir, exp_name, tgs_l, th):
     else:
       kernels_limits = [2100, 0, 0, 0, 1200, 0, 0]
 
-  print points
   count=0
-
   for kernel in [0, 1, 4, 5, 6]:
     for tgs in tgs_l:
       ts = 2
@@ -41,8 +37,8 @@ def igs_test(target_dir, exp_name, tgs_l, th):
         mwdt_list=[0,1,2,3]
       for mwdt in mwdt_list:
         for N in points:
-          if (N < kernels_limits[kernel]) and (ts==0 or N > (th/tgs)*4*kr[kernel]) and not (kernel==6 and mwdt==3):
-              outfile=('kernel%d_ts%d_mwdt%d_tgs%d_N%d.txt' % (kernel, ts, mwdt, tgs,  N))
+          if (N < kernels_limits[kernel]) and (ts==0 or N >= (th/tgs)*4*kr[kernel]) and not (kernel==6 and mwdt==3):
+              outfile=('kernel%d_isdp%d_ts%d_mwdt%d_tgs%d_N%d.txt' % (kernel, is_dp, ts, mwdt, tgs,  N))
               nt = max(int(th * 4e9/(N**3*3)/k_time_scale[kernel]), 30)
               run_test(dry_run=dry_run, is_dp=is_dp, th=th,  kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt,
                                  outfile=outfile, target_dir=target_dir, tgs=tgs, cs=cs, mwdt=mwdt)
