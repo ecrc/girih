@@ -11,7 +11,7 @@ def igs_test(target_dir, exp_name, tgs_l, th):
   kr = [4,1,1,1,4,1,1]
   k_time_scale = [1,1,1,1,2,2,20]
 
-  points = list(range(1056, 5000, 128))
+  points = list(range(32, 5000, 128))
   points = sorted(list(set(points)))
   if is_dp ==1:
     kernels_limits = [1057, 1057, 0, 0, 545, 680, 289]
