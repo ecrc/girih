@@ -1,17 +1,22 @@
 #!/usr/bin/env python
 def igs_test(target_dir, exp_name, tgs_l, th): 
-  from scripts.conf import conf
+  from scripts.conf.conf import machine_conf, machine_info
   from scripts.utils import run_test
   import itertools
 
-  cs = conf.machine_info['cache_size']/4
+  cs = machine_info['cache_size']/4
   kr = [4,1,1,1,4,1,1]
   k_time_scale = [1,1,1,1,2,2,20]
+
   #points = list(range(40, 961, 40)) + list(range(32, 1025, 32))
   #points = list(range(32, 1025, 64)) + [1024]
-  points = list(range(32, 1025, 128)) + [1024]
+  points = list(range(32, 1025, 128))
   points = sorted(list(set(points)))
   kernels_limits = [1057, 1057, 0, 0, 545, 680, 289]
+
+  if(machine_info['hostname']=='Haswell_18core'):
+    kernels_limits = [1600, 1600, 0, 0, 960, 1000, 500]
+
   print points
   count=0
 
@@ -48,13 +53,13 @@ def main():
   if sockets == 1:
     pin_str = "S0:0-%d -i"%(th-1)
   if sockets == 2:
-    pin_str = "S0:0-%d@S1:0-%d -i"%(th/2-1, th/2-1)
+    pin_str = "S0:0-%d@S1:0-%d -i "%(th/2-1, th/2-1)
 
 
 
   if(machine_info['hostname']=='Haswell_18core'):
     machine_conf['pinning_args'] = "-c " + pin_str + machine_conf['pinning_args']
-    tgs_l = [0, 1, 2, 3, 6, 9, 18]
+    tgs_l = [0, 1, 3, 6, 9, 18]
   elif(machine_info['hostname']=='IVB_10core'):
 #    machine_conf['pinning_args'] = "-g MEM -C " + pin_str + machine_conf['pinning_args']
     machine_conf['pinning_args'] = "-c " + pin_str + machine_conf['pinning_args']
