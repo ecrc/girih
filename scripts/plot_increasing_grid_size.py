@@ -6,9 +6,13 @@ def main():
 
   k_l = set()
   mwdt_l = set()
+  prec_l = set()
   use_prof = True 
   for k in raw_data:
-    k_l.add(get_stencil_num(k))
+    # add stencil operator
+    k['stencil'] = get_stencil_num(k)
+    k_l.add(k['stencil'])
+
     # add mwd type
     mwd = k['Wavefront parallel strategy'].lower()
     k['mwdt']=-1
@@ -18,18 +22,26 @@ def main():
       k['mwdt'] = 1
     elif('relaxed' in mwd):
       k['mwdt'] = 2
+    elif('wavefront' in mwd):
+      k['mwdt'] = 0
     if(k['mwdt']>=0): mwdt_l.add(k['mwdt'])
     if 'Sustained Memory BW' not in k.keys(): use_prof=False
+
+    # add the precision information
+    p = 1 if k['Precision'] in 'DP' else 0
+    k['Precision'] = p
+    prec_l.add(p)
   k_l = list(k_l)
   mwdt_l = list(mwdt_l)
-
+  prec_l = list(prec_l)
 
   for k in k_l:
     for mwdt in mwdt_l:
-      plot_lines(raw_data, k, mwdt, use_prof=use_prof)
+      for is_dp in prec_l:
+        plot_lines(raw_data, k, mwdt, is_dp, use_prof=use_prof)
 
         
-def plot_lines(raw_data, stencil_kernel, mwdt, use_prof=True, is_dp=1):
+def plot_lines(raw_data, stencil_kernel, mwdt, is_dp, use_prof=True):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
@@ -47,7 +59,7 @@ def plot_lines(raw_data, stencil_kernel, mwdt, use_prof=True, is_dp=1):
          'axes.linewidth': 0.25*m,
          'lines.linewidth': 0.75*m,
          'text.fontsize': 7*m,
-         'legend.fontsize': 5*m,
+         'legend.fontsize': 4*m,
          'xtick.labelsize': 6*m,
          'ytick.labelsize': 6*m,
          'lines.markersize': 1,
@@ -57,7 +69,7 @@ def plot_lines(raw_data, stencil_kernel, mwdt, use_prof=True, is_dp=1):
 
   
 
-  req_fields = [('Local NX', int), ('Thread group size', int), ('Time stepper orig name', str), ('MStencil/s  MAX', float), ('mwdt', int)]
+  req_fields = [('Local NX', int), ('Thread group size', int), ('Time stepper orig name', str), ('MStencil/s  MAX', float), ('mwdt', int), ('Precision', int), ('stencil', int)]
   if(use_prof): req_fields = req_fields + [ ('Sustained Memory BW', float)]
   data = []
   for k in raw_data:
@@ -71,16 +83,6 @@ def plot_lines(raw_data, stencil_kernel, mwdt, use_prof=True, is_dp=1):
         print f[0]
         print k
         return
-
-    # add the stencil operator
-    tup['stencil'] = get_stencil_num(k)
-
-    # add the precision information
-    if k['Precision'] in 'DP':
-      p = 1
-    else:
-      p = 0
-    tup['Precision'] = p
     data.append(tup)
 
   data = sorted(data, key=itemgetter('mwdt', 'Thread group size', 'Local NX'))
@@ -145,8 +147,9 @@ def plot_lines(raw_data, stencil_kernel, mwdt, use_prof=True, is_dp=1):
 #  if(use_prof):
 #    plt.plot([1, max_x], [mem_limit, mem_limit], color='.2', linestyle='--', label='Spt.lim.')
 
-
-  if mwdt==1:
+  if mwdt==0:
+    mwd_str = 'block'
+  elif mwdt==1:
     mwd_str = 'fe'
   elif mwdt==2:
     mwd_str = 'rs'
