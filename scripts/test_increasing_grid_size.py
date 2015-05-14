@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-def igs_test(target_dir, exp_name, tgs_l, th): 
+def igs_test(target_dir, exp_name, tgs_l, th, params={}): 
   from scripts.conf.conf import machine_conf, machine_info
   from scripts.utils import run_test
   import itertools
@@ -38,17 +38,25 @@ def igs_test(target_dir, exp_name, tgs_l, th):
       for mwdt in mwdt_list:
         for N in points:
           if (N < kernels_limits[kernel]) and (ts==0 or N >= (th/tgs)*4*kr[kernel]) and not (kernel==6 and mwdt==3):
+              tb, nwf, bsx = (-1,-1,100000)
+              key = (mwdt, kernel, tgs, N)
+              if key in params.keys():
+                tb, nwf, bsx = params[key]
+#              if tgs==0 or tb !=-1: continue
+
               outfile=('kernel%d_isdp%d_ts%d_mwdt%d_tgs%d_N%d.txt' % (kernel, is_dp, ts, mwdt, tgs,  N))
               nt = max(int(th * 4e9/(N**3*3)/k_time_scale[kernel]), 30)
               run_test(dry_run=dry_run, is_dp=is_dp, th=th,  kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt,
-                                 outfile=outfile, target_dir=target_dir, tgs=tgs, cs=cs, mwdt=mwdt)
+                                 outfile=outfile, target_dir=target_dir, tgs=tgs, cs=cs, mwdt=mwdt, tb=tb, nwf=nwf)
               count = count+1
   print "experiments count =" + str(count)
 
 
 def main():
-  from scripts.utils import create_project_tarball 
+  from scripts.utils import create_project_tarball, get_stencil_num
   from scripts.conf.conf import machine_conf, machine_info
+  import os
+  from csv import DictReader
 
   sockets=1 # number of processors to use in the experiments
 
@@ -63,7 +71,7 @@ def main():
 
 
   if(machine_info['hostname']=='Haswell_18core'):
-    machine_conf['pinning_args'] = "-c " + pin_str + machine_conf['pinning_args']
+    machine_conf['pinning_args'] = "-m -g MEM -C " + pin_str + machine_conf['pinning_args']
     tgs_l = [0, 1, 3, 6, 9, 18]
   elif(machine_info['hostname']=='IVB_10core'):
     machine_conf['pinning_args'] = "-m -g MEM -C " + pin_str + machine_conf['pinning_args']
@@ -76,7 +84,42 @@ def main():
   create_project_tarball(tarball_dir, "project_"+exp_name)
   target_dir='results/' + exp_name 
 
-  igs_test(target_dir, exp_name, tgs_l=tgs_l, th=th) 
+
+  # parse the results to obtain the selected parameters by the auto tuner
+  data = []
+  data_file = os.path.join(target_dir, 'summary.csv')
+  try:
+    with open(data_file, 'rb') as output_file:
+      raw_data = DictReader(output_file)
+      for k in raw_data:
+        k['stencil'] = get_stencil_num(k)
+        k['method'] = 2 if 'Diamond' in k['Time stepper orig name'] else 0
+        if k['method'] == 2:
+
+          if k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront with fixed execution':
+            k['mwdt'] = 3
+          elif k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront':
+            k['mwdt'] = 2
+          elif k['Wavefront parallel strategy'] == 'Wavefront':
+            k['mwdt'] = 0
+          elif k['Wavefront parallel strategy'] == 'Fixed execution wavefronts':
+            k['mwdt'] = 1
+          if int(k['Thread group size']) == 1:
+            k['mwdt'] = 0
+        data.append(k)
+  except:
+     pass
+  params = dict()
+  for k in data:
+    try:
+      if k['method']==2:
+        params[(k['mwdt'], k['stencil'], int(k['Thread group size']), int(k['Global NX']))]= (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Block size in X']))
+    except:
+      print k
+      raise
+
+
+  igs_test(target_dir, exp_name, tgs_l=tgs_l, th=th, params=params) 
 
 
 if __name__ == "__main__":
