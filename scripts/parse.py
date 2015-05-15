@@ -285,19 +285,19 @@ def get_summary(f):
                 mlist.append(('L1 DTLB miss rate %s'%(st),vals[i]))
 
 
-        if '|      Energy [J]      |' in line:
+        if 'Energy [J]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Energy',val))
  
-        if '|      Power [W]       |' in line:
+        if 'Power [W]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Power',val))
  
-        if '|   Energy DRAM [J]    |' in line:
+        if 'Energy DRAM [J]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Energy DRAM',val))
  
-        if '|    Power DRAM [W]    |' in line:
+        if 'Power DRAM [W]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Power DRAM',val))
          
