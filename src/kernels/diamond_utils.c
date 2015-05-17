@@ -328,6 +328,7 @@ void intra_diamond_info_init(Parameters *p){
       if(p->mpi_size > 1){ // broad cast the autotuning params
         MPI_Bcast(&(p->t_dim), 1, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(&(p->stencil_ctx.num_wf), 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&(p->stencil_ctx.bs_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
       }
       if(p->t_dim == -1){
         if(p->mpi_rank == 0) 
