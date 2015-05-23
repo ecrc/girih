@@ -1,6 +1,17 @@
+ifdef MIC
+  include conf/make.conf.mic
+  KERNEL=mwd_kernel.mic
+  BUILD_POST=_mic
+else
+  include conf/make.conf
+  KERNEL=mwd_kernel
+  BUILD_POST=
+endif
+
+
 VCFLAGS += -g -O0
 
-DP=0
+#DP=0
 USE_SPLIT_STRIDE=0
 INST=0
 VERBOSE=0
@@ -21,9 +32,9 @@ ifeq ($(DP), 1)
 	CFLAGS+=-DDP=1
 	FFLAGS+=-DDP=1
 	VCFLAGS+=-DDP=1
-	BUILD_DIR=build_dp
+	BUILD_DIR=build_dp$(BUILD_POST)
 else
-	BUILD_DIR=build
+	BUILD_DIR=build$(BUILD_POST)
 endif
 
 # Selecting time or space parallel multi-core wavefront
@@ -33,11 +44,4 @@ ifeq ($(USE_SPLIT_STRIDE), 1)
 	VCFLAGS+=-DUSE_SPLIT_STRIDE=1
 endif
 
-ifdef MIC
-  include conf/make.conf.mic
-  KERNEL=mwd_kernel.mic
-  BUILD_DIR := $(BUILD_DIR)_mic
-else
-  include conf/make.conf
-  KERNEL=mwd_kernel
-endif
+
