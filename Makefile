@@ -1,7 +1,5 @@
-include conf/make.conf
-include conf/make.inc
 
-KERNEL=mwd_kernel
+include conf/make.inc
 
 KERNELS_SRC = $(wildcard src/kernels/*.c)
 KERNELS_OBJ = $(patsubst src/kernels/%.c, ${BUILD_DIR}/%.o, $(KERNELS_SRC))
@@ -36,6 +34,6 @@ ${BUILD_DIR}/${KERNEL}: ${KERNELS_OBJ} ${BUILD_DIR}/driver.o ${BUILD_DIR}/utils.
 	${CC} ${CFLAGS} -o $@ $^ ${LDFLAGS} ${LIBS}
 
 clean:
-	-rm -rf build build_dp error_snapshot reference_snapshot target_snapshot 
+	-rm -rf build build_dp build_mic build_dp_mic error_snapshot reference_snapshot target_snapshot 
 
 

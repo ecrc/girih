@@ -1,9 +1,13 @@
-CC=mpicc
+CC=mpiicc
 FC=mpif90
 
-BASE_CFLAGS = -g -O3 -mmic -Ofast -fno-alias -openmp #-mcmodel=large
+BASE_CFLAGS = -g -O3 -fno-alias -openmp -mmic  #-mcmodel=large
+
+# Emmy path
+LIKWID_LIB = -L/home/hpc/unrz/unrz280/local.mic/lib
+LIKWID_INCLUDE = -I/home/hpc/unrz/unrz280/local.mic/include
 
 CFLAGS=$(BASE_CFLAGS) ${LIKWID_INCLUDE} -DLIKWID -DLIKWID_PERFMON
-VCFLAGS += -mmic ${LIKWID_INCLUDE} -DLIKWID -DLIKWID_PERFMON
-LDFLAGS = ${LIKWID_LIB} -llikwid
+VCFLAGS += -mmic  ${LIKWID_INCLUDE} -DLIKWID -DLIKWID_PERFMON
+LDFLAGS = -mmic -Wl,-rpath ${INTEL_C_HOME}/compiler/lib/mic  ${LIKWID_LIB} -llikwid
 

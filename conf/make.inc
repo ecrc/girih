@@ -33,3 +33,11 @@ ifeq ($(USE_SPLIT_STRIDE), 1)
 	VCFLAGS+=-DUSE_SPLIT_STRIDE=1
 endif
 
+ifdef MIC
+  include conf/make.conf.mic
+  KERNEL=mwd_kernel.mic
+  BUILD_DIR := $(BUILD_DIR)_mic
+else
+  include conf/make.conf
+  KERNEL=mwd_kernel
+endif
