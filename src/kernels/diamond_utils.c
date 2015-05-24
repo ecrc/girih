@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <math.h>
 
+
+int get_ntg(Parameters p){
+  return (int) ceil(1.0*p.num_threads/p.stencil_ctx.thread_group_size);
+}
+
 uint64_t get_mwf_size(Parameters *p, int t_dim){
   uint64_t diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
 
@@ -90,7 +95,7 @@ void auto_tune_diam_nwf(Parameters *op){
   int tgs = tp.stencil_ctx.thread_group_size;
   int cache_size_cond, int_diam_cond, wf_len_cond, cuncurrency_cond, diam_concurrency;
   int diam_height;
-  ntg = tp.num_threads / tgs;
+  ntg = get_ntg(tp);
 
   tp.stencil_ctx.num_wf = tgs; // set the number of wavefronts to the minimum possible value
   if((tp.mwd_type == 2) | (tp.mwd_type == 3)) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;

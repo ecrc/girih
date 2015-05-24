@@ -8,6 +8,7 @@
 #define ST_BUSY (0)
 #define ST_NOT_BUSY (1)
 
+extern int get_ntg(Parameters);
 extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
 
 typedef struct{
@@ -712,7 +713,7 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 void dynamic_intra_diamond_prologue_std(Parameters *p){
   // compute all the trapezoids
   int i, yb, ye;
-  int ntg = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+  int ntg = get_ntg(*p);
 #pragma omp parallel num_threads(ntg)
   {
     int b_inc = p->stencil.r;
@@ -757,7 +758,7 @@ void dynamic_intra_diamond_prologue(Parameters *p){
 
 void dynamic_intra_diamond_epilogue_std(Parameters *p){
   int yb, ye, i;
-  int ntg = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+  int ntg = get_ntg(*p);
 #pragma omp parallel num_threads(ntg)
   {
     int b_inc = p->stencil.r;

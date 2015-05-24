@@ -56,6 +56,12 @@ void param_default(Parameters *p) {
   p->stencil_ctx.thread_group_size = p->num_threads;
   p->wavefront = 1; // default to using wavefront in the tile
 
+  // default number of threads in each dimension
+  p->stencil_ctx.th_x = 1;
+  p->stencil_ctx.th_y = 1;
+  p->stencil_ctx.th_z = 1;
+  p->stencil_ctx.th_c = 1;
+
   p->stencil_ctx.num_wf = -1;
 
   p->stencil_ctx.enable_likwid_m = 1;
@@ -500,6 +506,10 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->use_omp_stat_sched = a.use_omp_stat_sched;
   b->stencil_ctx.bs_y = a.stencil_ctx.bs_y;
   b->stencil_ctx.bs_x = a.stencil_ctx.bs_x;
+  b->stencil_ctx.th_x = a.stencil_ctx.th_x;
+  b->stencil_ctx.th_y = a.stencil_ctx.th_y;
+  b->stencil_ctx.th_z = a.stencil_ctx.th_z;
+  b->stencil_ctx.th_c = a.stencil_ctx.th_c;
   b->stencil_ctx.thread_group_size = a.stencil_ctx.thread_group_size;
   b->stencil_ctx.clu_func = a.stencil_ctx.clu_func;
   b->stencil_ctx.num_wf = a.stencil_ctx.num_wf;
