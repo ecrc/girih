@@ -11,11 +11,12 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
   
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
+  int tgs_mc = tgs/stencil_ctx.th_c;
 
 #pragma omp parallel default(none) shared(stencil_ctx, shape, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
         private(nwf, th_nwf, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kb, ke, kt, t, k, j, i, q, r, t_start) \
-        num_threads(stencil_ctx.thread_group_size)
+        num_threads(tgs_mc)
   {
     tid = 0;
     gtid = 0;
@@ -31,7 +32,7 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
 
       nwf = stencil_ctx.num_wf;
-      th_nwf = nwf/tgs;
+      th_nwf = nwf/tgs_mc;
 
 //      printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
       for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
@@ -53,7 +54,7 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
 
           if(yb<ye){
             for(k=kt; k<kt+nwf; k++){
-              if( ((k-NHALO)/th_nwf)%tgs == tid ){
+              if( ((k-NHALO)/th_nwf)%tgs_mc == tid ){
                 kb=k;
                 ke=kb+1;
                 // compute E-field (except at first and last time steps of right-half diamond)
@@ -70,7 +71,7 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start; 
           if(yb<ye){
             for(k=kt; k<kt+nwf; k++){
-              if( ((k-NHALO)/th_nwf)%tgs == tid ){
+              if( ((k-NHALO)/th_nwf)%tgs_mc == tid ){
                 kb=k;
                 ke=kb+1;
                 // compute H-field

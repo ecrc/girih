@@ -43,7 +43,14 @@ static inline void solar_h_field_kernel_naive( const int shape[3], const int xb,
   uint64_t isub;
   real_t stagDiffR, stagDiffI, asgn;
 
+
   // Update H-field
+#pragma omp parallel default(shared) \
+        private(i,j,k,ixmin,ixmax,isub,stagDiffR, stagDiffI, asgn) \
+        num_threads(stencil_ctx.th_c)
+  {
+#pragma omp single nowait
+  {
   for(k=zb; k<ze; k++) {
     for(j=yb; j<ye; j++) {
 
@@ -79,7 +86,10 @@ static inline void solar_h_field_kernel_naive( const int shape[3], const int xb,
       }
     }
   }
+  }
 
+#pragma omp single nowait
+  {
   for(k=zb; k<ze; k++) {
     for(j=yb; j<ye; j++) {
 
@@ -115,6 +125,10 @@ static inline void solar_h_field_kernel_naive( const int shape[3], const int xb,
       }
     }
   }
+  }
+
+#pragma omp single nowait
+  {
 
   for(k=zb; k<ze; k++) {
     for(j=yb; j<ye; j++) {
@@ -150,6 +164,8 @@ static inline void solar_h_field_kernel_naive( const int shape[3], const int xb,
         Hyzd[i]      = asgn;
       }
     }
+  }
+  }
   }
 
 }
@@ -200,6 +216,14 @@ static inline void solar_e_field_kernel_naive( const int shape[3], const int xb,
   // ---------------------------------------------------------------------------------------
   // -----  Ex_z = Cex_tz * Ex_z + Cex_z * (N(Hz_x + Hz_y) - S(Hz_x + Hz_y) ) --------------
   // ---------------------------------------------------------------------------------------
+
+#pragma omp parallel default(shared) \
+        private(i,j,k,ixmin,ixmax,isub,stagDiffR, stagDiffI, asgn) \
+        num_threads(stencil_ctx.th_c)
+  {
+#pragma omp single nowait
+  {
+
   for(k=zb; k<ze; k++) {
     for(j=yb; j<ye; j++) {
 
@@ -236,6 +260,10 @@ static inline void solar_e_field_kernel_naive( const int shape[3], const int xb,
       }
     }
   }
+}
+#pragma omp single nowait
+  {
+
 
   for(k=zb; k<ze; k++) {
     for(j=yb; j<ye; j++) {
@@ -272,6 +300,10 @@ static inline void solar_e_field_kernel_naive( const int shape[3], const int xb,
       }
     }
   }
+}
+#pragma omp single nowait
+  {
+
 
   for(k=zb; k<ze; k++) {
     for(j=yb; j<ye; j++) {
@@ -308,7 +340,8 @@ static inline void solar_e_field_kernel_naive( const int shape[3], const int xb,
       }      
     }
   } 
-
+}
+}
 }
 
 static inline void solar_naive( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
