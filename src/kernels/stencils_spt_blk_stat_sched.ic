@@ -1,9 +1,11 @@
 void TEMPLATE(stat_sched,FUNC_NAME) KERNEL_SIG{
 
   int i,j,k, jb, je;
-  int nny =shape[1];
-  int nnx =shape[0];
+  const int nny =shape[1];
+  const int nnx =shape[0];
+  const unsigned long nnxy = 1UL * nnx * nny;
   uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
+  real_t *restrict ux, *restrict vx;
 
   for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
   {
@@ -14,6 +16,8 @@ void TEMPLATE(stat_sched,FUNC_NAME) KERNEL_SIG{
 #pragma omp for private(k,j,i) schedule(static)
       for(k=zb; k<ze; k++) {
         for(j=jb; j<je; j++) {
+          ux = &(u[1ULL*k*nnxy + j*nnx]);
+          vx = (real_t *restrict) &(v[1ULL*k*nnxy + j*nnx]);
 #pragma simd
           for(i=xb; i<xe; i++) {
             FUNC_BODY()

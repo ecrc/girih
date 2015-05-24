@@ -3,11 +3,13 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie, ib_r, ie_r, bs_x, nwf;
-  int nny =shape[1];
-  int nnx =shape[0];
+  const int nny =shape[1];
+  const int nnx =shape[0];
+  const unsigned long nnxy = 1UL * nnx * nny;
   uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   real_t * restrict u_r = u;
   real_t * restrict v_r = v;
+  real_t *restrict ux, *restrict vx;
   
   bs_x = stencil_ctx.bs_x;
   for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
@@ -32,6 +34,8 @@ void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, 
 
         for(k=kt; k<nwf+kt; k++){
           for(j=yb; j<ye; j++) {
+            ux = &(u[1ULL*k*nnxy + j*nnx]);
+            vx = &(v[1ULL*k*nnxy + j*nnx]);
   #pragma simd
             for(i=ib; i<ie; i++) {
               FUNC_BODY()

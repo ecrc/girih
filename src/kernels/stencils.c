@@ -7,19 +7,19 @@
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-U(i,j,k) = ((real_t) (2.0))*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*(coef[0]*V(i,j,k) \
-+coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
-+coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
-+coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1)) \
-+coef[2]*(V(i+2,j  ,k  )+V(i-2,j  ,k  )) \
-+coef[2]*(V(i  ,j+2,k  )+V(i  ,j-2,k  )) \
-+coef[2]*(V(i  ,j  ,k+2)+V(i  ,j  ,k-2)) \
-+coef[3]*(V(i+3,j  ,k  )+V(i-3,j  ,k  )) \
-+coef[3]*(V(i  ,j+3,k  )+V(i  ,j-3,k  )) \
-+coef[3]*(V(i  ,j  ,k+3)+V(i  ,j  ,k-3)) \
-+coef[4]*(V(i+4,j  ,k  )+V(i-4,j  ,k  )) \
-+coef[4]*(V(i  ,j+4,k  )+V(i  ,j-4,k  )) \
-+coef[4]*(V(i  ,j  ,k+4)+V(i  ,j  ,k-4)) ); \
+ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + ROC2(i,j,k)*(coef[0]*vx[i] \
++coef[1]*(vx[i+1]+vx[i-1]) \
++coef[1]*(vx[i+nnx]+vx[i-nnx]) \
++coef[1]*(vx[+nnxy+i]+vx[-nnxy+i]) \
++coef[2]*(vx[i+2]+vx[i-2]) \
++coef[2]*(vx[i+2*nnx]+vx[i-2*nnx]) \
++coef[2]*(vx[+2*nnxy+i]+vx[-2*nnxy+i]) \
++coef[3]*(vx[i+3]+vx[i-3]) \
++coef[3]*(vx[i+3*nnx]+vx[i-3*nnx]) \
++coef[3]*(vx[+3*nnxy+i]+vx[-3*nnxy+i]) \
++coef[4]*(vx[i+4]+vx[i-4]) \
++coef[4]*(vx[i+4*nnx]+vx[i-4*nnx]) \
++coef[4]*(vx[+4*nnxy+i]+vx[-4*nnxy+i]) ); \
 }
 
 #ifdef FUNC_NAME
@@ -37,10 +37,10 @@ U(i,j,k) = ((real_t) (2.0))*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*(coef[0]*V(i,j,k) 
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-U(i,j,k) = coef[0]*V(i,j,k) \
-+coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
-+coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
-+coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1)); \
+ux[i] = coef[0]*vx[i] \
++coef[1]*(vx[i+1]+vx[i-1]) \
++coef[1]*(vx[i+nnx]+vx[i-nnx]) \
++coef[1]*(vx[-nnxy+i]+vx[+nnxy+i]); \
 }
 
 #ifdef FUNC_NAME
@@ -58,10 +58,10 @@ U(i,j,k) = coef[0]*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
-+COEF(1,i,j,k)*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
-+COEF(1,i,j,k)*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
-+COEF(1,i,j,k)*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1)); \
+ux[i] = COEF(0,i,j,k)*vx[i] \
++COEF(1,i,j,k)*(vx[i+1]+vx[i-1]) \
++COEF(1,i,j,k)*(vx[i+nnx]+vx[i-nnx]) \
++COEF(1,i,j,k)*(vx[+nnxy+i]+vx[-nnxy+i]); \
 }
 
 #ifdef FUNC_NAME
@@ -79,10 +79,10 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
-+COEF(1,i,j,k)*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
-+COEF(2,i,j,k)*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
-+COEF(3,i,j,k)*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1)); \
+ux[i] = COEF(0,i,j,k)*vx[i] \
++COEF(1,i,j,k)*(vx[i+1]+vx[i-1]) \
++COEF(2,i,j,k)*(vx[i+nnx]+vx[i-nnx]) \
++COEF(3,i,j,k)*(vx[+nnxy+i]+vx[-nnxy+i]); \
 }
 
 #ifdef FUNC_NAME
@@ -100,19 +100,19 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-U(i,j,k) = COEF(0 ,i,j,k)*V(i,j,k) \
-+COEF(1 ,i,j,k)*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) \
-+COEF(2 ,i,j,k)*(V(i  ,j+1,k  )+V(i  ,j-1,k  )) \
-+COEF(3 ,i,j,k)*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1)) \
-+COEF(4 ,i,j,k)*(V(i+2,j  ,k  )+V(i-2,j  ,k  )) \
-+COEF(5 ,i,j,k)*(V(i  ,j+2,k  )+V(i  ,j-2,k  )) \
-+COEF(6 ,i,j,k)*(V(i  ,j  ,k+2)+V(i  ,j  ,k-2)) \
-+COEF(7 ,i,j,k)*(V(i+3,j  ,k  )+V(i-3,j  ,k  )) \
-+COEF(8 ,i,j,k)*(V(i  ,j+3,k  )+V(i  ,j-3,k  )) \
-+COEF(9 ,i,j,k)*(V(i  ,j  ,k+3)+V(i  ,j  ,k-3)) \
-+COEF(10,i,j,k)*(V(i+4,j  ,k  )+V(i-4,j  ,k  )) \
-+COEF(11,i,j,k)*(V(i  ,j+4,k  )+V(i  ,j-4,k  )) \
-+COEF(12,i,j,k)*(V(i  ,j  ,k+4)+V(i  ,j  ,k-4)); \
+ux[i] = COEF(0 ,i,j,k)*vx[i] \
++COEF(1 ,i,j,k)*(vx[i+1]+vx[i-1]) \
++COEF(2 ,i,j,k)*(vx[i+nnx]+vx[i-nnx]) \
++COEF(3 ,i,j,k)*(vx[+nnxy+i]+vx[-nnxy+i]) \
++COEF(4 ,i,j,k)*(vx[i+2]+vx[i-2]) \
++COEF(5 ,i,j,k)*(vx[i+2*nnx]+vx[i-2*nnx]) \
++COEF(6 ,i,j,k)*(vx[+2*nnxy+i]+vx[-2*nnxy+i]) \
++COEF(7 ,i,j,k)*(vx[i+3]+vx[i-3]) \
++COEF(8 ,i,j,k)*(vx[i+3*nnx]+vx[i-3*nnx]) \
++COEF(9 ,i,j,k)*(vx[+3*nnxy+i]+vx[-3*nnxy+i]) \
++COEF(10,i,j,k)*(vx[i+4]+vx[i-4]) \
++COEF(11,i,j,k)*(vx[i+4*nnx]+vx[i-4*nnx]) \
++COEF(12,i,j,k)*(vx[+4*nnxy+i]+vx[-4*nnxy+i]); \
 }
 
 #ifdef FUNC_NAME
@@ -130,14 +130,14 @@ U(i,j,k) = COEF(0 ,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
-+COEF(1,i,j,k)*V(i-1,j  ,k  ) \
-+COEF(2,i,j,k)*V(i+1,j  ,k  ) \
-+COEF(3,i,j,k)*V(i  ,j-1,k  ) \
-+COEF(4,i,j,k)*V(i  ,j+1,k  ) \
-+COEF(5,i,j,k)*V(i  ,j  ,k-1) \
-+COEF(6,i,j,k)*V(i  ,j  ,k+1); \
-}
+ux[i] = COEF(0,i,j,k)*vx[i] \
++COEF(1,i,j,k)*vx[i-1] \
++COEF(2,i,j,k)*vx[i+1] \
++COEF(3,i,j,k)*vx[i-nnx] \
++COEF(4,i,j,k)*vx[i+nnx] \
++COEF(5,i,j,k)*vx[-nnxy+i] \
++COEF(6,i,j,k)*vx[+nnxy+i]; \
+  }
 
 #ifdef FUNC_NAME
 #undef FUNC_NAME

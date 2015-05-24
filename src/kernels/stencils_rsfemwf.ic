@@ -4,8 +4,9 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie;
   int ib_r, ie_r, bs_x, nwf, tid, gtid, th_nwf, tgs, q, r;
-  int nny =shape[1];
-  int nnx =shape[0];
+  const int nny =shape[1];
+  const int nnx =shape[0];
+  const unsigned long nnxy = 1UL * nnx * nny;
   uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   int time_blk = te-tb; //t_dim*2+1; //temporal block size
   double t_start;
@@ -21,7 +22,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
   }
 //  int volatile current_z=0;
 
-#pragma omp parallel default(none) shared(stencil_ctx, status, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, tb, te,  t_dim, b_inc, e_inc, NHALO) \
+#pragma omp parallel default(none) shared(stencil_ctx, status, roc2, ln_domain, coef, nnx, nny, nnxy, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, tb, te,  t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
         private(nwf, th_nwf, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
@@ -38,6 +39,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
 
     real_t * restrict u_r = u;
     real_t * restrict v_r = v;
+    real_t *restrict ux, *restrict vx;
  
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
@@ -107,6 +109,8 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
           for(k=kt; k<kt+nwf; k++){
             if( ((k-NHALO)/th_nwf)%tgs == tid ) {
               for(j=yb; j<ye; j++) {
+                ux = &(u[1ULL*k*nnxy + j*nnx]);
+                vx = &(v[1ULL*k*nnxy + j*nnx]);
       #pragma simd
                 for(i=ib; i<ie; i++) {
                   FUNC_BODY()
