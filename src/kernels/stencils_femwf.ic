@@ -1,20 +1,20 @@
-void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
+void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie;
-  int ib_r, ie_r, bs_x, nwf, tid, gtid, th_nwf, tgs, q, r;
+  int ib_r, ie_r, bs_x, nwf, tid, gtid, th_nwf, tgs, q, r, num_wf;
   const int nny =shape[1];
   const int nnx =shape[0];
   const unsigned long nnxy = 1UL * nnx * nny;
   uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   double t_start;
-  
+  num_wf = stencil_ctx.num_wf;
   bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
 
-#pragma omp parallel default(none) shared(stencil_ctx, roc2, ln_domain, coef, nnx, nny, nnxy, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO) \
-        firstprivate(u, v) \
+#pragma omp parallel default(none) shared(stencil_ctx, roc2, ln_domain, coef, nnx, nny, nnxy, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r0, ye_r0, tb, te, t_dim, NHALO) \
+        firstprivate(u, v, num_wf, b_inc, e_inc) \
         private(nwf, th_nwf, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
   {
@@ -28,14 +28,35 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     real_t * restrict u_r = u;
     real_t * restrict v_r = v;
     real_t *restrict ux, *restrict vx;
- 
+
+    int tgs_my = tgs;
+    int tid_my = tid;
+    int yb_r = yb_r0;
+    int ye_r = ye_r0;
+
+    if(stencil_ctx.th_y>1 ){ // split only at full diamonds 
+      if(b_inc !=0 && e_inc!=0){ // split only at full diamonds 
+        tgs_my = tgs/stencil_ctx.th_y;
+        tid_my = tid/stencil_ctx.th_y;
+        if (tid%2 == 0){ // left thread
+          ye_r = (yb_r + ye_r)/2;
+          e_inc = 0;
+        } else{
+          yb_r = (yb_r + ye_r)/2;
+          b_inc = 0;
+        }
+      }else{// make sure to use sufficient number of frontlines
+        if (num_wf < tgs) num_wf = tgs;
+      }
+    }
+
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
 
-      nwf = stencil_ctx.num_wf;
-      th_nwf = nwf/tgs;
+      nwf = num_wf;
+      th_nwf = nwf/tgs_my;
 
-//      printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
+      //printf("[%02d, %02d] b_inc:%d e_inc:%d tb:%d te:%d yb_r0:%d ye_r0:%d yb_r:%d ye_r:%d nwf:%d th_nwf:%d num_wf:%d tgs_my:%d\n", gtid, tid, b_inc, e_inc, tb, te, yb_r0, ye_r0, yb_r, ye_r, nwf, th_nwf, num_wf, tgs_my);
       for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
 
         if(ze-zi < nwf){ 
@@ -50,13 +71,13 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
         kt = zi;
         for(t=tb; t< te; t++){ // Diamond blocking in time
-       if(t%2 == 0){ //swap pointers
-          u = v_r; v = u_r;
-        } else{
-          u = u_r; v = v_r;
-        }
+          if(t%2 == 0){ //swap pointers
+            u = v_r; v = u_r;
+          } else{
+            u = u_r; v = v_r;
+          }
           for(k=kt; k<kt+nwf; k++){
-            if( ((k-NHALO)/th_nwf)%tgs == tid ) {
+            if( ((k-NHALO)/th_nwf)%tgs_my == tid_my ) {
               for(j=yb; j<ye; j++) {
                 ux = &(u[1ULL*k*nnxy + j*nnx]);
                 vx = &(v[1ULL*k*nnxy + j*nnx]);
@@ -91,4 +112,5 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
       } // wavefront loop
     } // blocking in x
   } // parallel region
+//  printf("---------------------------\n");
 }

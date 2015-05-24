@@ -52,15 +52,16 @@ void param_default(Parameters *p) {
 #if defined(_OPENMP)
   p->num_threads = omp_get_max_threads();
 #endif
-  // default thread group size for methods using single thread group
-  p->stencil_ctx.thread_group_size = p->num_threads;
-  p->wavefront = 1; // default to using wavefront in the tile
-
   // default number of threads in each dimension
   p->stencil_ctx.th_x = 1;
   p->stencil_ctx.th_y = 1;
-  p->stencil_ctx.th_z = 1;
+  p->stencil_ctx.th_z = p->num_threads;
   p->stencil_ctx.th_c = 1;
+  // default thread group size for methods using single thread group
+  p->stencil_ctx.thread_group_size = p->stencil_ctx.th_x * p->stencil_ctx.th_y*
+                                     p->stencil_ctx.th_z * p->stencil_ctx.th_c;
+
+  p->wavefront = 1; // default to using wavefront in the tile
 
   p->stencil_ctx.num_wf = -1;
 
@@ -107,7 +108,7 @@ void reset_timers(Profile * p){
 
 void reset_wf_timers(Parameters * p){
   int i;
-  int num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+  int num_thread_groups = get_ntg(*p);
 
   // reset if the wavefront profiling is allocated
   if( (p->wavefront != 0) && (p->target_ts == 2) ) {
@@ -347,7 +348,7 @@ void init(Parameters *p) {
   // calculate the block size in Y to satisfy the layer condition at the spatially blocked code
   if (p->cache_size >0){
 
-    int num_thread_groups = (int) ceil(1.0*p->num_threads / p->stencil_ctx.thread_group_size);
+    int num_thread_groups = get_ntg(*p);
 
     if(p->use_omp_stat_sched==0){
       p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(real_t));
@@ -777,7 +778,7 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
 
   int i;
   uint64_t total_stencils;
-  int num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+  int num_thread_groups = get_ntg(*p);
 
   // look for NANs and zero results
   uint64_t k, zeroes_p, n_zeroes=0, nans=0;
@@ -1168,7 +1169,7 @@ void print_help(Parameters *p){
 void parse_args (int argc, char** argv, Parameters * p)
 { // for more details see http://libslack.org/manpages/getopt.3.html
   int c;
-  int thread_group_size = -1;
+  int thread_group_size = -1, thx=-1, thy=-1, thz=-1, thc=-1;
 
   while (1)
   {
@@ -1202,6 +1203,10 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"pad-array", 0, 0, 0},
         {"bsx", 1, 0, 0},
         {"mwd-type", 1, 0, 0},
+        {"thx", 1, 0, 0},
+        {"thy", 1, 0, 0},
+        {"thz", 1, 0, 0},
+        {"thc", 1, 0, 0},
         {"use-omp-stat-sched", 0, 0, 0},
 //        {"target-parallel-wavefront", 1, 0, 0},
         {0, 0, 0, 0}
@@ -1243,6 +1248,10 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "bsx") == 0) p->stencil_ctx.bs_x = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "mwd-type") == 0) p->mwd_type = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "use-omp-stat-sched") == 0) p->use_omp_stat_sched = 1;
+      else if(strcmp(long_options[option_index].name, "thx") == 0) thx = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thy") == 0) thy = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thz") == 0) thz = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thc") == 0) thc = atoi(optarg);
 //      else if(strcmp(long_options[option_index].name, "target-parallel-wavefront") == 0) p->target_parallel_wavefront = atoi(optarg);
      break;
 
@@ -1267,7 +1276,16 @@ void parse_args (int argc, char** argv, Parameters * p)
 
   // allow thread group size change only for methods supporting multiple thread groups
   if(p->target_ts == 2) {
+
     p->stencil_ctx.thread_group_size = thread_group_size;
+    if (thx==-1 & thy==-1 & thc==-1)
+      p->stencil_ctx.th_z = p->stencil_ctx.thread_group_size;
+
+    if(thx!=-1) p->stencil_ctx.th_x = thx;
+    if(thy!=-1) p->stencil_ctx.th_y = thy;
+    if(thz!=-1) p->stencil_ctx.th_z = thz;
+    if(thc!=-1) p->stencil_ctx.th_c = thc;
+
     p->use_omp_stat_sched = 0;
   }
 }

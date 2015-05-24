@@ -642,7 +642,7 @@ static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
 void dynamic_intra_diamond_main_loop(Parameters *p){
   int not_complete, th_y_coord, i;
   uint64_t il;
-  int num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+  int num_thread_groups = get_ntg(*p);
   uint64_t diam_size = y_len_l*(t_len-1)/2 + y_len_r*((t_len-1)/2 +1);
   int tid;
   double t1;

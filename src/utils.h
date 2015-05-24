@@ -19,6 +19,7 @@ void arrays_free(Parameters *p);
 extern void mpi_halo_init(Parameters *);
 extern void domain_decompose(Parameters *p);
 
+extern int get_ntg(Parameters);
 extern struct time_stepper TSList[];
 extern const char *MWD_name[];
 

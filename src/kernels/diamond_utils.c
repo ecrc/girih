@@ -71,7 +71,7 @@ double run_tuning_test(Parameters *tp){
   obt_perf =  lups/tp->prof.ts_main;
 
   printf("%06.2f]  time:%es  lups:%lu  cache block size:%lukiB  reps:%d\n",
-      obt_perf/(1e6), tp->prof.ts_main, lups, get_mwf_size(tp, tp->t_dim)*(tp->num_threads/tp->stencil_ctx.thread_group_size)/1024, orig_reps);
+      obt_perf/(1e6), tp->prof.ts_main, lups, get_mwf_size(tp, tp->t_dim)*get_ntg(*tp)/1024, orig_reps);
 
   return obt_perf;
 }
@@ -141,7 +141,7 @@ void auto_tune_diam_nwf(Parameters *op){
   domain_data_fill(&tp);
 
   // Allocate the wavefront profiling timers
-  int num_thread_groups = (int) ceil(1.0*tp.num_threads/tp.stencil_ctx.thread_group_size);
+  int num_thread_groups = get_ntg(tp);
   tp.stencil_ctx.t_wait        = (double *) malloc(sizeof(double)*tp.num_threads);
   tp.stencil_ctx.t_wf_main     = (double *) malloc(sizeof(double)*num_thread_groups);
   tp.stencil_ctx.t_wf_comm = (double *) malloc(sizeof(double)*num_thread_groups);
@@ -321,108 +321,104 @@ void intra_diamond_info_init(Parameters *p){
   uint64_t diam_width;
 
 
-    p->wf_larger_blk_size = 0;
-    p->larger_t_dim = 0;
+  if(p->stencil_ctx.thread_group_size ==-1) { // setup default thread group information
+    if(p->mpi_rank == 0) 
+      printf("EXITING: Thread group size must be set\n");
+  }
 
-    if( (p->stencil_ctx.thread_group_size !=-1) && ((p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) )){ // thread group size is defined but not the diamond size
-      if(p->mpi_rank == 0){
-        p->stencil_ctx.enable_likwid_m = 0;
-        auto_tune_diam_nwf(p);
-        p->stencil_ctx.enable_likwid_m = 1;
-      }
-      if(p->mpi_size > 1){ // broad cast the autotuning params
-        MPI_Bcast(&(p->t_dim), 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&(p->stencil_ctx.num_wf), 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&(p->stencil_ctx.bs_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
-      }
-      if(p->t_dim == -1){
-        if(p->mpi_rank == 0) 
-          printf("EXITING: No feasible diamond width for this problem configurations\n");
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Finalize();
-        exit(0);
-      }
+  p->wf_larger_blk_size = 0;
+  p->larger_t_dim = 0;
+
+  if( (p->stencil_ctx.thread_group_size !=-1) && ((p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) )){ // thread group size is defined but not the diamond size
+    if(p->mpi_rank == 0){
+      p->stencil_ctx.enable_likwid_m = 0;
+      auto_tune_diam_nwf(p);
+      p->stencil_ctx.enable_likwid_m = 1;
     }
-    p->wf_blk_size = get_mwf_size(p, p->t_dim);
-
-
-    diam_width = (p->t_dim+1) * 2 * p->stencil.r;
-    diam_concurrency = (p->stencil_shape[1]/p->t.shape[1]) / diam_width;
-
-    if (p->stencil_ctx.thread_group_size ==-1) { // setup default thread group information
-      if(p->num_threads == 1)
-        p->stencil_ctx.thread_group_size = 1;
-      else
-        p->stencil_ctx.thread_group_size = ( (diam_concurrency<2) ? p->num_threads : (p->num_threads/2) );
+    if(p->mpi_size > 1){ // broad cast the autotuning params
+      MPI_Bcast(&(p->t_dim), 1, MPI_INT, 0, MPI_COMM_WORLD);
+      MPI_Bcast(&(p->stencil_ctx.num_wf), 1, MPI_INT, 0, MPI_COMM_WORLD);
+      MPI_Bcast(&(p->stencil_ctx.bs_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
     }
-    else { // thread group size is set by the user
-      num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
-      //printf("threads:%d  num_thread_groups:%d thread_group_size:%d width:%d stencils:%d concurrency:%d\n",p->num_threads, num_thread_groups, p->stencil_ctx.thread_group_size, diam_width, p->stencil_shape[1]/p->t.shape[1], diam_concurrency);
-      if(num_thread_groups > diam_concurrency)
-        if(p->mpi_rank ==0){
-          printf("###ERROR: the number of thread groups exceed the available concurrency. Consider using %d thread groups or less\n", ((diam_concurrency>1)?diam_concurrency-1:1));
-          MPI_Barrier(MPI_COMM_WORLD);
-          MPI_Finalize();
-          exit(1);
-        }
-
-
-
-      // check for thread assignment validity
-      if(p->stencil_ctx.thread_group_size > p->num_threads){
-        if(p->mpi_rank ==0){
-          printf("###WARNING: Requested thread group size is larger the total available threads \n");
-        }
-      }
+    if(p->t_dim == -1){
+      if(p->mpi_rank == 0) 
+        printf("EXITING: No feasible diamond width for this problem configurations\n");
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(0);
     }
+  }
+  p->wf_blk_size = get_mwf_size(p, p->t_dim);
 
-    // check for block size in X validity
-    if(p->stencil_ctx.bs_x%p->stencil.r != 0) {
-      if(p->mpi_rank ==0){
-        fprintf(stderr, "###ERROR: Block size in in X must be multiples of the stencil radius\n");
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Finalize();
-        exit(1);
-      }
-    }
 
-    // check if thread group sizes are equal
-    if(p->num_threads%p->stencil_ctx.thread_group_size != 0){
-      if(p->mpi_rank ==0){
-        fprintf(stderr, "###ERROR: thread groups must be equal in size when using pre-computed wavefront assignment\n");
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Finalize();
-        exit(1);
-      }
-    }
+  diam_width = (p->t_dim+1) * 2 * p->stencil.r;
+  diam_concurrency = (p->stencil_shape[1]/p->t.shape[1]) / diam_width;
 
-    // Check for size validity in the direction of the wavefront
-    if( (p->wavefront == 1) && (p->stencil_ctx.thread_group_size == 1) ){ // single-thread group
-      min_z = (p->t_dim*2)*p->stencil.r+1;
-      if(p->stencil_shape[2] < min_z){
-        if(p->mpi_rank ==0) fprintf(stderr,"ERROR: The single core wavefront requires a minimum size of %d at the Z direction in the current configurations\n", min_z);
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Finalize();
-        exit(1);
-      }
-    }
-
-    if( (p->stencil_ctx.num_wf%p->stencil_ctx.thread_group_size != 0) && (p->stencil_ctx.thread_group_size != 1) ){
-      if(p->mpi_rank ==0) fprintf(stderr,"ERROR: num_wavefronts must be multiples of thread groups size\n");
+  num_thread_groups = get_ntg(*p);
+  //printf("threads:%d  num_thread_groups:%d thread_group_size:%d width:%d stencils:%d concurrency:%d\n",p->num_threads, num_thread_groups, p->stencil_ctx.thread_group_size, diam_width, p->stencil_shape[1]/p->t.shape[1], diam_concurrency);
+  if(num_thread_groups > diam_concurrency)
+    if(p->mpi_rank ==0){
+      printf("###ERROR: the number of thread groups exceed the available concurrency. Consider using %d thread groups or less\n", ((diam_concurrency>1)?diam_concurrency-1:1));
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);
     }
 
+  // check for thread assignment validity
+  if(p->stencil_ctx.thread_group_size > p->num_threads){
+    if(p->mpi_rank ==0){
+      printf("###WARNING: Requested thread group size is larger the total available threads \n");
+    }
+  }
 
-  if (p->mwd_type == 1){ // fixed execution to data
-    if( (p->stencil_ctx.num_wf%p->stencil_ctx.thread_group_size != 0) && (p->stencil_ctx.thread_group_size != 1) ){
-      if(p->mpi_rank ==0) fprintf(stderr,"ERROR: number of wavefronts must be multiples of thread group size\n");
+  if(p->stencil_ctx.thread_group_size != p->stencil_ctx.th_x * p->stencil_ctx.th_y*
+                                         p->stencil_ctx.th_z * p->stencil_ctx.th_c){
+     if(p->mpi_rank ==0){
+      fprintf(stderr, "###ERROR: Thread group size must be consistent with parallelizm in all dimensions\n");
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);
     }
   }
+
+  // check for block size in X validity
+  if(p->stencil_ctx.bs_x%p->stencil.r != 0) {
+    if(p->mpi_rank ==0){
+      fprintf(stderr, "###ERROR: Block size in in X must be multiples of the stencil radius\n");
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(1);
+    }
+  }
+
+  // check if thread group sizes are equal
+  if(p->num_threads%p->stencil_ctx.thread_group_size != 0){
+    if(p->mpi_rank ==0){
+      fprintf(stderr, "###ERROR: thread groups must be equal in size when using pre-computed wavefront assignment\n");
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(1);
+    }
+  }
+
+  // Check for size validity in the direction of the wavefront
+  if( (p->wavefront == 1) && (p->stencil_ctx.thread_group_size == 1) ){ // single-thread group
+    min_z = (p->t_dim*2)*p->stencil.r+1;
+    if(p->stencil_shape[2] < min_z){
+      if(p->mpi_rank ==0) fprintf(stderr,"ERROR: The single core wavefront requires a minimum size of %d at the Z direction in the current configurations\n", min_z);
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(1);
+    }
+  }
+
+  if( (p->stencil_ctx.num_wf%p->stencil_ctx.th_z != 0) && (p->stencil_ctx.thread_group_size != 1) ){
+    if(p->mpi_rank ==0) fprintf(stderr,"ERROR: num_wavefronts must be multiples of thread groups size\n");
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
+    exit(1);
+  }
+
 
   if( (p->mwd_type == 2) | (p->mwd_type == 3) ){ // relaxed synchronization
     if(p->stencil_ctx.num_wf/p->stencil_ctx.thread_group_size < p->stencil.r){
@@ -455,7 +451,7 @@ void intra_diamond_info_init(Parameters *p){
 
 
     // Allocate the wavefront profiling timers
-    num_thread_groups = (int) ceil(1.0*p->num_threads/p->stencil_ctx.thread_group_size);
+    num_thread_groups = get_ntg(*p);
     p->stencil_ctx.t_wait        = (double *) malloc(sizeof(double)*p->num_threads);
     p->stencil_ctx.t_wf_main     = (double *) malloc(sizeof(double)*num_thread_groups);
     p->stencil_ctx.t_wf_comm = (double *) malloc(sizeof(double)*num_thread_groups);
