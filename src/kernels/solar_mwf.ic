@@ -3,22 +3,22 @@ void mwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie, kb, ke;
-  int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, th_nwf, tgs, q, r;
+  int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, th_nwf, tgs, tgs_mc, q, r;
   int nny =shape[1];
   int nnx =shape[0];
   uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   double t_start;
   
-  bs_x = stencil_ctx.bs_x;
   tgs = stencil_ctx.thread_group_size;
+  tgs_mc = tgs/stencil_ctx.th_c;
+  bs_x = stencil_ctx.bs_x;
   nwf = stencil_ctx.num_wf;
-  th_nwf = nwf/tgs;
-
+  th_nwf = nwf/tgs_mc;
 
 #pragma omp parallel default(none) shared(stencil_ctx, shape, roc2, ln_domain, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
         private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kb, ke, kt, t, k, j, i, thb, the, q, r, t_start) \
-        num_threads(stencil_ctx.thread_group_size)
+        num_threads(tgs_mc)
   {
     tid = 0;
     gtid = 0;
@@ -26,9 +26,6 @@ void mwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
     tid = omp_get_thread_num();
     gtid = tid + mtid * tgs;
 #endif
-
-    real_t * restrict u_r = u;
-    real_t * restrict v_r = v;
 
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
@@ -39,8 +36,8 @@ void mwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
       for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
 
         if(ze-zi < nwf){ 
-          q = (int)((ze-zi)/tgs);
-          r = (ze-zi)%tgs;
+          q = (int)((ze-zi)/tgs_mc);
+          r = (ze-zi)%tgs_mc;
           if(tid < r) {
             thb = tid * (q+1);
             the = thb + (q+1);
