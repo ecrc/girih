@@ -6,6 +6,7 @@
 #include "data_structures.h"
 #include <stdlib.h>
 #include <stdio.h>
+//#include <xmmintrin.h>
 
 #define U(i,j,k)         (u[((1ULL)*((k)*(nny)+(j))*(nnx)+(i))])
 #define V(i,j,k)         (v[((1ULL)*((k)*(nny)+(j))*(nnx)+(i))])

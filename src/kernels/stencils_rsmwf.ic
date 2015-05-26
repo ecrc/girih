@@ -80,6 +80,19 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         ie = ie_r;
 
         kt = zi;
+
+ /*       // prefetch entire block, one cache line per loop
+        for(k=kt+nwf+thb; k<kt+nwf+the; k++){
+          for(j=yb-b_inc*t_dim; j<ye+e_inc*t_dim; j++) {
+            ux = &(u[1ULL*k*nnxy + j*nnx]);
+            vx = &(v[1ULL*k*nnxy + j*nnx]);
+            for(i=ib; i<ie; i+=(128/sizeof(real_t))) {
+              _mm_prefetch((char*)&ux[i], _MM_HINT_T2);
+              _mm_prefetch((char*)&vx[i], _MM_HINT_T2);
+            }
+          }
+        }
+*/
         for(t=tb; t< te; t++){ // Diamond blocking in time
           st = status[tid_idx];
 
