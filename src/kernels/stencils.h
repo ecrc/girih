@@ -25,4 +25,12 @@ void not_supported KERNEL_SIG{
   printf("ERROR: unsupported configuration for the selected stencil\n");
   exit(1); 
 }
+
+// Source: http://stackoverflow.com/questions/13772567/get-cpu-cycle-count
+static inline uint64_t rdtsc(){
+    unsigned int lo,hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
+}
+
 #endif /* STENCILS_H_ */

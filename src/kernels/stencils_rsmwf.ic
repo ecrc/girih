@@ -8,7 +8,7 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   const int nnx =shape[0];
   const unsigned long nnxy = 1UL * nnx * nny;
   uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
-  int time_blk = te-tb; //temporal block size
+  unsigned long time_blk = te-tb; //temporal block size
   double t_start;
   
   bs_x = stencil_ctx.bs_x;
@@ -19,11 +19,11 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
   volatile uint64_t *status;
   posix_memalign((void **)&status, 128, CL*tgs*sizeof(uint64_t));
   for(i=0; i<tgs; i++){
-    status[i*CL]=0;
+    status[i*CL]=1000;
   }
-  int volatile current_z=0;
 
-#pragma omp parallel default(none) shared(stencil_ctx, current_z, status, roc2, ln_domain, coef, nnx, nny,nnxy, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, tb, te, t_dim, b_inc, e_inc, NHALO) \
+
+#pragma omp parallel default(none) shared(stencil_ctx, status, roc2, ln_domain, coef, nnx, nny,nnxy, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, time_blk, tb, te, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
         private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, thb, the, q, r, t_start) \
         num_threads(stencil_ctx.thread_group_size)
@@ -36,21 +36,30 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 #endif
     int left_tid_idx = ((tid+tgs-1)%tgs)*CL;
     int tid_idx = tid*CL;
+//    uint64_t time_stamp_c;
+//    double time_stamp;
+    uint64_t lst, st;
+
+    int z_lag = 1;
+    if(tid ==0) z_lag-=time_blk; // first thread depends on data from prev. wavefront
 
     real_t * restrict u_r = u;
     real_t * restrict v_r = v;
     real_t *restrict ux, *restrict vx;
  
+//    char *spaces [] = {"       ", 
+//                       "              ",
+//                       "                     ",
+//                       "                            "};
+
     for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
       ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
  
       thb = th_nwf*tid;
       the = th_nwf*(tid+1);
 //printf("tid:%d thb:%d the:%d\n", tid, thb, the);
-//      printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
+//printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
       for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
-
-        if(tid == tgs-1) current_z = zi; // to respect dependencies across frontlines
 
         if(ze-zi < nwf){ 
           q = (int)((ze-zi)/tgs);
@@ -72,7 +81,8 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
         kt = zi;
         for(t=tb; t< te; t++){ // Diamond blocking in time
-       
+          st = status[tid_idx];
+
           if(t%2 == 0){ //swap pointers
             u = v_r; v = u_r;
           } else{
@@ -80,22 +90,17 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
           }
  
           // spin-wait ensure respecting data dependencies across threads
-          if(t!=0){
+          if(t!=tb){
             t_start = MPI_Wtime();
-            if(tid == 0){ // wait for dependencies across frontlines
-              while( (zi > current_z) & (status[tid_idx]+1 > (status[left_tid_idx]+time_blk)) ){
-                asm("");
-              }
-            }
-            else{ // wait for dependencies within the frontline
-              while(status[tid_idx]+1 > status[left_tid_idx]){
-                asm("");
-              }
+            while(st > status[left_tid_idx] -z_lag){
+              asm("");
             }
             stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
           }
 
-         
+//          time_stamp_c = rdtsc();
+//          time_stamp = ((double) (time_stamp_c%1000000ULL))/(2.301e3);
+//          lst = status[left_tid_idx];
           for(k=kt+thb; k<kt+the; k++){
             for(j=yb; j<ye; j++) {
               ux = &(u[1ULL*k*nnxy + j*nnx]);
@@ -107,25 +112,8 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
             }
           }
 
-
-/*          switch(tid){
-            case 0:
-              printf("%d:%04lu\n", t, status[tid_idx]);
-              break;
-            case 1:
-              printf("       %d:%04lu\n",t, status[tid_idx]);
-              break;
-            case 2:
-              printf("              %d:%04lu\n",t, status[tid_idx]);
-              break;
-            case 3:
-              printf("                     %d:%04lu\n",t, status[tid_idx]);
-              break;
-          }
- 
-if(status[tid_idx] > status[left_tid_idx] && tid>0  && t!=0) printf("################################################### [%d] t:%d  st:%lu  lst:%lu\n", tid, t, status[tid_idx], status[left_tid_idx]);
-*/
-//printf("[%d] t:%d  st:%d  lst:%d\n", tid, t, status[tid_idx], status[left_tid_idx]);
+//printf("%lu %05.1f z:%d %s %d:%04lu\n" ,time_stamp_c,time_stamp, zi/nwf, spaces[tid], t, st);
+//if(st >= lst && tid>0  && t!=tb) printf("%lu ################################################### [%d] t:%d  st:%lu  lst:%lu\n", time_stamp_c,  tid, t, status[tid_idx], lst);
 
           //update current thread time step status
           status[tid_idx]++;
