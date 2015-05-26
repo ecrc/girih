@@ -41,6 +41,7 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     uint64_t lst, st;
 
     int z_lag = 1;
+    if(NHALO > 1) z_lag = 0; // keep the wavefront tight for high order stencils
     if(tid ==0) z_lag-=time_blk; // first thread depends on data from prev. wavefront
 
     real_t * restrict u_r = u;
@@ -102,15 +103,6 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
             u = u_r; v = v_r;
           }
  
-          // spin-wait ensure respecting data dependencies across threads
-          if(t!=tb){
-            t_start = MPI_Wtime();
-            while(st > status[left_tid_idx] -z_lag){
-              asm("");
-            }
-            stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
-          }
-
 //          time_stamp_c = rdtsc();
 //          time_stamp = ((double) (time_stamp_c%1000000ULL))/(2.301e3);
 //          lst = status[left_tid_idx];
@@ -127,6 +119,17 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
 //printf("%lu %05.1f z:%d %s %d:%04lu\n" ,time_stamp_c,time_stamp, zi/nwf, spaces[tid], t, st);
 //if(st >= lst && tid>0  && t!=tb) printf("%lu ################################################### [%d] t:%d  st:%lu  lst:%lu\n", time_stamp_c,  tid, t, status[tid_idx], lst);
+
+
+         // spin-wait ensure respecting data dependencies across threads
+          if(t<te-1){
+            t_start = MPI_Wtime();
+            while(st >= status[left_tid_idx] -z_lag){
+              asm("");
+            }
+            stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+          }
+
 
           //update current thread time step status
           status[tid_idx]++;
