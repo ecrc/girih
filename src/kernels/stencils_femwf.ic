@@ -2,22 +2,21 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
-  int i, j, k, t, yb, ye, zi, kt, ib, ie;
-  int ib_r, ie_r, bs_x, nwf, tid, gtid, th_nwf, tgs, q, r, num_wf;
-  const int nny =shape[1];
-  const int nnx =shape[0];
-  const unsigned long nnxy = 1UL * nnx * nny;
-  uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
-  double t_start;
-  num_wf = stencil_ctx.num_wf;
-  bs_x = stencil_ctx.bs_x;
-  tgs = stencil_ctx.thread_group_size;
-
-#pragma omp parallel default(none) shared(stencil_ctx, roc2, ln_domain, coef, nnx, nny, nnxy, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r0, ye_r0, tb, te, t_dim, NHALO) \
-        firstprivate(u, v, num_wf, b_inc, e_inc) \
-        private(nwf, th_nwf, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, t_start) \
+#pragma omp parallel default(none) shared(shape, stencil_ctx, roc2, coef, mtid, xb, xe, zb, ze, yb_r0, ye_r0, tb, te, t_dim, NHALO) \
+        firstprivate(u, v, b_inc, e_inc) \
         num_threads(stencil_ctx.thread_group_size)
   {
+    int tgs, nwf, th_nwf, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r; 
+    double t_start;
+
+    const int nny =shape[1];
+    const int nnx =shape[0];
+    const unsigned long nnxy = 1UL * nnx * nny;
+    uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
+
+    tgs = stencil_ctx.thread_group_size;
+    nwf = stencil_ctx.num_wf;
+
     tid = 0;
     gtid = 0;
 #if defined(_OPENMP)
@@ -53,7 +52,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
       }else{// use the y-threads along z-axis make sure to use sufficient number of frontlines
         th_z *= th_y;
         tid_z = tid/th_x;
-        if (num_wf < th_z) num_wf = th_z;
+        if (nwf < th_z) nwf = th_z;
       }
     }
 
@@ -68,68 +67,54 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
       ie = ib + q;
     }
 
+    th_nwf = nwf/th_z;
 
-//    for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
-//      ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
+    //printf("[%02d, %02d] b_inc:%d e_inc:%d tb:%d te:%d yb_r0:%d ye_r0:%d yb_r:%d ye_r:%d nwf:%d th_nwf:%d num_wf:%d th_z:%d\n", gtid, tid, b_inc, e_inc, tb, te, yb_r0, ye_r0, yb_r, ye_r, nwf, th_nwf, num_wf, th_z);
+    for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
 
-      nwf = num_wf;
-      th_nwf = nwf/th_z;
+      if(ze-zi < nwf){ 
+        nwf = ze-zi;
+      }
 
-      //printf("[%02d, %02d] b_inc:%d e_inc:%d tb:%d te:%d yb_r0:%d ye_r0:%d yb_r:%d ye_r:%d nwf:%d th_nwf:%d num_wf:%d th_z:%d\n", gtid, tid, b_inc, e_inc, tb, te, yb_r0, ye_r0, yb_r, ye_r, nwf, th_nwf, num_wf, th_z);
-      for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
+      yb = yb_r;
+      ye = ye_r;
 
-        if(ze-zi < nwf){ 
-          nwf = ze-zi;
+      kt = zi;
+      for(t=tb; t< te; t++){ // Diamond blocking in time
+        if(t%2 == 0){ //swap pointers
+          u = v_r; v = u_r;
+        } else{
+          u = u_r; v = v_r;
         }
-
-        yb = yb_r;
-        ye = ye_r;
-
-//        ib = ib_r;
-//        ie = ie_r;
-
-        kt = zi;
-        for(t=tb; t< te; t++){ // Diamond blocking in time
-          if(t%2 == 0){ //swap pointers
-            u = v_r; v = u_r;
-          } else{
-            u = u_r; v = v_r;
-          }
-          for(k=kt; k<kt+nwf; k++){
-            if( ((k-NHALO)/th_nwf)%th_z == tid_z ) {
-              for(j=yb; j<ye; j++) {
-                ux = &(u[1ULL*k*nnxy + j*nnx]);
-                vx = &(v[1ULL*k*nnxy + j*nnx]);
-      #pragma simd
-                for(i=ib; i<ie; i++) {
-                  FUNC_BODY()
-                }
+        for(k=kt; k<kt+nwf; k++){
+          if( ((k-NHALO)/th_nwf)%th_z == tid_z ) {
+            for(j=yb; j<ye; j++) {
+              ux = &(u[1ULL*k*nnxy + j*nnx]);
+              vx = &(v[1ULL*k*nnxy + j*nnx]);
+    #pragma simd
+              for(i=ib; i<ie; i++) {
+                FUNC_BODY()
               }
             }
           }
+        }
 
-          // Update block size in Y
-          if(t< t_dim){ // lower half of the diamond
-            yb -= b_inc;
-            ye += e_inc;
-          }else{ // upper half of the diamond
-            yb += b_inc;
-            ye -= e_inc;
-          }
+        // Update block size in Y
+        if(t< t_dim){ // lower half of the diamond
+          yb -= b_inc;
+          ye += e_inc;
+        }else{ // upper half of the diamond
+          yb += b_inc;
+          ye -= e_inc;
+        }
 
-//          // Update block size in X
-//          if (ib != xb) ib-=NHALO; 
-//          if (ie != xe) ie-=NHALO;
+        kt -= NHALO;
 
-          kt -= NHALO;
-
-          t_start = MPI_Wtime();
+        t_start = MPI_Wtime();
 #pragma omp barrier
-          stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
+        stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
-        } // diamond blocking in time (time loop)
-      } // wavefront loop
-//    } // blocking in x
+      } // diamond blocking in time (time loop)
+    } // wavefront loop
   } // parallel region
-//  printf("---------------------------\n");
 }
