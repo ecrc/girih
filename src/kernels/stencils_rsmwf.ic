@@ -6,48 +6,60 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
-  int i, j, k, t, yb, ye, zi, kt, ib, ie;
-  int ib_r, ie_r, bs_x, thb, the, nwf, tid, gtid, tgs, q, r;
   const int nny =shape[1];
   const int nnx =shape[0];
   const unsigned long nnxy = 1UL * nnx * nny;
   uint64_t  ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   unsigned long time_blk = te-tb; //temporal block size
-  double t_start;
   
-  bs_x = stencil_ctx.bs_x;
-  tgs = stencil_ctx.thread_group_size;
-  nwf = stencil_ctx.num_wf;
+  int tgs = stencil_ctx.thread_group_size;
+  int nwf = stencil_ctx.num_wf;
 
   int th_x = stencil_ctx.th_x;
   int th_y = stencil_ctx.th_y;
   int th_z = stencil_ctx.th_z;
+  int th_xy = th_x*th_y;
 
   // at half diam use the y-threads along z-axis make sure to use sufficient number of frontlines
   if( (th_y==2) && (b_inc ==0 | e_inc==0) ){ 
-    th_z *= 2;
+    th_x *= 2;
     th_y = 1;
-    if (nwf < th_z) nwf = th_z;
+//    if (nwf < th_z) nwf = th_z;
   }
 
 
+  int i;
   const int CL=128/sizeof(uint64_t);
-  volatile uint64_t *status_z, *status_y;
+  volatile uint64_t *status_z, *status_y, *status_x, *status_xy;
   posix_memalign((void **)&status_z, 128, CL*th_z*sizeof(uint64_t));
   for(i=0; i<th_z; i++){
-    status_z[i*CL]=1000;
+    status_z[i*CL]=100;
   }
-  posix_memalign((void **)&status_y, 128, CL*2*th_z*sizeof(uint64_t));
-  for(i=0; i<2*th_z; i++){
-    status_y[i*CL]=10;
+/*  posix_memalign((void **)&status_y, 128, CL*th_y*th_z*sizeof(uint64_t));
+  for(i=0; i<th_y*th_z; i++){
+    status_y[i*CL]=100;
+  }
+  posix_memalign((void **)&status_x, 128, CL*th_x*th_y*th_z*sizeof(uint64_t));
+  for(i=0; i<th_x*th_y*th_z; i++){
+    status_x[i*CL]=10;
+  }
+*/
+  posix_memalign((void **)&status_xy, 128, CL*th_x*th_y*th_z*sizeof(uint64_t));
+  for(i=0; i<th_x*th_y*th_z; i++){
+    status_xy[i*CL]=10;
   }
 
 
-#pragma omp parallel default(none) shared(th_x, th_y, th_z, status_y, stencil_ctx, status_z, roc2, ln_domain, coef, nnx, nny,nnxy, tgs, nwf, mtid, xb, xe, bs_x, zb, ze, yb_r0, ye_r0, time_blk, tb, te, t_dim, NHALO) \
-        firstprivate(u, v, b_inc, e_inc) \
-        private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, thb, the, q, r, t_start) \
-        num_threads(stencil_ctx.thread_group_size)
+
+
+#pragma omp parallel default(none) shared(th_x, th_y, th_z, th_xy, status_xy, status_x,  status_y, status_z, stencil_ctx, roc2, ln_domain, coef, nnx, nny, nnxy, tgs, mtid, xb, xe, zb, ze, yb_r0, ye_r0, time_blk, tb, te, t_dim, NHALO) \
+        firstprivate(u, v, b_inc, e_inc, nwf) \
+        num_threads(tgs)
   {
+    int i, j, k, t, yb, ye, zi, kt, ib, ie;
+    int ib_r, ie_r, thb, the, tid, gtid, q, r;
+    double t_start;
+
     tid = 0;
     gtid = 0;
 #if defined(_OPENMP)
@@ -59,10 +71,14 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
 #if DEBUG
     uint64_t lst;
-    char *spaces [] = {"       ", 
-                       "                ",
-                       "                         ",
-                       "                                  "};
+    char *spaces [] = {"  ", 
+                       "           ",
+                       "                    ",
+                       "                             ",
+                       "                                      ",
+                       "                                               ",
+                       "                                                        ",
+                       "                                                                 "};
 #endif
 
     int z_lag = 1;
@@ -73,12 +89,12 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     real_t * restrict v_r = v;
     real_t *restrict ux, *restrict vx;
  
-    uint64_t  st_z, st_y;
+    uint64_t  st_z, st_xy;
     int th_nwf;
 
     // tid = tid_z*(th_x*th_y) + tid_y*th_x + tid_x
     int tid_x = tid%th_x;
-    int tid_y = (tid-tid_x)%th_y;// (tid/th_x)%2;
+    int tid_y = (tid/th_x)%th_y;
     int tid_z = tid/(th_x*th_y);
 
     int yb_r = yb_r0;
@@ -93,42 +109,68 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         b_inc = 0;
       }
     }
-/*
+
     int nbx = (xe-xb)/th_x;
     q = (int)((xe-xb)/th_x);
     r = (xe-xb)%th_x;
     if(tid_x < r) {
-      ib = xb + tid_x * (q+1);
-      ie = ib + (q+1);
+      ib_r = xb + tid_x * (q+1);
+      ie_r = ib_r + (q+1);
     }else {
-      ib = xb + r * (q+1) + (tid_x - r) * q;
-      ie = ib + q;
+      ib_r = xb + r * (q+1) + (tid_x - r) * q;
+      ie_r = ib_r + q;
     }
-*/
+//    ib_r=xb;
+//    ie_r=xe; 
+
+
+
 
     // index of neighbors at the CL-spaced status array
     int tid_z_idx = tid_z*CL;
     int left_tid_z_idx = ((tid_z+th_z-1)%th_z)*CL;
 
-    int tid_y_idx = (tid_y + 2*tid_z)*CL;
+/*    int tid_y_idx = (tid_y + 2*tid_z)*CL;
     int other_tid_y_idx = ((tid_y+1)%2 + 2*tid_z)*CL;
+    int master_tid_y_idx = (2*tid_z)*CL;
 
-    int tid_x_idx = tid_x*CL;
-//    printf("tid:%d th(z,y,x):(%d,%d,%d)  st_idx(z,y):(%d,%d) st_neighbor(z,y):(%d,%d)\n", tid, tid_z,tid_y,tid_x,tid_z_idx, tid_y_idx,  left_tid_z_idx, other_tid_y_idx);
+    int tid_x_idx = (tid_x + (tid_y+tid_z*th_y)*th_x )*CL;
+    int left_tid_x = (tid_x+th_x-1)%th_x;
+    int left_tid_x_idx = (left_tid_x + (tid_y+tid_z*th_y)*th_x)*CL;
+    int master_tid_x_idx = ((tid_y+tid_z*th_y)*th_x )*CL;
+*/
+    int tid_xy_idx = tid*CL;
+    int master_tid_xy_idx = tid_z*(th_y*th_x)*CL;
+
+/*
+    if(th_xy>1){
+      if(tid_y==0 & tid_x==0){ // master thread
+        printf("[%d] Master[id:%d]. Slaves:", tid, tid_xy_idx);
+        for(i=1; i<th_xy;i++){
+          printf(" %d",tid_xy_idx + i*CL);
+        }
+        printf("\n");
+      }
+  #pragma omp barrier
+      if(tid_y!=0 | tid_x!=0){ // slave thread
+        printf("[%d] %d. Master%d\n",tid, tid_xy_idx, master_tid_xy_idx);
+      }
+  #pragma omp barrier
+    }
+*/
+//    printf("tid:%d th(z,y,x):(%d,%d,%d)  st_idx(z,y,x):(%02d,%02d,%02d) st_neighbor(z,y,x):(%02d,%02d,%02d) master(y,x):(%02d,%02d) \n", tid, tid_z,tid_y,tid_x,tid_z_idx, tid_y_idx, tid_x_idx, left_tid_z_idx, other_tid_y_idx, left_tid_x_idx, master_tid_y_idx, master_tid_x_idx);
 //    #pragma omp barrier
 
 //    for(ib_r=xb; ib_r<xe; ib_r+=bs_x) { // blocking in X
 //      ie_r = (ib_r+bs_x)<(xe)?(ib_r+bs_x):(xe);
-      ib_r=xb;
-      ie_r=xe; 
-
       th_nwf = nwf/th_z;
       thb = th_nwf*tid_z;
       the = th_nwf*(tid_z+1);
 //printf("tid:%d thb:%d the:%d\n", tid, thb, the);
-//printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
+//printf("[%d, %d] xb:%d  xe:%d  ib_r:%03d  ie_r:%03d\n", gtid, tid, xb, xe, ib_r, ie_r);
 
 //printf("[%02d, %02d] b_inc:%d e_inc:%d tb:%d te:%d yb_r0:%d ye_r0:%d yb_r:%d ye_r:%d nwf:%d th_nwf:%d th_z:%d\n", gtid, tid, b_inc, e_inc, tb, te, yb_r0, ye_r0, yb_r, ye_r, nwf, th_nwf, th_z);
+//    #pragma omp barrier
 
       for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
 
@@ -166,7 +208,6 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         }
 */
         for(t=tb; t< te; t++){ // Diamond blocking in time
-          st_z = status_z[tid_z_idx];
 
           if(t%2 == 0){ //swap pointers
             u = v_r; v = u_r;
@@ -190,33 +231,40 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
           }
 
 #if DEBUG
-printf("%lu %05.1f z:%d th(z,y):%d,%d %s %d:%04lu:%02lu\n" ,time_stamp_c,time_stamp, zi/nwf, tid_z, tid_y%2, spaces[tid], t, st_z, status_y[tid_y_idx]);
+printf("%lu %05.1f z,t:(%d,%d) [%d]th(z,y,x):%d,%d,%d nwf,zb,ze:(%d,%d,%d) %s %d:%03lu:%02lu\n" ,time_stamp_c,time_stamp, zi, t, tid, tid_z, tid_y, tid_x, nwf,kt+thb,kt+the, spaces[tid], t, status_z[tid_z_idx], status_xy[tid_xy_idx]);
 //if(st_z >= lst && tid>0  && t!=tb) printf("%lu ################################################### [%d] t:%d  st_z:%lu  lst:%lu\n", time_stamp_c,  tid, t, status_z[tid_idx], lst);
 #endif
-         // Synchronize
-         t_start = MPI_Wtime();
-         // Spin-wait ensure respecting data dependencies across threads along z-axis
-          if((tid_y==0) & (t<te-1)){
-            while(st_z >= status_z[left_tid_z_idx] -z_lag){
-              asm("");
-//sleep(1); printf("%lu %05.1f z:%d th(z,y):%d,%d %s %d:%04lu:%02lu\n" ,time_stamp_c,time_stamp, zi/nwf, tid_z, tid_y%2, spaces[tid], t, st_z, status_y[tid_y_idx]);
+          // Synchronize
+          t_start = MPI_Wtime();
+
+          if(th_z > 1 && t<te-1){ // the last time step does not have to synchronize
+            // Synchronize local threads along the z-axis
+            if(tid_y==0 && tid_x==0){
+              st_z = status_z[tid_z_idx];
+              BLOCK_COND(st_z >= status_z[left_tid_z_idx] -z_lag)
             }
           }
-          // Synchronize local threads along y-axis
-          if(th_y>1){
-            st_y = ++status_y[tid_y_idx];
-            while(st_y > status_y[other_tid_y_idx]){
-              asm("");
-//sleep(1); printf("%lu %05.1f z:%d th(z,y):%d,%d %s %d:%04lu:%02lu\n" ,time_stamp_c,time_stamp, zi/nwf, tid_z, tid_y%2, spaces[tid], t, st_z, status_y[tid_y_idx]);
+          // Synchronize local threads along the xy-axes
+          if(th_xy>1){
+            if(tid_y==0 & tid_x==0){ // master thread
+              st_xy = status_xy[tid_xy_idx];
+              for(i=1; i<th_xy;i++){
+                BLOCK_COND(st_xy == status_xy[tid_xy_idx + i*CL])
+              }
+              status_xy[tid_xy_idx]++;
+            } else { // slave thread
+              st_xy = ++status_xy[tid_xy_idx];
+              BLOCK_COND(st_xy != status_xy[master_tid_xy_idx])
             }
           }
           stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
-
+//if(status_x[tid_x_idx] != status_x[left_tid_x_idx]  ) printf("################################################### [%d] t:%d  st_x,lst_x:%lu,%lu  st_y,lst_y:%lu,%lu\n",tid, t, status_x[tid_x_idx], status_x[left_tid_x_idx], status_y[tid_y_idx], status_y[other_tid_y_idx]);
+//if(status_x[tid_x_idx] != status_x[left_tid_x_idx] | (th_y>1 & tid_x==0 & (status_y[tid_y_idx] != status_y[other_tid_y_idx]) ) ) printf("################################################### [%d] t:%d  st_x,lst_x:%lu,%lu  st_y,lst_y:%lu,%lu\n",tid, t, status_x[tid_x_idx], status_x[left_tid_x_idx], status_y[tid_y_idx], status_y[other_tid_y_idx]);
           //update current thread time step status_z
-          if(tid_y==0) status_z[tid_z_idx]++;
+          if(th_z>1 & tid_y==0 & tid_x==0) status_z[tid_z_idx]++;
 
-         // Update block size in Y
+          // Update block size in Y
           if(t< t_dim){ // lower half of the diamond
             yb -= b_inc;
             ye += e_inc;
@@ -243,7 +291,7 @@ printf("%lu %05.1f z:%d th(z,y):%d,%d %s %d:%04lu:%02lu\n" ,time_stamp_c,time_st
 printf("--------------------------\n");
 #endif
 #if 0
-  int nnz = shape[2];
+  int j, k, nnz = shape[2];
   for (i=NHALO; i<nnz-NHALO; i++) {
     // new page
     printf("\n***************** slice # %d *************\n",i+1-NHALO);
@@ -258,5 +306,7 @@ printf("--------------------------\n");
 #endif
 
   free((void*)status_z);
-  free((void*)status_y);
+//  free((void*)status_y);
+//  free((void*)status_x);
+  free((void*)status_xy);
 }
