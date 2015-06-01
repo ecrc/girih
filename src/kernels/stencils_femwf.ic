@@ -6,7 +6,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         firstprivate(u, v, b_inc, e_inc) \
         num_threads(stencil_ctx.thread_group_size)
   {
-    int tgs, nwf, th_nwf, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r; 
+    int tgs, nwf, th_nwf, tid, gtid, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r; 
     double t_start;
 
     const int nny =shape[1];

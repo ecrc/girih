@@ -14,7 +14,7 @@ def main():
     print "Verifying different wavefront paralellization stratigies" 
     for kernel in [0, 1]:
         for nx, ny, nz, t in dim_list:
-            for mwd_t in [1, 2]:
+            for mwd_t in [0, 1, 2]:
                 for tgs,nwf,thz,thy,thx in intra_tile_l:
                     print "mwd_type:(tgs, nwf, thz, thy, thx) ",mwd_t, tgs,nwf,thz,thy,thx
                     run_verification(nx=nx, ny=ny, nz=nz, ts=2, kernel=kernel, t_dim=t, mwd_type=mwd_t, tgs=tgs, num_threads=8, nwf=nwf, thx=thx, thy=thy, thz=thz)
