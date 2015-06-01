@@ -1011,6 +1011,9 @@ void print_param(Parameters p) {
     printf("Intra-diamond prologue/epilogue MStencils: %lu\n", p.idiamond_pro_epi_logue_updates/(1000*1000));
     printf("Multi-wavefront updates: %d\n", p.stencil_ctx.num_wf);
     printf("Thread group size: %d\n", p.stencil_ctx.thread_group_size);
+    printf("Threads along z-axis: %d\n", p.stencil_ctx.th_z);
+    printf("Threads along y-axis: %d\n", p.stencil_ctx.th_y);
+    printf("Threads along x-axis: %d\n", p.stencil_ctx.th_x);
     break;
   }
 
@@ -1139,8 +1142,14 @@ void print_help(Parameters *p){
         "       Explicitly concatenate halo information before send and unpack them\n"
         "       at receiving end using multi-threading.\n"
         "       (Works for decomposition across X and Y only)\n"
-        "  --thread-group-size <integer>   (specific to method 9)\n"
+        "  --thread-group-size <integer>   (specific to diamond tiling)\n"
         "       Set the thread group size for methods supporting multiple thread groups\n"
+        "  --thx <integer>    (specific to diamond tiling)\n"
+        "       Set threads nmber along the x-axis in the diamond tile"
+        "  --thy <integer>    (specific to diamond tiling)\n"
+        "       Set threads nmber along the y-axis in the diamond tile"
+        "  --thz <integer>    (specific to diamond tiling)\n"
+        "       Set threads nmber along the z-axis in the diamond tile"
         "  --cache-size <integer>\n"
         "       The usable last level cache size for spatial blocking\n"
         "  --wavefront <bool>\n"

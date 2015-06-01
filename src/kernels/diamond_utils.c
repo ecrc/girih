@@ -342,6 +342,7 @@ void intra_diamond_info_init(Parameters *p){
     }
   }
 
+  // check thread group size validity
   if(p->stencil_ctx.thread_group_size != p->stencil_ctx.th_x * p->stencil_ctx.th_y*
                                          p->stencil_ctx.th_z * p->stencil_ctx.th_c){
      if(p->mpi_rank ==0){
@@ -352,6 +353,15 @@ void intra_diamond_info_init(Parameters *p){
     }
   }
 
+  // check number of threads along x-axis vailidity
+  if(p->stencil_ctx.th_x > p->lstencil_shape[0]){
+     if(p->mpi_rank ==0){
+      fprintf(stderr, "###ERROR: no sufficient concurrency along the x-axis\n");
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(1);
+    }
+  }
   // check if thread group sizes are equal
   if(p->num_threads%p->stencil_ctx.thread_group_size != 0){
     if(p->mpi_rank ==0){
