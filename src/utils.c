@@ -65,9 +65,9 @@ void param_default(Parameters *p) {
 
   p->stencil_ctx.num_wf = -1;
 
-  p->stencil_ctx.enable_likwid_m = 1;
+  p->stencil_ctx.bs_x = 1e7;
 
-  p->stencil_ctx.bs_x = 1e6;
+  p->stencil_ctx.enable_likwid_m = 1;
 
   // Topology parameters
   p->t.is_periodic[0]=0;
@@ -1001,7 +1001,6 @@ void print_param(Parameters p) {
     if(p.use_omp_stat_sched==1) printf("static\n"); else printf("static1\n");
     break;
   case 2: // dynamic scheduling intra diamond methods
-    printf("Block size in X: %d\n", p.stencil_ctx.bs_x);
     printf("Enable wavefronts: %d\n", p.wavefront!=0);
     if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", MWD_name[p.mwd_type]);
     printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*p.stencil.r);
@@ -1148,8 +1147,6 @@ void print_help(Parameters *p){
         "       Indicate whether to use wavefront in the tile. 1 for yes and 0 for no (default 1)\n"
         "  --num-wavefronts <int>\n"
         "       Set the number of wavefronts updated per wavefront iteration (default 1)\n"
-        "  --bsx <int>\n"
-        "       Set block size in X for MWD (default 1e6)\n"
         "  --mwd-type <int>\n"
         "       Select one of the MWD implementations from the one available at --list option\n"
         "  --use-omp-stat-sched\n"
@@ -1201,7 +1198,6 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"wavefront", 1, 0, 0},
         {"num-wavefronts", 1, 0, 0},
         {"pad-array", 0, 0, 0},
-        {"bsx", 1, 0, 0},
         {"mwd-type", 1, 0, 0},
         {"thx", 1, 0, 0},
         {"thy", 1, 0, 0},
@@ -1245,7 +1241,6 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "wavefront") == 0) p->wavefront = atoi(optarg)!=0;
       else if(strcmp(long_options[option_index].name, "num-wavefronts") == 0) p->stencil_ctx.num_wf = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "pad-array") == 0) p->array_padding = 1;
-      else if(strcmp(long_options[option_index].name, "bsx") == 0) p->stencil_ctx.bs_x = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "mwd-type") == 0) p->mwd_type = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "use-omp-stat-sched") == 0) p->use_omp_stat_sched = 1;
       else if(strcmp(long_options[option_index].name, "thx") == 0) thx = atoi(optarg);

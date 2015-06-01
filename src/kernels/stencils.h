@@ -16,6 +16,7 @@
 #define CAT(X,Y) X##_##Y
 #define TEMPLATE(X,Y) CAT(X,Y)
 
+#define BLOCK_COND(x) while((x)){asm("");}
 
 //function for the unsupported features
 void not_supported_mwd KERNEL_MWD_SIG{

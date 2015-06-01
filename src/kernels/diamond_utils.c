@@ -17,8 +17,7 @@ uint64_t get_mwf_size(Parameters *p, int t_dim){
   int nwf = p->stencil_ctx.num_wf;
   diam_height = t_dim*2*p->stencil.r + nwf;
 
-  int bsl = p->stencil_ctx.bs_x + t_dim*p->stencil.r;
-  lnx = (bsl < p->ldomain_shape[0] ? bsl : p->ldomain_shape[0]);
+  lnx = p->ldomain_shape[0];
 
   wf_updates = (t_dim+1)*(t_dim+1)*2 * p->stencil.r; // Y-T projection
   wf_elements = (wf_updates - diam_width) * p->stencil.r + diam_width + diam_width*(nwf-1);
@@ -275,33 +274,6 @@ void auto_tune_diam_nwf(Parameters *op){
     op->stencil_ctx.num_wf = tp.stencil_ctx.num_wf;
   }
 
-  //simple tuning of blocking in X
-  diam_concurrency = tp.stencil_shape[1]/((tp.t_dim+1)*2*tp.stencil.r);
-  tp.idiamond_pro_epi_logue_updates = (uint64_t) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
-  int prev_bs_x, base_bs_x;
-  double div=1.0;
-  if (tp.stencil_ctx.bs_x > tp.stencil_shape[0]/tp.t.shape[0]){//no blocking set by user
-    tp.stencil_ctx.bs_x = tp.stencil_shape[0]/tp.t.shape[0];
-    base_bs_x = tp.stencil_ctx.bs_x;
-    printf("[AUTO TUNE]     Diamond width:%02d, wavefronts #:%d  [Blk. in X: pefromance (MLUPS/s)]\n", (tp.t_dim+1)*2*tp.stencil.r, tp.stencil_ctx.num_wf);
-    printf("[AUTO TUNE]          [%03d: ", tp.stencil_ctx.bs_x);  
-    prev_nwf_perf = run_tuning_test(&tp);
-    while(1){
-      div += 1;
-      prev_bs_x = tp.stencil_ctx.bs_x; 
-      tp.stencil_ctx.bs_x = ceil( ((double)(base_bs_x)) /div);
-      printf("[AUTO TUNE]          [%03d: ", tp.stencil_ctx.bs_x);  
-      exp_perf = run_tuning_test(&tp);
-
-      if(exp_perf < prev_nwf_perf){
-        op->stencil_ctx.bs_x = prev_bs_x;
-        break;
-      }
-      prev_nwf_perf = exp_perf;
-    }
-  }
-
-
   free(tp.stencil_ctx.t_wait);
   free(tp.stencil_ctx.t_wf_main);
   free(tp.stencil_ctx.t_wf_comm);
@@ -338,7 +310,6 @@ void intra_diamond_info_init(Parameters *p){
     if(p->mpi_size > 1){ // broad cast the autotuning params
       MPI_Bcast(&(p->t_dim), 1, MPI_INT, 0, MPI_COMM_WORLD);
       MPI_Bcast(&(p->stencil_ctx.num_wf), 1, MPI_INT, 0, MPI_COMM_WORLD);
-      MPI_Bcast(&(p->stencil_ctx.bs_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
     }
     if(p->t_dim == -1){
       if(p->mpi_rank == 0) 
@@ -375,16 +346,6 @@ void intra_diamond_info_init(Parameters *p){
                                          p->stencil_ctx.th_z * p->stencil_ctx.th_c){
      if(p->mpi_rank ==0){
       fprintf(stderr, "###ERROR: Thread group size must be consistent with parallelizm in all dimensions\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
-      exit(1);
-    }
-  }
-
-  // check for block size in X validity
-  if(p->stencil_ctx.bs_x%p->stencil.r != 0) {
-    if(p->mpi_rank ==0){
-      fprintf(stderr, "###ERROR: Block size in in X must be multiples of the stencil radius\n");
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);

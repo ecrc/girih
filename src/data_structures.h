@@ -116,8 +116,8 @@ typedef void (*clu_func_t)CLU_SIG;
 
 // context information passed to the stencil kernel
 typedef struct{
+  int bs_x; //depricated
   int bs_y; // for spatial blocking in Y at the standard methods
-  int bs_x; // for spatial blocking in X at MWD
   int thread_group_size;
   int th_x, th_y, th_z, th_c; // number of threads per dimension in x, y, and z, and per component
 

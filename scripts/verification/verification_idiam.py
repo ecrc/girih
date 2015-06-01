@@ -8,33 +8,33 @@ def verification_idiam(k):
     npz =1
 
 
-    dim_list = [[32, 480,  128,5, 8, 2],
-                [64, 480,  128,5, 32, 2]]
+    dim_list = [[32, 480,  128,5, 2],
+                [64, 480,  128,5, 2]]
     print "Verifying different wavefront paralellization stratigies"
     th = 10
     for mwdt in [0,1,2,3]:
-        for nlx, nly, nlz, t, bs_x, tgs in dim_list:
+        for nlx, nly, nlz, t, tgs in dim_list:
             for kernel, R in [(1,1), (0,4)]:
                 nx = nlx*npx
                 ny = nly*npy
                 nz = nlz*npz
                 if th <= nly/((t+1)*2*R): # enough concurrency in the wavefront for the provided threads
                     print "MWD type:%d" % mwdt
-                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  num_threads=th, tgs=tgs, nwf=tgs*R, bs_x=bs_x, mwd_type=mwdt)
+                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  num_threads=th, tgs=tgs, nwf=tgs*R, mwd_type=mwdt)
 
 
-    dim_list = [[16, 128,  128,1, 8, 1],
-                [32, 480,  128,5, 8, 2],
-                [64, 480,  128,5, 32, 2]]
+    dim_list = [[16, 128,  128,1, 1],
+                [32, 480,  128,5, 2],
+                [64, 480,  128,5, 2]]
     print "Verifying different values of cache blocking in X"
     for th in range(2,21,2):
-        for nlx, nly, nlz, t, bs_x, tgs in dim_list:
+        for nlx, nly, nlz, t, tgs in dim_list:
             for kernel, R in [(1,1), (4,4)]:
                 nx = nlx*npx
                 ny = nly*npy
                 nz = nlz*npz
                 if th <= nly/((t+1)*2*R): # enough concurrency in the wavefront for the provided threads
-                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  num_threads=th, tgs=tgs, nwf=tgs, bs_x=bs_x)
+                    run_verification(nx=nx, ny=ny, nz=nz, ts=k, npx=npx, npy=npy, npz=npz, t_dim=t, kernel=kernel,  num_threads=th, tgs=tgs, nwf=tgs)
 
 
     print "Verifying different multi-core wavefront threads/tile_size combinations"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-def run_verification(nx, ny, nz, ts, t_dim=3, npx=1, npy=1, npz=1, kernel=0, dp=0, concat=0, num_threads=0, tgs=1, nwf=-1, bs_x=1000000, mwd_type=1, thx=1, thy=1, thz=1):
+def run_verification(nx, ny, nz, ts, t_dim=3, npx=1, npy=1, npz=1, kernel=0, dp=0, concat=0, num_threads=0, tgs=1, nwf=-1, mwd_type=1, thx=1, thy=1, thz=1):
     import os
     import subprocess
     from string import Template
@@ -21,10 +21,10 @@ def run_verification(nx, ny, nz, ts, t_dim=3, npx=1, npy=1, npz=1, kernel=0, dp=
 
     if(nwf == -1): nwf = 4*thz
 
-    cmd_template=Template('mpirun -np $np $binary --nt $nt --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz --verbose 0 --verify 1 --target-ts $ts --target-kernel $kernel --t-dim $t_dim --halo-concatenate $concat --thread-group-size $tgs --num-wavefronts $nwf --bsx $bs_x --mwd-type $mwd_type --thx $thx --thy $thy --thz $thz')
+    cmd_template=Template('mpirun -np $np $binary --nt $nt --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz --verbose 0 --verify 1 --target-ts $ts --target-kernel $kernel --t-dim $t_dim --halo-concatenate $concat --thread-group-size $tgs --num-wavefronts $nwf --mwd-type $mwd_type --thx $thx --thy $thy --thz $thz')
 
     np = npx*npy*npz
-    cmd_str = cmd_template.substitute(np=np, nt=nt, npx=npx, npy=npy, npz=npz, nx=nx, ny=ny, nz=nz, t_dim=t_dim, ts=ts, kernel=kernel, binary=binary, concat=concat, tgs=tgs, nwf=nwf, bs_x=bs_x, mwd_type=mwd_type, thx=thx, thy=thy, thz=thz)
+    cmd_str = cmd_template.substitute(np=np, nt=nt, npx=npx, npy=npy, npz=npz, nx=nx, ny=ny, nz=nz, t_dim=t_dim, ts=ts, kernel=kernel, binary=binary, concat=concat, tgs=tgs, nwf=nwf, mwd_type=mwd_type, thx=thx, thy=thy, thz=thz)
     if num_threads == 0:
         num_threads = max(1, min(8,16/np))
     omp_threads = "export OMP_NUM_THREADS=%d" % num_threads
