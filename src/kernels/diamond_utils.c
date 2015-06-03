@@ -123,6 +123,7 @@ void auto_tune_diam_nwf(Parameters *op){
   int tgs = tp.stencil_ctx.thread_group_size;
   int cache_size_cond, int_diam_cond, wf_len_cond, cuncurrency_cond, diam_concurrency;
   int diam_height;
+  int thz = tp.stencil_ctx.th_z;
   ntg = get_ntg(tp);
 
   tp.stencil_ctx.num_wf = tgs; // set the number of wavefronts to the minimum possible value
@@ -199,7 +200,7 @@ void auto_tune_diam_nwf(Parameters *op){
         printf("[AUTO TUNE] Diamond width:%02d  [wavefronts #: pefromance (MLUPS/s)]\n", (tp.t_dim+1)*2*tp.stencil.r);
         // loop over increasing number of wavefronts per update
         prev_nwf_perf = -1;
-        tp.stencil_ctx.num_wf = tgs; // start with smallest possible number of updates
+        tp.stencil_ctx.num_wf = thz; // start with smallest possible number of updates
         if(tp.mwd_type == 3) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
         tp.idiamond_pro_epi_logue_updates = (uint64_t) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
@@ -217,23 +218,23 @@ void auto_tune_diam_nwf(Parameters *op){
 
             // termination criteria for the nwf
             if (exp_perf < prev_nwf_perf){
-              tp.stencil_ctx.num_wf -= tgs;
+              tp.stencil_ctx.num_wf -= thz;
               break;
             }
             else{
               prev_nwf_perf = exp_perf;
-              tp.stencil_ctx.num_wf += tgs;
+              tp.stencil_ctx.num_wf += thz;
             }
 
           }
           else{ // invalid wavefront length
-            tp.stencil_ctx.num_wf -= tgs;
+            tp.stencil_ctx.num_wf -= thz;
             break;
           }
 
         }
-        if(tp.stencil_ctx.num_wf < tgs){
-          tp.stencil_ctx.num_wf = tgs;
+        if(tp.stencil_ctx.num_wf < thz){
+          tp.stencil_ctx.num_wf = thz;
           //printf("ERROR: Invalid Wavefronts #\n");
           //exit(1);
         }
@@ -277,23 +278,23 @@ void auto_tune_diam_nwf(Parameters *op){
 
         // termination criteria for the nwf
         if (exp_perf < prev_nwf_perf){
-          tp.stencil_ctx.num_wf -= tgs;
+          tp.stencil_ctx.num_wf -= thz;
           break;
         }
         else{
           prev_nwf_perf = exp_perf;
-          tp.stencil_ctx.num_wf += tgs;
+          tp.stencil_ctx.num_wf += thz;
         }
 
       }
       else{ // invalid wavefront length
-        tp.stencil_ctx.num_wf -= tgs;
+        tp.stencil_ctx.num_wf -= thz;
         break;
       }
 
     }
-    if(tp.stencil_ctx.num_wf < tgs){
-      tp.stencil_ctx.num_wf = tgs;
+    if(tp.stencil_ctx.num_wf < thz){
+      tp.stencil_ctx.num_wf = thz;
     }
     if(tp.mwd_type == 3){ 
       if(tp.stencil_ctx.num_wf < tgs*tp.stencil.r){
