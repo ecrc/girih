@@ -52,6 +52,7 @@ void param_default(Parameters *p) {
 #if defined(_OPENMP)
   p->num_threads = omp_get_max_threads();
 #endif
+
   // default number of threads in each dimension
   p->stencil_ctx.th_x = 1;
   p->stencil_ctx.th_y = 1;
@@ -1169,9 +1170,9 @@ void print_help(Parameters *p){
         "  --use-omp-stat-sched\n"
         "       Use OpenMP static schedule instead of static,1 at the spatial blocking time steppers\n"
         "  --th-block <integer>    (specific to diamond tiling)\n"
-        "       Set the thread affinity block size per stride (below) when using internal affinitiy control"
+        "       Set the thread affinity block size per stride (below) when using internal affinitiy control\n"
         "  --th-stride <integer>    (specific to diamond tiling)\n"
-        "       Set the stride size when using internal affinitiy control"
+        "       Set the stride size when using internal affinitiy control\n"
 
 
 

@@ -37,7 +37,7 @@ void cpu_bind_init(Parameters *p){
   ib = 1;
 #endif
   printf("Using OS threads:");
-  for(i=ib; i<(p->num_threads+ib)*p->th_stride;i++){
+  for(i=ib; i<p->num_threads*p->th_stride/p->th_block+ib;i++){
     if((i-ib)%p->th_stride < p->th_block){
       printf(" %d",i);
       p->stencil_ctx.bind_masks[i] = CPU_ALLOC( ncpus );
@@ -47,6 +47,7 @@ void cpu_bind_init(Parameters *p){
   }
   printf("\n");
 
+ omp_set_nested(1); 
  // Set the affinity to reduce the cost of first run
   int num_thread_groups = get_ntg(*p);
 #pragma omp parallel num_threads(num_thread_groups) PROC_BIND(spread)
@@ -58,7 +59,7 @@ void cpu_bind_init(Parameters *p){
       int gtid = tid + mtid * p->stencil_ctx.thread_group_size;
 
       int err = sched_setaffinity(0, p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[gtid]);
-      if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
+      if(err==-1) printf("WARNING: Could not set CPU Affinity of thread:%d error:%d\n", gtid, err);
     }
   }
 
