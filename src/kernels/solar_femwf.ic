@@ -13,7 +13,7 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
   tgs = stencil_ctx.thread_group_size;
   int tgs_mc = tgs/stencil_ctx.th_c;
 
-#pragma omp parallel default(none) shared(stencil_ctx, shape, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO) \
+#pragma omp parallel default(none) shared(tgs_mc, stencil_ctx, shape, roc2, ln_domain, coef, nnx, nny, tgs, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
         private(nwf, th_nwf, tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kb, ke, kt, t, k, j, i, q, r, t_start) \
         num_threads(tgs_mc)

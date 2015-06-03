@@ -15,7 +15,7 @@ void mwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, 
   nwf = stencil_ctx.num_wf;
   th_nwf = nwf/tgs_mc;
 
-#pragma omp parallel default(none) shared(stencil_ctx, shape, roc2, ln_domain, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO) \
+#pragma omp parallel default(none) shared(tgs_mc, stencil_ctx, shape, roc2, ln_domain, coef, nnx, nny, tgs, nwf, th_nwf, mtid, xb, xe, bs_x, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
         private(tid, gtid, ib_r, ie_r, zi, yb, ye, ib, ie, kb, ke, kt, t, k, j, i, thb, the, q, r, t_start) \
         num_threads(tgs_mc)
