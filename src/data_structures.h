@@ -35,7 +35,7 @@
 #define BOUNDARY_SRC_VAL (100.1)
 
 #ifndef ENABLE_CPU_BIND
-#define ENABLE_CPU_BIND (0)
+#define ENABLE_CPU_BIND (1)
 #endif
 
 // Use thread affinity supported by 4.0 standard
@@ -211,6 +211,10 @@ typedef struct{
 
   real_t * restrict U1, * restrict U2, * restrict U3, * restrict source;
   real_t * restrict coef;
+
+  // parameters for internal thread affinity
+  int th_block;
+  int th_stride;
 
   // Holds the value of cache blocking across Y axis
   stencil_CTX stencil_ctx;

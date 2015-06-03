@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+int get_ntg(Parameters p){
+  return (int) ceil(1.0*p.num_threads/p.stencil_ctx.thread_group_size);
+}
+
 
 void cpu_bind_init(Parameters *p){
 
@@ -26,17 +30,40 @@ void cpu_bind_init(Parameters *p){
 
   p->stencil_ctx.setsize = CPU_ALLOC_SIZE(ncpus);
   p->stencil_ctx.bind_masks = (cpu_set_t**) malloc(p->num_threads*sizeof(cpu_set_t*));
-  int i;
-  for(i=0; i<p->num_threads;i++){
-    p->stencil_ctx.bind_masks[i] = CPU_ALLOC( ncpus );
-    CPU_ZERO_S(p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
-    CPU_SET_S(i,p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
+
+  int i, ib;
+  ib=0;
+#if __MIC__
+  ib = 1;
+#endif
+  printf("Using OS threads:");
+  for(i=ib; i<(p->num_threads+ib)*p->th_stride;i++){
+    if((i-ib)%p->th_stride < p->th_block){
+      printf(" %d",i);
+      p->stencil_ctx.bind_masks[i] = CPU_ALLOC( ncpus );
+      CPU_ZERO_S(p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
+      CPU_SET_S(i,p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
+    }
   }
+  printf("\n");
+
+ // Set the affinity to reduce the cost of first run
+  int num_thread_groups = get_ntg(*p);
+#pragma omp parallel num_threads(num_thread_groups) PROC_BIND(spread)
+  {
+    int mtid = omp_get_thread_num();
+  #pragma omp parallel shared(mtid)  num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
+    {
+      int tid = omp_get_thread_num();
+      int gtid = tid + mtid * p->stencil_ctx.thread_group_size;
+
+      int err = sched_setaffinity(0, p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[gtid]);
+      if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
+    }
+  }
+
 }
 
-int get_ntg(Parameters p){
-  return (int) ceil(1.0*p.num_threads/p.stencil_ctx.thread_group_size);
-}
 
 uint64_t get_mwf_size(Parameters *p, int t_dim){
   uint64_t diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;

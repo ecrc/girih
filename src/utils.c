@@ -61,6 +61,10 @@ void param_default(Parameters *p) {
   p->stencil_ctx.thread_group_size = p->stencil_ctx.th_x * p->stencil_ctx.th_y*
                                      p->stencil_ctx.th_z * p->stencil_ctx.th_c;
 
+  //internal affinity variables
+  p->th_block = 1;
+  p->th_stride = 1;
+
   p->wavefront = 1; // default to using wavefront in the tile
 
   p->stencil_ctx.num_wf = -1;
@@ -516,6 +520,8 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->stencil_ctx.num_wf = a.stencil_ctx.num_wf;
   b->stencil_ctx.setsize = a.stencil_ctx.setsize;
   b->stencil_ctx.bind_masks = a.stencil_ctx.bind_masks;
+  b->th_block = a.th_block;
+  b->th_stride = a.th_stride;
 
   
   copyv(a.source_pt, b->source_pt, 3);
@@ -1162,7 +1168,10 @@ void print_help(Parameters *p){
         "       Select one of the MWD implementations from the one available at --list option\n"
         "  --use-omp-stat-sched\n"
         "       Use OpenMP static schedule instead of static,1 at the spatial blocking time steppers\n"
-
+        "  --th-block <integer>    (specific to diamond tiling)\n"
+        "       Set the thread affinity block size per stride (below) when using internal affinitiy control"
+        "  --th-stride <integer>    (specific to diamond tiling)\n"
+        "       Set the stride size when using internal affinitiy control"
 
 
 
@@ -1214,6 +1223,8 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"thy", 1, 0, 0},
         {"thz", 1, 0, 0},
         {"thc", 1, 0, 0},
+        {"th-block", 1, 0, 0},
+        {"th-stride", 1, 0, 0},
         {"use-omp-stat-sched", 0, 0, 0},
 //        {"target-parallel-wavefront", 1, 0, 0},
         {0, 0, 0, 0}
@@ -1258,6 +1269,8 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "thy") == 0) thy = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "thz") == 0) thz = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "thc") == 0) thc = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "th-block") == 0) p->th_block = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "th-stride") == 0) p->th_stride = atoi(optarg);
 //      else if(strcmp(long_options[option_index].name, "target-parallel-wavefront") == 0) p->target_parallel_wavefront = atoi(optarg);
      break;
 
