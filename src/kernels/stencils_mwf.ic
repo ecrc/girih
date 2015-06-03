@@ -6,7 +6,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0,
 //  abs_tid= (int*) malloc(stencil_ctx.thread_group_size*sizeof(int));
 #pragma omp parallel default(none) shared(abs_tid, shape, stencil_ctx, roc2, coef, mtid, xb, xe, zb, ze, yb_r0, ye_r0, tb, te, t_dim, NHALO) \
         firstprivate(u, v, b_inc, e_inc) \
-        num_threads(stencil_ctx.thread_group_size)
+        num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
     int tgs, nwf, th_nwf, tid, gtid, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r;
     double t_start, thb, the;
@@ -136,7 +136,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0,
   } // parallel region
 
 /*  int i;
-  printf("Thread group:");
+  printf("[%d] Thread group:", mtid);
   for(i=0;i<stencil_ctx.thread_group_size;i++) printf(" %02d", abs_tid[i]);
   printf("\n");
   free(abs_tid);*/

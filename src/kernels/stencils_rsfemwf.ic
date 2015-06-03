@@ -23,7 +23,7 @@ void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb
 
 #pragma omp parallel default(none) shared(shape, stencil_ctx, status, roc2, coef, tgs, mtid, xb, xe, zb, ze, yb_r, ye_r, tb, te,  t_dim, b_inc, e_inc, NHALO) \
         firstprivate(u, v) \
-        num_threads(stencil_ctx.thread_group_size)
+        num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
 
     int i, j, k, t, yb, ye, zi, kt, ib, ie;

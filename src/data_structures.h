@@ -35,8 +35,16 @@
 #define BOUNDARY_SRC_VAL (100.1)
 
 #ifndef ENABLE_CPU_BIND
-#define ENABLE_CPU_BIND (1)
+#define ENABLE_CPU_BIND (0)
 #endif
+
+// Use thread affinity supported by 4.0 standard
+#if _OPENMP >= 201307
+#define PROC_BIND(x) proc_bind(x)
+#else
+#define PROC_BIND(x)
+#endif
+
 
 #ifndef DP
 #define DP (0)

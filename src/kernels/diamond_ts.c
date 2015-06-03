@@ -651,10 +651,10 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
     avail_list[i] = i;
   }
 
-#pragma omp parallel num_threads(num_thread_groups) shared(head, tail) private(tid)
+#pragma omp parallel num_threads(num_thread_groups) shared(head, tail) private(tid) PROC_BIND(spread)
   {
     // initlaize the likwid markers according to the openmp nested parallelism
-    #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size)
+    #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
     {
       if(p->stencil_ctx.enable_likwid_m == 1) { 
         LIKWID_MARKER_THREADINIT;
@@ -699,7 +699,7 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
       }
     }
     // stop the markers of the experiment
-    #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size)
+    #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
     { 
       if(p->stencil_ctx.enable_likwid_m == 1) {
         LIKWID_MARKER_STOP("calc"); 
@@ -714,7 +714,7 @@ void dynamic_intra_diamond_prologue_std(Parameters *p){
   // compute all the trapezoids
   int i, yb, ye;
   int ntg = get_ntg(*p);
-#pragma omp parallel num_threads(ntg)
+#pragma omp parallel num_threads(ntg) PROC_BIND(spread)
   {
     int b_inc = p->stencil.r;
     int e_inc = p->stencil.r;
@@ -759,7 +759,7 @@ void dynamic_intra_diamond_prologue(Parameters *p){
 void dynamic_intra_diamond_epilogue_std(Parameters *p){
   int yb, ye, i;
   int ntg = get_ntg(*p);
-#pragma omp parallel num_threads(ntg)
+#pragma omp parallel num_threads(ntg) PROC_BIND(spread)
   {
     int b_inc = p->stencil.r;
     int e_inc = p->stencil.r;
