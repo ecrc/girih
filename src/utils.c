@@ -514,6 +514,8 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->stencil_ctx.thread_group_size = a.stencil_ctx.thread_group_size;
   b->stencil_ctx.clu_func = a.stencil_ctx.clu_func;
   b->stencil_ctx.num_wf = a.stencil_ctx.num_wf;
+  b->stencil_ctx.setsize = a.stencil_ctx.setsize;
+  b->stencil_ctx.bind_masks = a.stencil_ctx.bind_masks;
 
   
   copyv(a.source_pt, b->source_pt, 3);

@@ -24,6 +24,11 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     gtid = tid + mtid * tgs;
 #endif
 
+#if ENABLE_CPU_BIND
+    int err = sched_setaffinity(0, stencil_ctx.setsize, stencil_ctx.bind_masks[mtid*tgs+tid]);
+    if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
+#endif
+
     real_t * restrict u_r = u;
     real_t * restrict v_r = v;
     real_t *restrict ux, *restrict vx;

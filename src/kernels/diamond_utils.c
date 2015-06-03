@@ -5,6 +5,35 @@
 #include <math.h>
 
 
+void cpu_bind_init(Parameters *p){
+
+  // Source for finding number of CPUs: https://software.intel.com/en-us/blogs/2013/10/31/applying-intel-threading-building-blocks-observers-for-thread-affinity-on-intel
+  cpu_set_t *mask;
+  int ncpus;
+  for ( ncpus = sizeof(cpu_set_t)/8; ncpus < 16*1024; ncpus <<= 1 ) {
+    mask = CPU_ALLOC( ncpus );
+    if ( !mask ) break;
+    const size_t size = CPU_ALLOC_SIZE( ncpus );
+    CPU_ZERO_S( size, mask );
+    const int err = sched_getaffinity( 0, size, mask );
+    if ( !err ) break;
+    CPU_FREE( mask );
+    mask = NULL;
+    if ( errno != EINVAL )  break;
+  }
+  if ( !mask )
+    printf("Warning: Failed to obtain process affinity mask. Thread affinitization is disabled.\n");  
+
+  p->stencil_ctx.setsize = CPU_ALLOC_SIZE(ncpus);
+  p->stencil_ctx.bind_masks = (cpu_set_t**) malloc(p->num_threads*sizeof(cpu_set_t*));
+  int i;
+  for(i=0; i<p->num_threads;i++){
+    p->stencil_ctx.bind_masks[i] = CPU_ALLOC( ncpus );
+    CPU_ZERO_S(p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
+    CPU_SET_S(i,p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
+  }
+}
+
 int get_ntg(Parameters p){
   return (int) ceil(1.0*p.num_threads/p.stencil_ctx.thread_group_size);
 }
@@ -298,9 +327,13 @@ void intra_diamond_info_init(Parameters *p){
       printf("EXITING: Thread group size must be set\n");
   }
 
+  // Initialize thread binings
+#if ENABLE_CPU_BIND
+  cpu_bind_init(p);
+#endif
+
   p->wf_larger_blk_size = 0;
   p->larger_t_dim = 0;
-
   if( (p->stencil_ctx.thread_group_size !=-1) && ((p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) )){ // thread group size is defined but not the diamond size
     if(p->mpi_rank == 0){
       p->stencil_ctx.enable_likwid_m = 0;

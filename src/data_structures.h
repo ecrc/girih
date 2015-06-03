@@ -16,6 +16,15 @@
 #include "mpi.h"
 #endif
 
+// For thread binding
+#define _GNU_SOURCE
+#define __USE_GNU
+#include <sched.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <errno.h>
+
 #ifndef restrict
 #define restrict __restrict__
 #endif
@@ -24,6 +33,10 @@
 #define MAX_CACHE_SIZE (70*1024)  // cache size in kB
 #define FLUSH_SIZE (50*1024*1024) // in bytes
 #define BOUNDARY_SRC_VAL (100.1)
+
+#ifndef ENABLE_CPU_BIND
+#define ENABLE_CPU_BIND (1)
+#endif
 
 #ifndef DP
 #define DP (0)
@@ -120,6 +133,10 @@ typedef struct{
   int bs_y; // for spatial blocking in Y at the standard methods
   int thread_group_size;
   int th_x, th_y, th_z, th_c; // number of threads per dimension in x, y, and z, and per component
+
+  // cpu binding masks
+  cpu_set_t **bind_masks;
+  int setsize;
 
   // for separate stride-1 functions
   clu_func_t clu_func;
