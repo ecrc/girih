@@ -897,15 +897,15 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
       printf("%-27s %f (s) - %05.2f%%\n","RANK0 ts others:",
           p->prof.total-(p->prof.ts_main+p->prof.ts_others), (p->prof.total-(p->prof.ts_main+p->prof.ts_others))/p->prof.total*100);
       printf("******************************************************\n");
-      printf("%-27s", "Metric \\ core:");
+      printf("%-30s", "Metric \\ core:");
       for(i=0; i<p->num_threads; i++) printf("  core %02d     ", i);
       printf("\n");
 
-      printf("%-27s", "Wavefront barrier wait [s]:");
+      printf("%-27s", "Wavefront synchronization [s]:");
       for(i=0; i<p->num_threads; i++) printf("  %e", p->stencil_ctx.t_wait[i]);
       printf("\n");
-      printf("%-27s", "Wavefront barrier wait [%]:");
-      for(i=0; i<p->num_threads; i++) printf("  %05.2f       ", p->stencil_ctx.t_wait[i]/p->prof.ts_main*100);
+      printf("%-27s", "Wavefront synchronization [%]:");
+      for(i=0; i<p->num_threads; i++) printf("  %05.2f       ", p->stencil_ctx.t_wait[i]/(p->prof.ts_main + p->prof.ts_others)*100);
       printf("\n\n");
 
       printf("%-27s", "Metric \\ thread group:");
@@ -916,7 +916,7 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
       for(i=0; i<num_thread_groups; i++) printf("  %e", p->stencil_ctx.t_wf_main[i]);
       printf("\n");
       printf("%-27s", "Wavefront steady state [%]:");
-      for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ", p->stencil_ctx.t_wf_main[i]/p->prof.ts_main*100);
+      for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ", p->stencil_ctx.t_wf_main[i]/(p->prof.ts_main+p->prof.ts_others)*100);
       printf("\n");
 
       printf("%-27s", "Wavefront startup/end [s]:");
@@ -924,30 +924,30 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
       printf("\n");
       printf("%-27s", "Wavefront startup/end [%]:");
       for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ",
-          (p->stencil_ctx.t_wf_prologue[i] + p->stencil_ctx.t_wf_epilogue[i])/p->prof.ts_main*100);
+          (p->stencil_ctx.t_wf_prologue[i] + p->stencil_ctx.t_wf_epilogue[i])/(p->prof.ts_main+p->prof.ts_others)*100);
       printf("\n");
 
       printf("%-27s", "Wavefront communication [s]:");
       for(i=0; i<num_thread_groups; i++) printf("  %e", p->stencil_ctx.t_wf_comm[i]);
       printf("\n");
       printf("%-27s", "Wavefront communication [%]:");
-      for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ", p->stencil_ctx.t_wf_comm[i]/p->prof.ts_main*100);
+      for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ", p->stencil_ctx.t_wf_comm[i]/(p->prof.ts_main+p->prof.ts_others)*100);
       printf("\n");
 
       printf("%-27s", "Wavefront others [s]:");
       for(i=0; i<num_thread_groups; i++) printf("  %e",
-          p->prof.ts_main -(p->stencil_ctx.t_wf_main[i] + p->stencil_ctx.t_wf_prologue[i] + p->stencil_ctx.t_wf_comm[i] + p->stencil_ctx.t_wf_epilogue[i] + p->stencil_ctx.t_group_wait[i]));
+          p->prof.ts_main+p->prof.ts_others - (p->stencil_ctx.t_wf_main[i] + p->stencil_ctx.t_wf_prologue[i] + p->stencil_ctx.t_wf_comm[i] + p->stencil_ctx.t_wf_epilogue[i]));
       printf("\n");
       printf("%-27s", "Wavefront others [%]:");
       for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ",
-          (p->prof.ts_main - (p->stencil_ctx.t_wf_main[i] + p->stencil_ctx.t_wf_prologue[i] + p->stencil_ctx.t_wf_comm[i] + p->stencil_ctx.t_wf_epilogue[i]))/p->prof.ts_main*100);
+          (p->prof.ts_main+ p->prof.ts_others - (p->stencil_ctx.t_wf_main[i] + p->stencil_ctx.t_wf_prologue[i] + p->stencil_ctx.t_wf_comm[i] + p->stencil_ctx.t_wf_epilogue[i]))/(p->prof.ts_main+ p->prof.ts_others)*100);
       printf("\n");
 
       printf("%-27s", "Group spin-wait [s]:");
       for(i=0; i<num_thread_groups; i++) printf("  %e", p->stencil_ctx.t_group_wait[i]);
       printf("\n");
-      printf("%-27s", "Group spinn-wait [%]:");
-      for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ", p->stencil_ctx.t_group_wait[i]/p->prof.ts_main*100);
+      printf("%-27s", "Group spin-wait [%]:");
+      for(i=0; i<num_thread_groups; i++) printf("  %05.2f       ", p->stencil_ctx.t_group_wait[i]/(p->prof.total)*100);
       printf("\n");
  
       printf("%-27s", "Resolved diamonds:");
