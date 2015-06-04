@@ -31,18 +31,19 @@ void cpu_bind_init(Parameters *p){
   p->stencil_ctx.setsize = CPU_ALLOC_SIZE(ncpus);
   p->stencil_ctx.bind_masks = (cpu_set_t**) malloc(p->num_threads*sizeof(cpu_set_t*));
 
-  int i, ib;
+  int i, ib, idx=0;
   ib=0;
 #if __MIC__
   ib = 1;
 #endif
-  printf("Using OS threads:");
+  printf("Using OS threads binding:");
   for(i=ib; i<p->num_threads*p->th_stride/p->th_block+ib;i++){
     if((i-ib)%p->th_stride < p->th_block){
-      printf(" %d",i);
-      p->stencil_ctx.bind_masks[i] = CPU_ALLOC( ncpus );
-      CPU_ZERO_S(p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
-      CPU_SET_S(i,p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[i]);
+      printf("  %d->%d", i, idx);
+      p->stencil_ctx.bind_masks[idx] = CPU_ALLOC( ncpus );
+      CPU_ZERO_S(p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[idx]);
+      CPU_SET_S(i,p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[idx]);
+      idx++;
     }
   }
   printf("\n");

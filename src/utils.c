@@ -1023,6 +1023,8 @@ void print_param(Parameters p) {
     printf("Threads along z-axis: %d\n", p.stencil_ctx.th_z);
     printf("Threads along y-axis: %d\n", p.stencil_ctx.th_y);
     printf("Threads along x-axis: %d\n", p.stencil_ctx.th_x);
+    printf("Threads block: %d\n", p.th_block);
+    printf("Threads stride: %d\n", p.th_stride);
     break;
   }
 
@@ -1169,10 +1171,8 @@ void print_help(Parameters *p){
         "       Select one of the MWD implementations from the one available at --list option\n"
         "  --use-omp-stat-sched\n"
         "       Use OpenMP static schedule instead of static,1 at the spatial blocking time steppers\n"
-        "  --th-block <integer>    (specific to diamond tiling)\n"
-        "       Set the thread affinity block size per stride (below) when using internal affinitiy control\n"
-        "  --th-stride <integer>    (specific to diamond tiling)\n"
-        "       Set the stride size when using internal affinitiy control\n"
+        "  --threads threads[:block[:stride]]    (specific to diamond tiling)\n"
+        "       Set the threads number, blocks, and strides when using internal affinitiy control\n"
 
 
 
@@ -1188,6 +1188,7 @@ void parse_args (int argc, char** argv, Parameters * p)
 { // for more details see http://libslack.org/manpages/getopt.3.html
   int c;
   int thread_group_size = -1, thx=-1, thy=-1, thz=-1, thc=-1;
+  char *threads=NULL;
 
   while (1)
   {
@@ -1224,8 +1225,7 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"thy", 1, 0, 0},
         {"thz", 1, 0, 0},
         {"thc", 1, 0, 0},
-        {"th-block", 1, 0, 0},
-        {"th-stride", 1, 0, 0},
+        {"threads", 1, 0, 0},
         {"use-omp-stat-sched", 0, 0, 0},
 //        {"target-parallel-wavefront", 1, 0, 0},
         {0, 0, 0, 0}
@@ -1270,8 +1270,7 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "thy") == 0) thy = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "thz") == 0) thz = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "thc") == 0) thc = atoi(optarg);
-      else if(strcmp(long_options[option_index].name, "th-block") == 0) p->th_block = atoi(optarg);
-      else if(strcmp(long_options[option_index].name, "th-stride") == 0) p->th_stride = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "threads") == 0) threads = strtok(optarg,":");
 //      else if(strcmp(long_options[option_index].name, "target-parallel-wavefront") == 0) p->target_parallel_wavefront = atoi(optarg);
      break;
 
@@ -1305,6 +1304,21 @@ void parse_args (int argc, char** argv, Parameters * p)
     if(thy!=-1) p->stencil_ctx.th_y = thy;
     if(thz!=-1) p->stencil_ctx.th_z = thz;
     if(thc!=-1) p->stencil_ctx.th_c = thc;
+
+    // parse the thread affinity argument
+    if(threads != NULL){
+      p->num_threads = atoi(threads); //parse threads
+      p->th_stride = 1;
+      p->th_block = 1;
+      threads = strtok (NULL, ":");
+    }
+    if(threads != NULL){ //parse block
+      p->th_block = atoi(threads); 
+      threads = strtok (NULL, ":");
+    }
+    if(threads != NULL){ //parse stride
+      p->th_stride = atoi(threads); 
+    }
 
     p->use_omp_stat_sched = 0;
   }
