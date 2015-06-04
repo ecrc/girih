@@ -881,13 +881,13 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
     }
 
     if( (p->wavefront !=0) && (p->target_ts == 2) ) {
-//      printf("\nTotal RANK0 MStencil/s  MIN: %f  \n", p->ln_stencils/(1e6*t_max));
-//      printf("Total RANK0 MStencil/s  MAX: %f  \n", p->ln_stencils/(1e6*t_min));
+      printf("\nTotal RANK0 MStencil/s MIN: %f  \n", p->ln_stencils/(1e6*t_max));
+      printf("Total RANK0 MStencil/s MAX: %f  \n", p->ln_stencils/(1e6*t_min));
 
       printf("******************************************************\n");
       total_stencils = ((uint64_t) p->ln_stencils * (uint64_t) p->nt - p->idiamond_pro_epi_logue_updates)/(1e6);
-      printf("MWD main-loop RANK0 MStencil/s  MIN: %f\n", total_stencils*1.0/(t_ts_main_max));
-      printf("MWD main-loop RANK0 MStencil/s  MAX: %f\n", total_stencils*1.0/(t_ts_main_min));
+      printf("MWD main-loop RANK0 MStencil/s MIN: %f\n", total_stencils*1.0/(t_ts_main_max));
+      printf("MWD main-loop RANK0 MStencil/s MAX: %f\n", total_stencils*1.0/(t_ts_main_min));
 
       printf("******************************************************\n");
       printf("%-27s %f (s) - %05.2f%%\n", "RANK0 ts main loop:",
