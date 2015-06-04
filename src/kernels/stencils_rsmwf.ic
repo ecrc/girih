@@ -29,7 +29,7 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         firstprivate(u, v, b_inc, e_inc) \
         num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
-    int i, j, k, t, yb, ye, zi, kt, ib, ie;
+    int i, j, k, t, yb, ye, zi, kt, ib, ie, err;
     int ib_r, ie_r, thb, the, tid, gtid, q, r;
     double t_start;
 
@@ -49,10 +49,10 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     gtid = tid + mtid * tgs;
 #endif
 
-#if ENABLE_CPU_BIND
-    int err = sched_setaffinity(0, stencil_ctx.setsize, stencil_ctx.bind_masks[mtid*tgs+tid]);
-    if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
-#endif
+    if(stencil_ctx.use_manual_cpu_bind == 1){
+      err = sched_setaffinity(0, stencil_ctx.setsize, stencil_ctx.bind_masks[mtid*tgs+tid]);
+      if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
+    }
 
     int z_lag = 1;
     if(NHALO > 1) z_lag = 0; // keep the wavefront tight for high order stencils

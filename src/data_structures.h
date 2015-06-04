@@ -34,10 +34,6 @@
 #define FLUSH_SIZE (50*1024*1024) // in bytes
 #define BOUNDARY_SRC_VAL (100.1)
 
-#ifndef ENABLE_CPU_BIND
-#define ENABLE_CPU_BIND (1)
-#endif
-
 // Use thread affinity supported by 4.0 standard
 #if _OPENMP >= 201307
 #define PROC_BIND(x) proc_bind(x)
@@ -145,6 +141,7 @@ typedef struct{
   // cpu binding masks
   cpu_set_t **bind_masks;
   int setsize;
+  int use_manual_cpu_bind;
 
   // for separate stride-1 functions
   clu_func_t clu_func;

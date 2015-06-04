@@ -65,6 +65,7 @@ void param_default(Parameters *p) {
   //internal affinity variables
   p->th_block = 1;
   p->th_stride = 1;
+  p->stencil_ctx.use_manual_cpu_bind=0;
 
   p->wavefront = 1; // default to using wavefront in the tile
 
@@ -523,7 +524,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->stencil_ctx.bind_masks = a.stencil_ctx.bind_masks;
   b->th_block = a.th_block;
   b->th_stride = a.th_stride;
-
+  b->stencil_ctx.use_manual_cpu_bind = a.stencil_ctx.use_manual_cpu_bind;
   
   copyv(a.source_pt, b->source_pt, 3);
   copyv(a.lstencil_shape, b->lstencil_shape, 3);
@@ -584,6 +585,7 @@ void domain_data_fill_std(Parameters * p){
   uint64_t i,j,k, gi, gj, gk;
   real_t r;
   int xb, xe, yb, ye, zb, ze;
+  #pragma omp parallel for
   for(i=0; i<p->ln_domain;i++){
     p->U1[i] = 0.0;
     p->U2[i] = 0.0;
@@ -604,6 +606,7 @@ void domain_data_fill_std(Parameters * p){
   if(p->t.rank_coords[1] == p->t.shape[1]-1) ye -= p->stencil.r;
   if(p->t.rank_coords[2] == p->t.shape[2]-1) ze -= p->stencil.r;
   // fill the local stencil subdomain according to the global location and pad the boundary with zeroes
+  #pragma omp parallel for private(j,i,gi,gj,gk,r)
   for(k=zb; k<ze; k++){
     for(j=yb; j<ye; j++){
       for(i=xb; i<xe; i++){
@@ -653,6 +656,7 @@ void domain_data_fill_std(Parameters * p){
 
   // set source points at the first and last YZ plains
   if(p->t.rank_coords[0] == 0){
+    #pragma omp parallel for private(j)
     for(k=0; k<p->ldomain_shape[2]; k++){
       for(j=0; j<p->ldomain_shape[1]; j++){
         pU1(0, j, k) += BOUNDARY_SRC_VAL;
@@ -661,6 +665,7 @@ void domain_data_fill_std(Parameters * p){
     }
   }
   if(p->t.rank_coords[0] == p->t.shape[0]-1){
+    #pragma omp parallel for private(j)
     for(k=0; k<p->ldomain_shape[2]; k++){
       for(j=0; j<p->ldomain_shape[1]; j++){
         pU1(p->lstencil_shape[0]+2*p->stencil.r-1, j, k) += BOUNDARY_SRC_VAL;
@@ -1307,6 +1312,7 @@ void parse_args (int argc, char** argv, Parameters * p)
 
     // parse the thread affinity argument
     if(threads != NULL){
+      p->stencil_ctx.use_manual_cpu_bind = 1;
       p->num_threads = atoi(threads); //parse threads
       p->th_stride = 1;
       p->th_block = 1;

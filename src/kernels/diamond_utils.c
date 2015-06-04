@@ -36,20 +36,20 @@ void cpu_bind_init(Parameters *p){
 #if __MIC__
   ib = 1;
 #endif
-  printf("Using OS threads binding:");
   for(i=ib; i<p->num_threads*p->th_stride/p->th_block+ib;i++){
     if((i-ib)%p->th_stride < p->th_block){
-      printf("  %d->%d", i, idx);
       p->stencil_ctx.bind_masks[idx] = CPU_ALLOC( ncpus );
       CPU_ZERO_S(p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[idx]);
       CPU_SET_S(i,p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[idx]);
       idx++;
     }
   }
-  printf("\n");
 
- omp_set_nested(1); 
- // Set the affinity to reduce the cost of first run
+  int max_threads = omp_get_max_threads();
+  int *phys_cpu = (int*) malloc(max_threads*sizeof(int));
+
+  omp_set_nested(1);
+  // Set the affinity to reduce the cost of first run
   int num_thread_groups = get_ntg(*p);
 #pragma omp parallel num_threads(num_thread_groups) PROC_BIND(spread)
   {
@@ -61,9 +61,17 @@ void cpu_bind_init(Parameters *p){
 
       int err = sched_setaffinity(0, p->stencil_ctx.setsize, p->stencil_ctx.bind_masks[gtid]);
       if(err==-1) printf("WARNING: Could not set CPU Affinity of thread:%d error:%d\n", gtid, err);
+      phys_cpu[gtid] = sched_getcpu();
     }
   }
 
+  printf("Using OS threads binding (OS_tid->Phys_id):");
+  for(i=0;i<p->num_threads;i++){
+    printf("  %d->%d", i, phys_cpu[i]);
+  }
+  printf("\n");
+
+  free(phys_cpu);
 }
 
 
@@ -155,7 +163,7 @@ void auto_tune_diam_nwf(Parameters *op){
   int thz = tp.stencil_ctx.th_z;
   ntg = get_ntg(tp);
 
-  tp.stencil_ctx.num_wf = tgs; // set the number of wavefronts to the minimum possible value
+  tp.stencil_ctx.num_wf = thz; // set the number of wavefronts to the minimum possible value
   if(tp.mwd_type == 3) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
 
 
@@ -358,9 +366,9 @@ void intra_diamond_info_init(Parameters *p){
   }
 
   // Initialize thread binings
-#if ENABLE_CPU_BIND
-  cpu_bind_init(p);
-#endif
+  if(p->stencil_ctx.use_manual_cpu_bind==1){
+    cpu_bind_init(p);
+  }
 
   p->wf_larger_blk_size = 0;
   p->larger_t_dim = 0;

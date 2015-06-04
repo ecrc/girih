@@ -8,7 +8,7 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0,
         firstprivate(u, v, b_inc, e_inc) \
         num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
-    int tgs, nwf, th_nwf, tid, gtid, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r;
+    int tgs, nwf, th_nwf, tid, gtid, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, err;
     double t_start, thb, the;
 
     const int nny =shape[1];
@@ -26,10 +26,10 @@ void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0,
     gtid = tid + mtid * tgs;
 #endif
 
-#if ENABLE_CPU_BIND
-    int err = sched_setaffinity(0, stencil_ctx.setsize, stencil_ctx.bind_masks[mtid*tgs+tid]);
-    if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
-#endif
+    if(stencil_ctx.use_manual_cpu_bind == 1){
+      err = sched_setaffinity(0, stencil_ctx.setsize, stencil_ctx.bind_masks[mtid*tgs+tid]);
+      if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
+    }
 
     //abs_tid[tid] = sched_getcpu();
 
