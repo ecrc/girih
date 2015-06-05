@@ -33,6 +33,8 @@
 #define MAX_CACHE_SIZE (70*1024)  // cache size in kB
 #define FLUSH_SIZE (50*1024*1024) // in bytes
 #define BOUNDARY_SRC_VAL (100.1)
+#define MAX_X_THREADS 3
+
 
 // Use thread affinity supported by 4.0 standard
 #if _OPENMP >= 201307
@@ -243,11 +245,26 @@ typedef struct{
 
   int array_padding;
 
+  int in_auto_tuning;
+
 }Parameters;
 
 struct time_stepper {
   const char *name;
   void (*func)(Parameters *p);
 };
+
+
+#define RAISE_ERROR(err) { \
+                            if(p->mpi_rank == 0) { \
+                              fprintf(stderr,"ERROR: "); \
+                              fprintf(stderr,err); \
+                              fprintf(stderr,"\n"); \
+                              } \
+                            MPI_Barrier(MPI_COMM_WORLD); \
+                            MPI_Finalize(); \
+                            exit(1); \
+                         }
+ 
 
 #endif /* DATA_STRUCTURES_H_ */

@@ -1,8 +1,12 @@
 #include "data_structures.h"
-#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
+
+typedef struct Tune_Params{
+  int thread_group_size, th_z, th_y, th_x, diamond_width, num_wavefronts;
+}Tune_Params;
 
 int get_ntg(Parameters p){
   return (int) ceil(1.0*p.num_threads/p.stencil_ctx.thread_group_size);
@@ -157,14 +161,13 @@ void auto_tune_diam_nwf(Parameters *op){
   double exp_perf, cur_perf, prev_nwf_perf, prev_diam_perf;
   int i, lt_dim, max_t_dim, prev_max_nwf, diam_width, prev_t_dim;
   uint64_t wf_size, ntg;
-  int tgs = tp.stencil_ctx.thread_group_size;
   int cache_size_cond, int_diam_cond, wf_len_cond, cuncurrency_cond, diam_concurrency;
   int diam_height;
   int thz = tp.stencil_ctx.th_z;
   ntg = get_ntg(tp);
 
   tp.stencil_ctx.num_wf = thz; // set the number of wavefronts to the minimum possible value
-  if(tp.mwd_type == 3) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
+  if(tp.mwd_type == 3) tp.stencil_ctx.num_wf = thz*tp.stencil.r;
 
 
   // find max possible diamond width and allocate memory accordingly, if not pre set
@@ -238,7 +241,7 @@ void auto_tune_diam_nwf(Parameters *op){
         // loop over increasing number of wavefronts per update
         prev_nwf_perf = -1;
         tp.stencil_ctx.num_wf = thz; // start with smallest possible number of updates
-        if(tp.mwd_type == 3) tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
+        if(tp.mwd_type == 3) tp.stencil_ctx.num_wf = thz*tp.stencil.r;
         tp.idiamond_pro_epi_logue_updates = (uint64_t) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
         while(1){
@@ -334,8 +337,8 @@ void auto_tune_diam_nwf(Parameters *op){
       tp.stencil_ctx.num_wf = thz;
     }
     if(tp.mwd_type == 3){ 
-      if(tp.stencil_ctx.num_wf < tgs*tp.stencil.r){
-        tp.stencil_ctx.num_wf = tgs*tp.stencil.r;
+      if(tp.stencil_ctx.num_wf < thz*tp.stencil.r){
+        tp.stencil_ctx.num_wf = thz*tp.stencil.r;
       }
     }
     op->stencil_ctx.num_wf = tp.stencil_ctx.num_wf;
@@ -352,6 +355,170 @@ void auto_tune_diam_nwf(Parameters *op){
   mpi_halo_finalize(&tp);
 }
 
+int* get_factors(int val, int *n_factors){
+  int *fact_l; 
+  int n_fact=0, i;
+  for(i=1; i<=val; i++){
+    if(val%i==0) n_fact++;
+  }
+  fact_l = (int*) malloc(n_fact*sizeof(int));
+  int idx=0;
+  for(i=1; i<=val; i++){
+    if(val%i==0){
+      fact_l[idx] = i;
+      idx++;
+    }
+  }
+  *n_factors = n_fact;
+  return fact_l;
+}
+Tune_Params* get_tgs_tune_params_list(Parameters *p, int *num_tune_cases){
+  int i, x, y, z, tgsi, n_tgs, n_thz, n_thy, n_thx, n_tgs_factors, idx, n_tune_cases;
+  int *tgs_l, *thz_l, *thy_l, *thx_l, *tgs_factors_l;
+  Tune_Params *tune_cases_l;  
+
+  // Get possible thread group sizes
+  if(p->stencil_ctx.thread_group_size >= 1){ // thread group size passed by the user
+    tgs_l = (int*) malloc(sizeof(int));
+    tgs_l[0] = p->stencil_ctx.thread_group_size;
+    n_tgs=1;
+
+    tgs_factors_l = get_factors(p->stencil_ctx.thread_group_size, &n_tgs_factors);
+  } else { // not passed by the user nor 1WD
+    tgs_l = get_factors(p->num_threads, &n_tgs);
+    tgs_factors_l = tgs_l;
+    n_tgs_factors = n_tgs;
+  }
+
+  // Get the other intra-tile params list if not set by the user
+  if(p->stencil_ctx.th_z == -1){
+    thz_l = tgs_factors_l;
+    n_thz = n_tgs_factors;
+  } else{
+    thz_l = (int*) malloc(sizeof(int));
+    thz_l[0] = p->stencil_ctx.th_z;
+    n_thz = 1;
+  }
+  if(p->stencil_ctx.th_y == -1){
+    thy_l = tgs_factors_l;
+    n_thy = n_tgs_factors;
+  } else{
+    if(p->stencil_ctx.th_y>2) RAISE_ERROR("Threads along y-axis must be 1 or 2")
+    thy_l = (int*) malloc(sizeof(int));
+    thy_l[0] = p->stencil_ctx.th_y;
+    n_thy = 1;
+  }
+  if(p->stencil_ctx.th_x == -1){
+    thx_l = tgs_factors_l;
+    n_thx = n_tgs_factors;
+  } else{
+    if(p->stencil_ctx.th_x>MAX_X_THREADS) RAISE_ERROR("Threads along x-axis must be less than 4")
+    thx_l = (int*) malloc(sizeof(int));
+    thx_l[0] = p->stencil_ctx.th_x;
+    n_thx = 1;
+  }
+
+  // Get all possible intra-tile parallelizm sizes
+  n_tune_cases=0;
+  for(tgsi=0; tgsi<n_tgs;tgsi++){
+    for(z=0; z<n_thz; z++){
+      for(y=0; y<n_thy; y++){
+        for(x=0; x<n_thx; x++){
+          if(thx_l[x]<=MAX_X_THREADS  && thy_l[y]<=2)
+            if(thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]) n_tune_cases++; 
+        }
+      }
+    }
+  }
+  if(n_tune_cases == 0) RAISE_ERROR("Invalid thread group parallelism dimensions")
+  tune_cases_l = (Tune_Params *) malloc(n_tune_cases*sizeof(Tune_Params));
+  idx=0;
+  for(tgsi=0; tgsi<n_tgs;tgsi++){
+    for(z=0; z<n_thz; z++){
+      for(y=0; y<n_thy; y++){
+        for(x=0; x<n_thx; x++){
+          if(thx_l[x]<=MAX_X_THREADS  && thy_l[y]<=2){
+            if(thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]){
+              tune_cases_l[idx].thread_group_size = tgs_l[tgsi];
+              tune_cases_l[idx].th_z = thz_l[z];
+              tune_cases_l[idx].th_y = thy_l[y];
+              tune_cases_l[idx].th_x = thx_l[x];
+              idx++;
+            }
+          }
+        }
+      }
+    }
+  }
+  *num_tune_cases = n_tune_cases;
+  return tune_cases_l;
+}
+
+
+void auto_tune_params(Parameters *p){
+  int i, n_tune_cases;
+  Tune_Params *tune_cases_l;  
+
+  tune_cases_l = get_tgs_tune_params_list(p, &n_tune_cases);
+
+  printf("Auto-tuning for the following cases (thread group size, th_z, th_y, th_x): ");
+  for(i=0; i<n_tune_cases; i++) 
+    printf("(%d, %d, %d, %d) ", tune_cases_l[i].thread_group_size, tune_cases_l[i].th_z, tune_cases_l[i].th_y, tune_cases_l[i].th_x);
+  printf("\n");
+
+
+  exit(0);
+
+  for(tunei=0; tunei<n_tune_cases; tunei++){
+    // set the current test cases
+    p->stencil_ctx. tune_cases_l[tunei].;
+    p->stencil_ctx. tune_cases_l[tunei].;
+    p->stencil_ctx. tune_cases_l[tunei].;
+    p->stencil_ctx. tune_cases_l[tunei].;
+
+
+    // Initialize thread binings
+    if(p->stencil_ctx.use_manual_cpu_bind==1){
+      cpu_bind_init(p);
+    }
+
+    // auto-tune for diamond width and number of frontlines
+    p->wf_larger_blk_size = 0;
+    p->larger_t_dim = 0;
+    if( ((p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) )){ 
+      if(p->mpi_rank == 0){
+        p->stencil_ctx.enable_likwid_m = 0;
+        auto_tune_diam_nwf(p);
+        p->stencil_ctx.enable_likwid_m = 1;
+      }
+      if(p->t_dim==-1) 
+        RAISE_ERROR("EXITING: No feasible diamond width for this problem configurations")
+    }
+
+    // Free the binding array after each test
+    if(p->stencil_ctx.use_manual_cpu_bind==1){
+      for(i=0; i<p->num_threads;i++){
+        CPU_FREE(p->stencil_ctx.bind_masks[i]);
+      } 
+      free(p->stencil_ctx.bind_masks);
+    }
+
+  }
+
+  // broad cast the autotuning params
+  if(p->mpi_size > 1){
+    MPI_Bcast(&(p->t_dim), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(p->stencil_ctx.num_wf), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(p->stencil_ctx.thread_group_size), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(p->stencil_ctx.th_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(p->stencil_ctx.th_y), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(p->stencil_ctx.th_z), 1, MPI_INT, 0, MPI_COMM_WORLD);
+  }  
+  p->wf_blk_size = get_mwf_size(p, p->t_dim);
+
+}
+
+
 void intra_diamond_info_init(Parameters *p){
   int i, in_dimension=0;
   int nt2, remain, min_z;
@@ -359,45 +526,20 @@ void intra_diamond_info_init(Parameters *p){
   int diam_concurrency, num_thread_groups;
   uint64_t diam_width;
 
-
-  if(p->stencil_ctx.thread_group_size ==-1) { // setup default thread group information
-    if(p->mpi_rank == 0) 
-      printf("EXITING: Thread group size must be set\n");
+  if(p->in_auto_tuning==0){
+    p->in_auto_tuning = 1;
+    auto_tune_params(p);
+    p->in_auto_tuning = 0;
   }
 
   // Initialize thread binings
-  if(p->stencil_ctx.use_manual_cpu_bind==1){
+  if((p->stencil_ctx.use_manual_cpu_bind==1) && (p->in_auto_tuning==0)){
     cpu_bind_init(p);
   }
 
-  p->wf_larger_blk_size = 0;
-  p->larger_t_dim = 0;
-  if( (p->stencil_ctx.thread_group_size !=-1) && ((p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) )){ // thread group size is defined but not the diamond size
-    if(p->mpi_rank == 0){
-      p->stencil_ctx.enable_likwid_m = 0;
-      auto_tune_diam_nwf(p);
-      p->stencil_ctx.enable_likwid_m = 1;
-    }
-    if(p->mpi_size > 1){ // broad cast the autotuning params
-      MPI_Bcast(&(p->t_dim), 1, MPI_INT, 0, MPI_COMM_WORLD);
-      MPI_Bcast(&(p->stencil_ctx.num_wf), 1, MPI_INT, 0, MPI_COMM_WORLD);
-    }
-    if(p->t_dim == -1){
-      if(p->mpi_rank == 0) 
-        printf("EXITING: No feasible diamond width for this problem configurations\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
-      exit(0);
-    }
-  }
-  p->wf_blk_size = get_mwf_size(p, p->t_dim);
-
-
   diam_width = (p->t_dim+1) * 2 * p->stencil.r;
   diam_concurrency = (p->stencil_shape[1]/p->t.shape[1]) / diam_width;
-
   num_thread_groups = get_ntg(*p);
-  //printf("threads:%d  num_thread_groups:%d thread_group_size:%d width:%d stencils:%d concurrency:%d\n",p->num_threads, num_thread_groups, p->stencil_ctx.thread_group_size, diam_width, p->stencil_shape[1]/p->t.shape[1], diam_concurrency);
   if(num_thread_groups > diam_concurrency)
     if(p->mpi_rank ==0){
       printf("###ERROR: the number of thread groups exceed the available concurrency. Consider using %d thread groups or less\n", ((diam_concurrency>1)?diam_concurrency-1:1));
@@ -436,7 +578,7 @@ void intra_diamond_info_init(Parameters *p){
   // check if thread group sizes are equal
   if(p->num_threads%p->stencil_ctx.thread_group_size != 0){
     if(p->mpi_rank ==0){
-      fprintf(stderr, "###ERROR: thread groups must be equal in size when using pre-computed wavefront assignment\n");
+      fprintf(stderr, "###ERROR: threads number must be multiples of thread group size\n");
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);

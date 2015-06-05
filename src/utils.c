@@ -53,14 +53,12 @@ void param_default(Parameters *p) {
   p->num_threads = omp_get_max_threads();
 #endif
 
-  // default number of threads in each dimension
-  p->stencil_ctx.th_x = 1;
-  p->stencil_ctx.th_y = 1;
-  p->stencil_ctx.th_z = p->num_threads;
+  // no default number of threads in all dimension, except components
+  p->stencil_ctx.th_x = -1;
+  p->stencil_ctx.th_y = -1;
+  p->stencil_ctx.th_z = -1;
   p->stencil_ctx.th_c = 1;
-  // default thread group size for methods using single thread group
-  p->stencil_ctx.thread_group_size = p->stencil_ctx.th_x * p->stencil_ctx.th_y*
-                                     p->stencil_ctx.th_z * p->stencil_ctx.th_c;
+  p->stencil_ctx.thread_group_size = -1;
 
   //internal affinity variables
   p->th_block = 1;
@@ -90,6 +88,8 @@ void param_default(Parameters *p) {
   p->h[0].size = 0;
   p->h[1].size = 0;
   p->h[2].size = 0;
+
+  p->in_auto_tuning=0;
 
   // Initialize the default stencil coefficients values
   real_t coef[] = {-0.28472, 0.16000, -0.02000, 0.00254,
@@ -538,6 +538,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->idiamond_pro_epi_logue_updates = a.idiamond_pro_epi_logue_updates;
   b->t_dim = a.t_dim;
   b->is_last = a.is_last;
+  b->in_auto_tuning = a.in_auto_tuning;
 
   b->cache_size =   a.cache_size;
 
@@ -1192,7 +1193,6 @@ void print_help(Parameters *p){
 void parse_args (int argc, char** argv, Parameters * p)
 { // for more details see http://libslack.org/manpages/getopt.3.html
   int c;
-  int thread_group_size = -1, thx=-1, thy=-1, thz=-1, thc=-1;
   char *threads=NULL;
 
   while (1)
@@ -1264,17 +1264,17 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "help") == 0) print_help(p);
       else if(strcmp(long_options[option_index].name, "disable-source-point") == 0) p->source_point_enabled=0;
       else if(strcmp(long_options[option_index].name, "halo-concatenate") == 0) p->halo_concat = atoi(optarg)!=0;
-      else if(strcmp(long_options[option_index].name, "thread-group-size") == 0) thread_group_size = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thread-group-size") == 0) p->stencil_ctx.thread_group_size = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "cache-size") == 0) p->cache_size = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "wavefront") == 0) p->wavefront = atoi(optarg)!=0;
       else if(strcmp(long_options[option_index].name, "num-wavefronts") == 0) p->stencil_ctx.num_wf = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "pad-array") == 0) p->array_padding = 1;
       else if(strcmp(long_options[option_index].name, "mwd-type") == 0) p->mwd_type = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "use-omp-stat-sched") == 0) p->use_omp_stat_sched = 1;
-      else if(strcmp(long_options[option_index].name, "thx") == 0) thx = atoi(optarg);
-      else if(strcmp(long_options[option_index].name, "thy") == 0) thy = atoi(optarg);
-      else if(strcmp(long_options[option_index].name, "thz") == 0) thz = atoi(optarg);
-      else if(strcmp(long_options[option_index].name, "thc") == 0) thc = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thx") == 0) p->stencil_ctx.th_x = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thy") == 0) p->stencil_ctx.th_y = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thz") == 0) p->stencil_ctx.th_z = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "thc") == 0) p->stencil_ctx.th_c = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "threads") == 0) threads = strtok(optarg,":");
 //      else if(strcmp(long_options[option_index].name, "target-parallel-wavefront") == 0) p->target_parallel_wavefront = atoi(optarg);
      break;
@@ -1300,16 +1300,6 @@ void parse_args (int argc, char** argv, Parameters * p)
 
   // allow thread group size change only for methods supporting multiple thread groups
   if(p->target_ts == 2) {
-
-    p->stencil_ctx.thread_group_size = thread_group_size;
-    if (thx==-1 & thy==-1 & thc==-1)
-      p->stencil_ctx.th_z = p->stencil_ctx.thread_group_size;
-
-    if(thx!=-1) p->stencil_ctx.th_x = thx;
-    if(thy!=-1) p->stencil_ctx.th_y = thy;
-    if(thz!=-1) p->stencil_ctx.th_z = thz;
-    if(thc!=-1) p->stencil_ctx.th_c = thc;
-
     // parse the thread affinity argument
     if(threads != NULL){
       p->stencil_ctx.use_manual_cpu_bind = 1;
