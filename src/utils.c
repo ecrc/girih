@@ -71,8 +71,6 @@ void param_default(Parameters *p) {
 
   p->stencil_ctx.bs_x = 1e7;
 
-  p->stencil_ctx.enable_likwid_m = 1;
-
   // Topology parameters
   p->t.is_periodic[0]=0;
   p->t.is_periodic[1]=0;

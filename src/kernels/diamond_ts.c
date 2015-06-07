@@ -83,17 +83,17 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc){
   for(t=0; t< (p->t_dim+1)*2; t++){
     // compute E-field
 //printf("Main E -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, 
+    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
     if(t <= p->t_dim){ // inverted trapezoid (or lower half of the diamond)
       ye += e_inc;
     }else{ // trapezoid  (or upper half of the diamond)
       yb += b_inc;
     }
- 
+
     // compute H-field
 //printf("Main H -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye, 
+    p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, yb, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, ye,
                             p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
     if(t < p->t_dim){ // inverted trapezoid (or lower half of the diamond)
       yb -= b_inc;
@@ -374,7 +374,7 @@ static inline void update_state(int y_coord, Parameters *p){
     }
   }
 }*/
- 
+
 
 
 
@@ -484,17 +484,17 @@ void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, 
 
     // compute E-field
 //printf("Main E -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
                                          ye, ze, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
     if(t <= p->t_dim) ye += e_inc; // lower half of the diamond
     else              yb += b_inc; // upper half of the diamond
 
     // compute H-field
 //printf("Main H -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
                                          ye, ze, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
     if(t < p->t_dim) yb -= b_inc; // lower half of the diamond
-    else             ye -= e_inc; // upper half of the diamond 
+    else             ye -= e_inc; // upper half of the diamond
   }
 
   t2 = MPI_Wtime();
@@ -516,23 +516,23 @@ void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, 
   else               yb += b_inc; // upper half of the diamond
   // Update H shift
   if(tb < p->t_dim) yb -= b_inc; // lower half of the diamond
-  else              ye -= e_inc; // upper half of the diamond 
+  else              ye -= e_inc; // upper half of the diamond
   for(t=tb+1; t< te; t++){
     zb = p->ldomain_shape[2]-p->stencil.r - (t-tb)*p->stencil.r;
 
     // compute E-field
 //printf("Main E -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
                                          ye, ze, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
     if(t <= p->t_dim) ye += e_inc; // lower half of the diamond
     else              yb += b_inc; // upper half of the diamond
 
     // compute H-field
 //printf("Main H -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, 
+    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
                                          ye, ze, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
     if(t < p->t_dim) yb -= b_inc; // lower half of the diamond
-    else             ye -= e_inc; // upper half of the diamond 
+    else             ye -= e_inc; // upper half of the diamond
   }
 
   p->stencil_ctx.t_wf_prologue[tid] += t2-t1;
@@ -654,11 +654,11 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 #pragma omp parallel num_threads(num_thread_groups) shared(head, tail) private(tid) PROC_BIND(spread)
   {
     // initlaize the likwid markers according to the openmp nested parallelism
-    #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
-    {
-      if(p->stencil_ctx.enable_likwid_m == 1) { 
-        LIKWID_MARKER_THREADINIT;
-        LIKWID_MARKER_START("calc"); 
+    if(p->in_auto_tuning == 0) {
+      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
+      {
+         LIKWID_MARKER_THREADINIT;
+         LIKWID_MARKER_START("calc");
       }
     }
 
@@ -699,10 +699,10 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
       }
     }
     // stop the markers of the experiment
-    #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
-    { 
-      if(p->stencil_ctx.enable_likwid_m == 1) {
-        LIKWID_MARKER_STOP("calc"); 
+    if(p->in_auto_tuning == 0) {
+      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
+      {
+         LIKWID_MARKER_STOP("calc");
       }
     }
 
@@ -763,7 +763,7 @@ void dynamic_intra_diamond_epilogue_std(Parameters *p){
   {
     int b_inc = p->stencil.r;
     int e_inc = p->stencil.r;
-    int yb_r = p->stencil.r + diam_width/2 - p->stencil.r; 
+    int yb_r = p->stencil.r + diam_width/2 - p->stencil.r;
     int ye_r = yb_r + 2*p->stencil.r;
     int tid = 0;
 #if defined(_OPENMP)
@@ -854,7 +854,7 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   t3 = MPI_Wtime();
 
   // Epilogue
-  dynamic_intra_diamond_epilogue(p); 
+  dynamic_intra_diamond_epilogue(p);
   t4 = MPI_Wtime();
 
   p->prof.ts_main += (t3-t2);

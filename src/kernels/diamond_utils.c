@@ -30,7 +30,7 @@ void cpu_bind_init(Parameters *p){
     if ( errno != EINVAL )  break;
   }
   if ( !mask )
-    printf("Warning: Failed to obtain process affinity mask. Thread affinitization is disabled.\n");  
+    printf("Warning: Failed to obtain process affinity mask. Thread affinitization is disabled.\n");
 
   p->stencil_ctx.setsize = CPU_ALLOC_SIZE(ncpus);
   p->stencil_ctx.bind_masks = (cpu_set_t**) malloc(p->num_threads*sizeof(cpu_set_t*));
@@ -79,38 +79,38 @@ void cpu_bind_init(Parameters *p){
 }
 
 
-uint64_t get_mwf_size(Parameters *p, int t_dim){
+uint64_t get_mwf_size(Parameters p, int t_dim){
   uint64_t diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
 
-  t_order = p->stencil.time_order;
-  diam_width = (t_dim+1)*2*p->stencil.r;
-  int nwf = p->stencil_ctx.num_wf;
-  diam_height = t_dim*2*p->stencil.r + nwf;
+  t_order = p.stencil.time_order;
+  diam_width = (t_dim+1)*2*p.stencil.r;
+  int nwf = p.stencil_ctx.num_wf;
+  diam_height = t_dim*2*p.stencil.r + nwf;
 
-  lnx = p->ldomain_shape[0];
+  lnx = p.ldomain_shape[0];
 
-  wf_updates = (t_dim+1)*(t_dim+1)*2 * p->stencil.r; // Y-T projection
-  wf_elements = (wf_updates - diam_width) * p->stencil.r + diam_width + diam_width*(nwf-1);
+  wf_updates = (t_dim+1)*(t_dim+1)*2 * p.stencil.r; // Y-T projection
+  wf_elements = (wf_updates - diam_width) * p.stencil.r + diam_width + diam_width*(nwf-1);
 
-  switch(p->stencil.coeff){
+  switch(p.stencil.coeff){
   case CONSTANT_COEFFICIENT:
-    total_points = ( (t_order+1)             *wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
+    total_points = ( (t_order+1)             *wf_elements + (diam_width + diam_height )*2*p.stencil.r) * lnx * sizeof(real_t);
     break;
 
   case VARIABLE_COEFFICIENT:
-    total_points = ( (t_order+1 + (1+p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
+    total_points = ( (t_order+1 + (1+p.stencil.r) )*wf_elements + (diam_width + diam_height )*2*p.stencil.r) * lnx * sizeof(real_t);
     break;
 
   case VARIABLE_COEFFICIENT_AXSYM:
-    total_points = ( (t_order+1 + (1+3*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
+    total_points = ( (t_order+1 + (1+3*p.stencil.r) )*wf_elements + (diam_width + diam_height )*2*p.stencil.r) * lnx * sizeof(real_t);
     break;
 
   case VARIABLE_COEFFICIENT_NOSYM:
-    total_points = ( (t_order+1 + (1+6*p->stencil.r) )*wf_elements + (diam_width + diam_height )*2*p->stencil.r) * lnx * sizeof(real_t);
+    total_points = ( (t_order+1 + (1+6*p.stencil.r) )*wf_elements + (diam_width + diam_height )*2*p.stencil.r) * lnx * sizeof(real_t);
     break;
 
   case SOLAR_COEFFICIENT:
-    total_points = ( (p->stencil.nd)*wf_elements + (diam_width + diam_height )*12*p->stencil.r) * lnx * 2*sizeof(real_t);
+    total_points = ( (p.stencil.nd)*wf_elements + (diam_width + diam_height )*12*p.stencil.r) * lnx * 2*sizeof(real_t);
     break;
 
 
@@ -119,7 +119,7 @@ uint64_t get_mwf_size(Parameters *p, int t_dim){
     exit(1);
     break;
   }
-  //printf("npx:%d  nx:%d  lnx:%lu  updates:%lu  elements:%lu  total:%lu\n", p->t.shape[0],  p->ldomain_shape[0], lnx, wf_updates, wf_elements, total_points);
+  //printf("npx:%d  nx:%d  lnx:%lu  updates:%lu  elements:%lu  total:%lu\n", p.t.shape[0],  p.ldomain_shape[0], lnx, wf_updates, wf_elements, total_points);
   return total_points;
 }
 double run_tuning_test(Parameters *tp){
@@ -140,10 +140,67 @@ double run_tuning_test(Parameters *tp){
   obt_perf =  lups/tp->prof.ts_main;
 
   printf("%06.2f]  time:%es  lups:%lu  cache block size:%lukiB  reps:%d\n",
-      obt_perf/(1e6), tp->prof.ts_main, lups, get_mwf_size(tp, tp->t_dim)*get_ntg(*tp)/1024, orig_reps);
+      obt_perf/(1e6), tp->prof.ts_main, lups, get_mwf_size(*tp, tp->t_dim)*get_ntg(*tp)/1024, orig_reps);
 
   return obt_perf;
 }
+
+void get_feasible_diam_widthes(Parameters p, int *diam_widthes, int *num_diam_widthes){
+  int n_diam_widthes, max_t_dim, i, y_len, lt_dim, diam_width, wf_len, ntg, wf_size, num_wf, idx;
+  int cache_size_cond, int_diam_cond, wf_len_cond, cuncurrency_cond, diam_concurrency;
+
+  y_len = p.stencil_shape[1]/p.t.shape[1];
+  num_wf = (p.stencil_ctx.num_wf>0? p.stencil_ctx.num_wf: 1);
+  ntg = get_ntg(p);
+  n_diam_widthes=0;
+  for(i=y_len/p.stencil.r; i>=4; i-=4){
+    lt_dim = i/2 - 1;
+    diam_width = i*p.stencil.r;
+    wf_len = lt_dim*2*p.stencil.r+1 + num_wf-1;
+
+    wf_size = get_mwf_size(p, lt_dim);
+    cache_size_cond = wf_size*ntg < (1ULL*MAX_CACHE_SIZE*1024);
+
+    cuncurrency_cond = (y_len/diam_width) >= ntg;
+    int_diam_cond = y_len%diam_width == 0;
+    wf_len_cond = wf_len <= p.stencil_shape[2];
+
+//    printf("i:%d, diam_width %d,  cuncurrency_cond %d, cache_size_cond %d, int_diam_cond %d, wf_len_cond %d, cache_blk_size: %lu kB\n",
+//        i, diam_width, cuncurrency_cond, cache_size_cond, int_diam_cond, wf_len_cond, wf_size*ntg/1024);
+    if( (int_diam_cond == 1) && (wf_len_cond == 1) && (cuncurrency_cond == 1)  && (cache_size_cond == 1) ){ // consider limitation in z and concurrency
+      n_diam_widthes++;
+    }
+  }
+
+  // check if no feasible diam width is found
+  if(n_diam_widthes == 0){
+    diam_widthes=NULL;
+    *num_diam_widthes=0;
+    return;
+  }
+
+  // allocate and fill the diam widthes array
+  diam_widthes = (int*) malloc(n_diam_widthes*sizeof(int));
+  idx=0;
+  for(i=y_len/p.stencil.r; i>=4; i-=4){
+    lt_dim = i/2 - 1;
+    diam_width = i*p.stencil.r;
+    wf_len = lt_dim*2*p.stencil.r+1 + num_wf-1;
+
+    wf_size = get_mwf_size(p, lt_dim);
+    cache_size_cond = wf_size*ntg < (1ULL*MAX_CACHE_SIZE*1024);
+
+    cuncurrency_cond = (y_len/diam_width) >= ntg;
+    int_diam_cond = y_len%diam_width == 0;
+    wf_len_cond = wf_len <= p.stencil_shape[2];
+    if( (int_diam_cond == 1) && (wf_len_cond == 1) && (cuncurrency_cond == 1)  && (cache_size_cond == 1) ){ // consider limitation in z and concurrency
+      diam_widthes[idx++] = lt_dim;
+    }
+  }
+  *num_diam_widthes = n_diam_widthes;
+
+}
+
 void auto_tune_diam_nwf(Parameters *op){
   Parameters tp;
   copy_params_struct(*op, &tp);
@@ -178,7 +235,7 @@ void auto_tune_diam_nwf(Parameters *op){
       diam_width = i*tp.stencil.r;
       diam_height = lt_dim*2*tp.stencil.r+1 + tp.stencil_ctx.num_wf-1;
 
-      wf_size = get_mwf_size(&tp, lt_dim);
+      wf_size = get_mwf_size(tp, lt_dim);
       cache_size_cond = wf_size*ntg < (uint64_t) (MAX_CACHE_SIZE*1024);
 
       cuncurrency_cond = (tp.stencil_shape[1]/diam_width) >= ntg;
@@ -201,7 +258,7 @@ void auto_tune_diam_nwf(Parameters *op){
     }
 
     printf("[AUTO TUNE] max. diamond width: %d\n", (max_t_dim+1)*2*tp.stencil.r);
-  } 
+  }
 
   // initialize the data of the tuning experiments
   init(&tp);
@@ -218,7 +275,7 @@ void auto_tune_diam_nwf(Parameters *op){
   tp.stencil_ctx.t_wf_epilogue = (double *) malloc(sizeof(double)*num_thread_groups);
   tp.stencil_ctx.wf_num_resolved_diamonds = (double *) malloc(sizeof(double)*num_thread_groups);
   tp.stencil_ctx.t_group_wait = (double *) malloc(sizeof(double)*num_thread_groups);
- 
+
   if(op->t_dim == -1){ // tune both diamond widht and number of frontlines
     // brute force search for best diamond/nwf starting from small to large
     // test diamond sizes from smallest to largest
@@ -227,7 +284,7 @@ void auto_tune_diam_nwf(Parameters *op){
     for(i=4; i<=(max_t_dim+1)*2; i+=4){ // loop over diamond sizes
       tp.t_dim = i/2 - 1;
       diam_width = i*tp.stencil.r;
-      wf_size = get_mwf_size(&tp, tp.t_dim);
+      wf_size = get_mwf_size(tp, tp.t_dim);
       diam_concurrency = tp.stencil_shape[1]/diam_width;
 
       cache_size_cond = wf_size*ntg > (uint64_t) (tp.cache_size*1024);
@@ -245,13 +302,13 @@ void auto_tune_diam_nwf(Parameters *op){
         tp.idiamond_pro_epi_logue_updates = (uint64_t) (tp.stencil_shape[0] * tp.stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp.t_dim+1)*(tp.t_dim+1) + (tp.t_dim+1))*tp.stencil.r;
 
         while(1){
-          wf_size = get_mwf_size(&tp, tp.t_dim);
+          wf_size = get_mwf_size(tp, tp.t_dim);
           cache_size_cond = wf_size*ntg > (uint64_t) (tp.cache_size*1024);
           diam_height = tp.t_dim*2*tp.stencil.r+1 +tp.stencil_ctx.num_wf-1;
           wf_len_cond = diam_height <= tp.stencil_shape[2];
 
           if( (wf_len_cond==1) && (cache_size_cond == 1) ){
-            printf("[AUTO TUNE]     [%03d: ",tp.stencil_ctx.num_wf);  
+            printf("[AUTO TUNE]     [%03d: ",tp.stencil_ctx.num_wf);
             exp_perf = run_tuning_test(&tp);
 
   //          printf("tgs:%d  nwf:%d  perf:%6.2f  prev_nwf_perf:%6.2f\n", tgs, tp.stencil_ctx.num_wf, exp_perf/1024/1024, prev_nwf_perf/1024/1024);
@@ -293,14 +350,14 @@ void auto_tune_diam_nwf(Parameters *op){
 
       }
     }
-    if (op->t_dim < 1) op->t_dim = 1;  
+    if (op->t_dim < 1) op->t_dim = 1;
 
     op->t_dim = tp.t_dim;
     op->stencil_ctx.num_wf = tp.stencil_ctx.num_wf;
 
 
   } else { // diamond width is provided but not the number of frontlines
-    
+
     diam_width =  ((tp.t_dim+1)*2)*tp.stencil.r;
     diam_concurrency = tp.stencil_shape[1]/diam_width;
     prev_nwf_perf = -1;
@@ -311,7 +368,7 @@ void auto_tune_diam_nwf(Parameters *op){
       wf_len_cond = diam_height <= tp.stencil_shape[2];
 
       if(wf_len_cond==1){
-        printf("[AUTO TUNE]     [%03d: ",tp.stencil_ctx.num_wf);  
+        printf("[AUTO TUNE]     [%03d: ",tp.stencil_ctx.num_wf);
         exp_perf = run_tuning_test(&tp);
 
 //          printf("tgs:%d  nwf:%d  perf:%6.2f  prev_nwf_perf:%6.2f\n", tgs, tp.stencil_ctx.num_wf, exp_perf/1024/1024, prev_nwf_perf/1024/1024);
@@ -336,7 +393,7 @@ void auto_tune_diam_nwf(Parameters *op){
     if(tp.stencil_ctx.num_wf < thz){
       tp.stencil_ctx.num_wf = thz;
     }
-    if(tp.mwd_type == 3){ 
+    if(tp.mwd_type == 3){
       if(tp.stencil_ctx.num_wf < thz*tp.stencil.r){
         tp.stencil_ctx.num_wf = thz*tp.stencil.r;
       }
@@ -355,8 +412,8 @@ void auto_tune_diam_nwf(Parameters *op){
   mpi_halo_finalize(&tp);
 }
 
-int* get_factors(int val, int *n_factors){
-  int *fact_l; 
+int* get_num_factors(int val, int *n_factors){
+  int *fact_l;
   int n_fact=0, i;
   for(i=1; i<=val; i++){
     if(val%i==0) n_fact++;
@@ -372,10 +429,16 @@ int* get_factors(int val, int *n_factors){
   *n_factors = n_fact;
   return fact_l;
 }
-Tune_Params* get_tgs_tune_params_list(Parameters *p, int *num_tune_cases){
-  int i, x, y, z, tgsi, n_tgs, n_thz, n_thy, n_thx, n_tgs_factors, idx, n_tune_cases;
+void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, int *num_tune_cases, int **ret_tgs_l, int *num_tgs){
+  int i, x, y, z, max_tgs, tgsi, n_tgs, n_thz, n_thy, n_thx, n_tgs_factors, idx, n_tune_cases;
   int *tgs_l, *thz_l, *thy_l, *thx_l, *tgs_factors_l;
-  Tune_Params *tune_cases_l;  
+  Tune_Params *tune_cases_l;
+
+  max_tgs = p->num_threads;
+  if(p->num_threads > MAX_THREAD_GROUP_SIZE){
+    max_tgs = MAX_THREAD_GROUP_SIZE;
+    printf("INFO: Using maximum configured thread group size %d\n", MAX_THREAD_GROUP_SIZE);
+  }
 
   // Get possible thread group sizes
   if(p->stencil_ctx.thread_group_size >= 1){ // thread group size passed by the user
@@ -383,9 +446,9 @@ Tune_Params* get_tgs_tune_params_list(Parameters *p, int *num_tune_cases){
     tgs_l[0] = p->stencil_ctx.thread_group_size;
     n_tgs=1;
 
-    tgs_factors_l = get_factors(p->stencil_ctx.thread_group_size, &n_tgs_factors);
+    tgs_factors_l = get_num_factors(p->stencil_ctx.thread_group_size, &n_tgs_factors);
   } else { // not passed by the user nor 1WD
-    tgs_l = get_factors(p->num_threads, &n_tgs);
+    tgs_l = get_num_factors(max_tgs, &n_tgs);
     tgs_factors_l = tgs_l;
     n_tgs_factors = n_tgs;
   }
@@ -418,14 +481,14 @@ Tune_Params* get_tgs_tune_params_list(Parameters *p, int *num_tune_cases){
     n_thx = 1;
   }
 
-  // Get all possible intra-tile parallelizm sizes
+  // Get all feasible intra-tile parallelizm combinations
   n_tune_cases=0;
   for(tgsi=0; tgsi<n_tgs;tgsi++){
     for(z=0; z<n_thz; z++){
       for(y=0; y<n_thy; y++){
         for(x=0; x<n_thx; x++){
           if(thx_l[x]<=MAX_X_THREADS  && thy_l[y]<=2)
-            if(thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]) n_tune_cases++; 
+            if(thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]) n_tune_cases++;
         }
       }
     }
@@ -451,30 +514,33 @@ Tune_Params* get_tgs_tune_params_list(Parameters *p, int *num_tune_cases){
     }
   }
   *num_tune_cases = n_tune_cases;
-  return tune_cases_l;
+  *ret_tune_cases_l = tune_cases_l;
+  *num_tgs = n_tgs;
+  *ret_tgs_l = tgs_l;
 }
 
 
 void auto_tune_params(Parameters *p){
-  int i, n_tune_cases;
-  Tune_Params *tune_cases_l;  
-
-  tune_cases_l = get_tgs_tune_params_list(p, &n_tune_cases);
+  int i, n_tune_cases, n_tgs, tune_case;
+  Tune_Params *tune_cases_l=NULL;
+  int *tgs_l=NULL;
+  get_tgs_tune_params_lists(p, &tune_cases_l, &n_tune_cases, &tgs_l, &n_tgs);
 
   printf("Auto-tuning for the following cases (thread group size, th_z, th_y, th_x): ");
-  for(i=0; i<n_tune_cases; i++) 
+  for(i=0; i<n_tune_cases; i++)
     printf("(%d, %d, %d, %d) ", tune_cases_l[i].thread_group_size, tune_cases_l[i].th_z, tune_cases_l[i].th_y, tune_cases_l[i].th_x);
   printf("\n");
 
 
-  exit(0);
+//  exit(0);
+  // Get the maximum possible diamond width in the current configuration to initialize autotuning
 
-  for(tunei=0; tunei<n_tune_cases; tunei++){
+  for(tune_case=0; tune_case<n_tune_cases; tune_case++){
     // set the current test cases
-    p->stencil_ctx. tune_cases_l[tunei].;
-    p->stencil_ctx. tune_cases_l[tunei].;
-    p->stencil_ctx. tune_cases_l[tunei].;
-    p->stencil_ctx. tune_cases_l[tunei].;
+    p->stencil_ctx.thread_group_size = tune_cases_l[tune_case].thread_group_size;
+    p->stencil_ctx.th_x = tune_cases_l[tune_case].th_x;
+    p->stencil_ctx.th_y = tune_cases_l[tune_case].th_y;
+    p->stencil_ctx.th_z = tune_cases_l[tune_case].th_z;
 
 
     // Initialize thread binings
@@ -485,21 +551,19 @@ void auto_tune_params(Parameters *p){
     // auto-tune for diamond width and number of frontlines
     p->wf_larger_blk_size = 0;
     p->larger_t_dim = 0;
-    if( ((p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) )){ 
+    if( ((p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) )){
       if(p->mpi_rank == 0){
-        p->stencil_ctx.enable_likwid_m = 0;
         auto_tune_diam_nwf(p);
-        p->stencil_ctx.enable_likwid_m = 1;
       }
-      if(p->t_dim==-1) 
+      if(p->t_dim==-1)
         RAISE_ERROR("EXITING: No feasible diamond width for this problem configurations")
     }
 
-    // Free the binding array after each test
+    // Free the CPU binding array after each test
     if(p->stencil_ctx.use_manual_cpu_bind==1){
       for(i=0; i<p->num_threads;i++){
         CPU_FREE(p->stencil_ctx.bind_masks[i]);
-      } 
+      }
       free(p->stencil_ctx.bind_masks);
     }
 
@@ -513,8 +577,8 @@ void auto_tune_params(Parameters *p){
     MPI_Bcast(&(p->stencil_ctx.th_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.th_y), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.th_z), 1, MPI_INT, 0, MPI_COMM_WORLD);
-  }  
-  p->wf_blk_size = get_mwf_size(p, p->t_dim);
+  }
+  p->wf_blk_size = get_mwf_size(*p, p->t_dim);
 
 }
 
@@ -643,14 +707,14 @@ void intra_diamond_info_init(Parameters *p){
     p->stencil_ctx.t_wf_epilogue = (double *) malloc(sizeof(double)*num_thread_groups);
     p->stencil_ctx.wf_num_resolved_diamonds = (double *) malloc(sizeof(double)*num_thread_groups);
     p->stencil_ctx.t_group_wait = (double *) malloc(sizeof(double)*num_thread_groups);
-    
+
     // number of Stencil updates in the prologue and epilogue (trapezoid and inverted trapezoid)
 //    p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (uint64_t) (2*diam_concurrency) * ((diam_width*diam_width)/4 - (diam_width/2));
 
     if(p->stencil.type == REGULAR){
       p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (uint64_t) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
     }else if(p->stencil.type == SOLAR){
-      p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * diam_concurrency) 
+      p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * diam_concurrency)
                                          *((p->t_dim+1)*(p->t_dim+1)*2)*p->stencil.r;
     }
 

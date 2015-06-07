@@ -33,7 +33,8 @@
 #define MAX_CACHE_SIZE (70*1024)  // cache size in kB
 #define FLUSH_SIZE (50*1024*1024) // in bytes
 #define BOUNDARY_SRC_VAL (100.1)
-#define MAX_X_THREADS 3
+#define MAX_X_THREADS (3)
+#define MAX_THREAD_GROUP_SIZE (18)
 
 
 // Use thread affinity supported by 4.0 standard
@@ -152,8 +153,6 @@ typedef struct{
   // wavefront profiling
   double *t_wf_comm, *t_wait, *t_wf_prologue, *t_wf_main, *t_wf_epilogue, *wf_num_resolved_diamonds, *t_group_wait;
 
-  // likwid markers usage enable/disable 
-  int enable_likwid_m;
 }stencil_CTX;
 
 
