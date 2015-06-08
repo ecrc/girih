@@ -846,7 +846,8 @@ void dynamic_intra_diamond_ts(Parameters *p) {
 
   // Prologue
   t1 = MPI_Wtime();
-  dynamic_intra_diamond_prologue(p);
+  if(p->in_auto_tuning == 0)
+    dynamic_intra_diamond_prologue(p);
   t2 = MPI_Wtime();
 
   // main loop
@@ -854,7 +855,8 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   t3 = MPI_Wtime();
 
   // Epilogue
-  dynamic_intra_diamond_epilogue(p);
+  if(p->in_auto_tuning == 0)
+    dynamic_intra_diamond_epilogue(p);
   t4 = MPI_Wtime();
 
   p->prof.ts_main += (t3-t2);
