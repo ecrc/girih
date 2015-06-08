@@ -35,7 +35,7 @@
 #define BOUNDARY_SRC_VAL (100.1)
 #define MAX_X_THREADS (3)
 #define MAX_THREAD_GROUP_SIZE (18)
-
+#define TUNING_DIRECTION (0) // test ascending thread group size
 
 // Use thread affinity supported by 4.0 standard
 #if _OPENMP >= 201307
