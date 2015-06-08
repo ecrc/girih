@@ -707,9 +707,9 @@ void auto_tune_params(Parameters *p){
         tp.stencil_ctx.th_y = tune_cases_l[tune_case].th_y;
         tp.stencil_ctx.th_z = tune_cases_l[tune_case].th_z;
 
-        reinit_auto_tune(&tp);
+//        reinit_auto_tune(&tp);
 
-        printf("\n[AUTO TUNE] START tune case #%d: Thread group size:%d  thx:%d  thy:%d  thz:%d", tune_case, tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z);
+        printf("\n[AUTO TUNE] START tune case #%02d: Thread group size:%02d  thx:%02d  thy:%02d  thz:%02d", tune_case, tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z);
 
         // auto-tune for diamond width and number of frontlines
         tp.t_dim = default_t_dim;
@@ -725,7 +725,7 @@ void auto_tune_params(Parameters *p){
         }
 
 
-        printf("[AUTO TUNE] COMPLETE: Thread group size:%d  thx:%d  thy:%d  thz:%d  t_dim:%d  mwf:%d  perf:%7.2f MLUP/s\n", tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z, tune_cases_l[tune_case].t_dim, tune_cases_l[tune_case].num_wf, tune_cases_l[tune_case].perf/1e6);
+        printf("[AUTO TUNE] COMPLETE: Thread group size:%02d  thx:%02d  thy:%02d  thz:%02d  t_dim:%02d  mwf:%02d  perf:%7.2f MLUP/s\n", tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z, tune_cases_l[tune_case].t_dim, tune_cases_l[tune_case].num_wf, tune_cases_l[tune_case].perf/1e6);
 
       }
 
