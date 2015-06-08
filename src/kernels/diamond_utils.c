@@ -384,7 +384,7 @@ double auto_tune_diam_nwf(Parameters *tp){
   ntg = get_ntg(*tp);
   for(i=n_time_blocks-1; i>=0; i--){ // loop over diamond sizes
     tp->t_dim = time_blocks[i];
-    diam_width = tp->t_dim*tp->stencil.r;
+    diam_width = (tp->t_dim+1)*2*tp->stencil.r;
     diam_concurrency = tp->stencil_shape[1]/diam_width;
     cuncurrency_cond = diam_concurrency >= ntg;
     printf("[AUTO TUNE]   Diamond width:%02d  [wavefronts #: pefromance (MLUPS/s)]\n", (tp->t_dim+1)*2*tp->stencil.r);
@@ -393,7 +393,8 @@ double auto_tune_diam_nwf(Parameters *tp){
     latest_perf = -1;
     tp->stencil_ctx.num_wf = thz; // start with smallest possible number of updates
     if(tp->mwd_type == 3) tp->stencil_ctx.num_wf = thz*tp->stencil.r;
-    tp->idiamond_pro_epi_logue_updates = (uint64_t) (tp->stencil_shape[0] * tp->stencil_shape[2]) * (uint64_t) (2*diam_concurrency) * ((tp->t_dim+1)*(tp->t_dim+1) + (tp->t_dim+1))*tp->stencil.r;
+
+    tp->idiamond_pro_epi_logue_updates = 1ULL * tp->stencil_shape[0] * tp->stencil_shape[2] * 2ULL * diam_concurrency * ((tp->t_dim+1)*(tp->t_dim+1) + (tp->t_dim+1))*tp->stencil.r;
 
     while(1){
       wf_size = get_mwf_size(*tp, tp->t_dim);
@@ -563,7 +564,7 @@ void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, in
     thy_l = tgs_factors_l;
     n_thy = n_tgs_factors;
   } else{
-    if(p->stencil_ctx.th_y>2) RAISE_ERROR("Threads along y-axis must be 1 or 2")
+    if(p->stencil_ctx.th_y>2) RAISE_ERROR("[AUTO TUNE] Threads along y-axis must be 1 or 2")
     thy_l = (int*) malloc(sizeof(int));
     thy_l[0] = p->stencil_ctx.th_y;
     n_thy = 1;
@@ -572,11 +573,16 @@ void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, in
     thx_l = tgs_factors_l;
     n_thx = n_tgs_factors;
   } else{
-    if(p->stencil_ctx.th_x>MAX_X_THREADS) RAISE_ERROR("Threads along x-axis must be less than 4")
+    if(p->stencil_ctx.th_x>MAX_X_THREADS) RAISE_ERROR("[AUTO TUNE] Threads along x-axis must be less than 4")
     thx_l = (int*) malloc(sizeof(int));
     thx_l[0] = p->stencil_ctx.th_x;
     n_thx = 1;
   }
+
+//  printf("tgs lst:");  for(i=0; i<n_tgs;i++) printf(" %d", tgs_l[i]); printf("\n");
+//  printf("thx lst:");  for(i=0; i<n_thx;i++) printf(" %d", thx_l[i]); printf("\n");
+//  printf("thy lst:");  for(i=0; i<n_thy;i++) printf(" %d", thy_l[i]); printf("\n");
+//  printf("thz lst:");  for(i=0; i<n_thz;i++) printf(" %d", thz_l[i]); printf("\n");
 
   // Get all feasible intra-tile parallelizm combinations
   n_tune_cases=0;
@@ -590,7 +596,7 @@ void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, in
       }
     }
   }
-  if(n_tune_cases == 0) RAISE_ERROR("Invalid thread group parallelism dimensions")
+  if(n_tune_cases == 0) RAISE_ERROR("[AUTO TUNE] Invalid thread group parallelism dimensions")
   tune_cases_l = (Tune_Params *) malloc(n_tune_cases*sizeof(Tune_Params));
   idx=0;
   for(tgsi=0; tgsi<n_tgs;tgsi++){
@@ -884,14 +890,11 @@ void intra_diamond_info_init(Parameters *p){
     p->stencil_ctx.wf_num_resolved_diamonds = (double *) malloc(sizeof(double)*num_thread_groups);
     p->stencil_ctx.t_group_wait = (double *) malloc(sizeof(double)*num_thread_groups);
 
-    // number of Stencil updates in the prologue and epilogue (trapezoid and inverted trapezoid)
-//    p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (uint64_t) (2*diam_concurrency) * ((diam_width*diam_width)/4 - (diam_width/2));
 
     if(p->stencil.type == REGULAR){
-      p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2]) * (uint64_t) (2*diam_concurrency) * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
+      p->idiamond_pro_epi_logue_updates = 1ULL * p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * 2ULL * diam_concurrency * ((p->t_dim+1)*(p->t_dim+1) + (p->t_dim+1))*p->stencil.r;
     }else if(p->stencil.type == SOLAR){
-      p->idiamond_pro_epi_logue_updates = (uint64_t) (p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * diam_concurrency)
-                                         *((p->t_dim+1)*(p->t_dim+1)*2)*p->stencil.r;
+      p->idiamond_pro_epi_logue_updates = 1ULL * p->stencil_shape[0]/p->t.shape[0] * p->stencil_shape[2]/p->t.shape[2] * diam_concurrency * ((p->t_dim+1)*(p->t_dim+1)*2)*p->stencil.r;
     }
 
     if(p->source_point_enabled == 1){
