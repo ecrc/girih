@@ -184,39 +184,27 @@ uint64_t get_mwf_size(Parameters p, int t_dim){
 }
 double run_tuning_test(Parameters *tp){
   double t = 0.0;
-  int reps = 1, orig_reps;
-  double obt_perf, prev_perf=1.0, perf_ratio=100.;
+  int reps = 0;
+  double obt_perf=0., prev_perf, perf_ratio;
   double threash_nwf = 2.5;
 
-  int tests = 3;
-  int idx = 1;
   uint64_t lups;
-printf("\n");
+
   do{
+    reps++;
+    prev_perf = obt_perf;
+
     tp->nt = reps*(tp->t_dim+1)*2 + 2;
     tp->prof.ts_main = 0;
     dynamic_intra_diamond_ts(tp);
     t = tp->prof.ts_main;
     lups = tp->ln_stencils*tp->nt - tp->idiamond_pro_epi_logue_updates;
     obt_perf =  lups/t;
-    printf("                      %06.2f]  time:%e  MLUPS:%lu  cache block size:%lukiB  reps:%d\n", obt_perf/(1e6), t, lups/1000000ULL, get_mwf_size(*tp, tp->t_dim)*get_ntg(*tp)/1024, reps);
-    if(idx%tests==0){
-       reps++;
-       if(idx>tests){
-         perf_ratio = 100*fabs(obt_perf-prev_perf)/prev_perf;
-         printf("                      --- reps: %d  perf diff:%6.1f   perf ratio:%6.1f%%\n", reps-1, fabs((obt_perf-prev_perf))/1e6, perf_ratio);
-       }
-       prev_perf = obt_perf;
-    }
-    idx++;
-  } while((t < 8.0)  && (threash_nwf < perf_ratio));
-printf("\n");
 
+    perf_ratio = 100*fabs(obt_perf-prev_perf)/obt_perf;
+    printf("[AUTO TUNE]     [%03d: %06.2f]  time:%e  MLUPS:%06lu  cache block size:%lukiB  reps:%d  perf err: %4.1f%%\n", tp->stencil_ctx.num_wf, obt_perf/(1e6), t, lups/1000000ULL, get_mwf_size(*tp, tp->t_dim)*get_ntg(*tp)/1024, reps, perf_ratio);
 
-//  lups = reps*(tp->ln_stencils*tp->nt - tp->idiamond_pro_epi_logue_updates);
-//  obt_perf =  lups/t;
-
-//  printf("%06.2f]  time:%e  MLUPS:%lu  cache block size:%lukiB  reps:%d\n", obt_perf/(1e6), t, lups/1000000ULL, get_mwf_size(*tp, tp->t_dim)*get_ntg(*tp)/1024, reps);
+  } while( (reps<20) && (t < 8.0)  && (threash_nwf < perf_ratio) );
 
   return obt_perf;
 }
@@ -406,7 +394,6 @@ double auto_tune_diam_nwf(Parameters *tp){
       wf_len_cond = diam_height <= tp->stencil_shape[2];
 
       if( (wf_len_cond==1) && (cache_size_cond == 1) ){
-        printf("[AUTO TUNE]     [%03d: ",tp->stencil_ctx.num_wf);
         exp_perf = run_tuning_test(tp);
         // termination criteria for the nwf
         if (exp_perf < prev_nwf_perf){
@@ -636,16 +623,11 @@ void auto_tune_params(Parameters *p){
 
     get_tgs_tune_params_lists(p, &tune_cases_l, &n_tune_cases, &tgs_l, &n_tgs);
 
-    printf("[AUTO TUNE] Tuning case(s) (thread group size, th_z, th_y, th_x): ");
-    for(i=0; i<n_tune_cases; i++)
-      printf("(%d, %d, %d, %d) ", tune_cases_l[i].thread_group_size, tune_cases_l[i].th_z, tune_cases_l[i].th_y, tune_cases_l[i].th_x);
-    printf("\n");
-
     // unset the diamond width and num frontlies if thread group size will be autotuned
     if(n_tune_cases>1){
       p->t_dim = -1;
       p->stencil_ctx.num_wf = -1;
-      printf("[AUTO TUNE] Selected values for time block and number of frontlines are ignored\n");
+      printf("[AUTO TUNE] Any selected values for time block and number of frontlines are ignored\n");
     } else { // return if are parameters are set by the user
       if( (p->t_dim != -1) && (p->stencil_ctx.num_wf !=-1) )
         return;
@@ -687,7 +669,6 @@ void auto_tune_params(Parameters *p){
 
 
     if( (p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) ){
-      printf("[AUTO TUNE] Allocating based on diam width: %d\n", (max_t_dim+1)*2*p->stencil.r);
       copy_params_struct(*p, &tp);
       // set for the first test case to initialize tuning
       tp.stencil_ctx.th_x = 1;
@@ -695,7 +676,16 @@ void auto_tune_params(Parameters *p){
       tp.stencil_ctx.th_z = max_tgs;
       tp.stencil_ctx.thread_group_size = max_tgs;
       tp.t_dim = max_t_dim;
+      tp.verbose=0;
       init_auto_tune(&tp);
+
+      printf("[AUTO TUNE] Allocated based on diam width: %d\n", (max_t_dim+1)*2*p->stencil.r);
+
+      printf("[AUTO TUNE] Tuning case(s) [%d] (thread group size, th_z, th_y, th_x): ", n_tune_cases);
+      for(i=0; i<n_tune_cases; i++)
+        printf("(%d, %d, %d, %d) ", tune_cases_l[i].thread_group_size, tune_cases_l[i].th_z, tune_cases_l[i].th_y, tune_cases_l[i].th_x);
+      printf("\n");
+
 
       // test thread group combinations
 #if TUNING_DIRECTION==1
@@ -725,7 +715,7 @@ void auto_tune_params(Parameters *p){
         }
 
 
-        printf("[AUTO TUNE] COMPLETE: Thread group size:%02d  thx:%02d  thy:%02d  thz:%02d  t_dim:%02d  mwf:%02d  perf:%7.2f MLUP/s\n", tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z, tune_cases_l[tune_case].t_dim, tune_cases_l[tune_case].num_wf, tune_cases_l[tune_case].perf/1e6);
+        printf("[AUTO TUNE] COMPLETE tune case #%02d: Thread group size:%02d  thx:%02d  thy:%02d  thz:%02d  t_dim:%02d  mwf:%02d  perf:%7.2f MLUP/s\n", tune_case, tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z, tune_cases_l[tune_case].t_dim, tune_cases_l[tune_case].num_wf, tune_cases_l[tune_case].perf/1e6);
 
       }
 
