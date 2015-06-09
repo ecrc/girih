@@ -116,7 +116,7 @@ def main():
   for k in data:
     try:
       if k['method']==2:
-        params[(k['mwdt'], k['stencil'], int(k['Thread group size']), int(k['Global NX']))]= (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Block size in X']))
+        params[(k['mwdt'], k['stencil']), int(k['Global NX'])]= (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Block size in X']), int(k['Thread group size']), int(k['thx']), int(k['thy']), int(k['thz']))
     except:
       print k
       raise
