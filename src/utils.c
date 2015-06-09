@@ -45,7 +45,7 @@ void param_default(Parameters *p) {
 //  p->nb_diamond_chunk=1;
   p->halo_concat = 1;
 
-  p->cache_size = 8192;
+  p->cache_size = 0;
 
   // get the number of available OpenMP threads
   p->num_threads = 1;
@@ -1192,7 +1192,7 @@ void parse_args (int argc, char** argv, Parameters * p)
 { // for more details see http://libslack.org/manpages/getopt.3.html
   int c;
   char *threads=NULL;
-
+  int cache_size=-1;
   while (1)
   {
     int option_index = 0;
@@ -1263,7 +1263,7 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "disable-source-point") == 0) p->source_point_enabled=0;
       else if(strcmp(long_options[option_index].name, "halo-concatenate") == 0) p->halo_concat = atoi(optarg)!=0;
       else if(strcmp(long_options[option_index].name, "thread-group-size") == 0) p->stencil_ctx.thread_group_size = atoi(optarg);
-      else if(strcmp(long_options[option_index].name, "cache-size") == 0) p->cache_size = atoi(optarg);
+      else if(strcmp(long_options[option_index].name, "cache-size") == 0) cache_size = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "wavefront") == 0) p->wavefront = atoi(optarg)!=0;
       else if(strcmp(long_options[option_index].name, "num-wavefronts") == 0) p->stencil_ctx.num_wf = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "pad-array") == 0) p->array_padding = 1;
@@ -1295,6 +1295,10 @@ void parse_args (int argc, char** argv, Parameters * p)
   }
 
   set_centered_source(p);
+
+  // set assumed cache size to zero for diamond approach if not set by the user
+  if(cache_size !=-1) p->cache_size = cache_size;
+  if( (cache_size ==-1) && (p->target_ts == 2) ) p->cache_size = 0;
 
   // allow thread group size change only for methods supporting multiple thread groups
   if(p->target_ts == 2) {
