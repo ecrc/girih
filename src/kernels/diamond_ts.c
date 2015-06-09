@@ -647,8 +647,24 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
   int tid;
   double t1;
 
-  for(i=0; i<y_len_r; i++){
-    avail_list[i] = i;
+  int idx=0;
+ 
+  if(p->in_auto_tuning == 0) {
+    for(i=0; i<y_len_r; i++){
+      avail_list[i] = i;
+    }
+  } else { // diversify the startup for shorter autotuning
+    for(i=0; i<y_len_r; i++){
+      if(i%2==0){
+        avail_list[i] = idx++;
+      }
+    }
+    for(i=0; i<y_len_r; i++){
+      if(i%2==1){
+        avail_list[i] = idx++;
+      }
+    }
+//  for(i=0; i<y_len_r; i++) printf("i:%d list:%d\n", i, avail_list[i]);
   }
 
 #pragma omp parallel num_threads(num_thread_groups) shared(head, tail) private(tid) PROC_BIND(spread)
