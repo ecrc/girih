@@ -4,7 +4,7 @@ def igs_test(target_dir, exp_name, th, params={}):
   from scripts.utils import run_test
   import itertools
 
-  dry_run = 1
+  dry_run = 0
   is_dp=1
 
   cs = 4096
@@ -36,12 +36,11 @@ def igs_test(target_dir, exp_name, th, params={}):
       kernels_limits = [2100, 0, 0, 0, 1200, 0, 0]
 
   count=0
-  for kernel in [0, 1, 4, 5]: #, 6]:
-    for ts in [0, 2]:
+  for kernel, mwdt_list in [(0,[0,1]), (1,[0,2]), (4,[0,1]), (5,[1])]: #, 6]:
+    #for ts in [0, 2]:
+    for ts in [2]:
       if ts == 0:
         mwdt_list=[0]
-      else:
-        mwdt_list=[0,1,2,3]
       for mwdt in mwdt_list:
         for N in points:
           if (N < kernels_limits[kernel]):
@@ -77,7 +76,7 @@ def main():
 
 
   if(machine_info['hostname']=='Haswell_18core'):
-    machine_conf['pinning_args'] = "-m -g MEM -C " + pin_str + machine_conf['pinning_args']
+    machine_conf['pinning_args'] = "" #"-m -g MEM -C " + pin_str + machine_conf['pinning_args']
   elif(machine_info['hostname']=='IVB_10core'):
     machine_conf['pinning_args'] = "-m -g MEM -C " + pin_str + machine_conf['pinning_args']
 
