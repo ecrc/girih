@@ -6,11 +6,11 @@ def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
   from scripts.conf import conf
 
   job_template=Template(
-"""$set_threads$th; $mpirun_cmd $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --bsx $bsx --num-wavefronts $nwf --t-dim $tb  --verify $verify | tee $outpath""")
+"""$set_threads$th; $mpirun_cmd $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --num-wavefronts $nwf --t-dim $tb --threads $th  --verify $verify | tee $outpath""")
 
   # set default arguments
-  defaults = {'dry_run':0, 'is_dp':1, 'tgs':1, 'cs':8192, 'mwdt':1, 'npx':1, 'npy':1, 'npz':1, 'nwf':-1,
-              'bsx':1000000, 'ntests':2, 'alignment':16, 'verify':0, 'verbose':1, 'th': 1, 'tb':-1}
+  defaults = {'dry_run':0, 'is_dp':1, 'tgs':-1, 'cs':4096, 'mwdt':2, 'npx':1, 'npy':1, 'npz':1, 'nwf':-1,
+              'ntests':2, 'alignment':16, 'verify':0, 'verbose':1, 'th': 1, 'thx': -1, 'thy': -1, 'thz': -1, 'tb':-1}
   # set the default run commands and arguments of the machine
   defaults.update(conf.machine_conf)
 
@@ -69,6 +69,8 @@ def select_fields(data, rows=[], cols=[]):
 def create_project_tarball(dest_dir, fname):
   import tarfile, glob
   import os
+  from shutil import copyfile
+  import inspect
 
   nl = ["src/kernels/*", "src/*.c", "src/*.h", "scripts/*.py", "scripts/*/*.py", "make.inc", "Makefile"]
   nl = [glob.glob(n) for n in nl]
@@ -83,6 +85,11 @@ def create_project_tarball(dest_dir, fname):
     for n in nl:
       print "Adding to the tar file: " + n
       tar.add(n)
+
+  # copy the calling script to the destination dir
+  src_file = inspect.stack()[1][1]
+  dst_file = os.path.join(out_dir, os.path.basename(src_file))
+  copyfile(src_file, dst_file)
 
 
 def ensure_dir(d):

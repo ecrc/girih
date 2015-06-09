@@ -1,18 +1,29 @@
 #!/usr/bin/env python
-def igs_test(target_dir, exp_name, tgs_l, th, params={}): 
+def igs_test(target_dir, exp_name, th, params={}): 
   from scripts.conf.conf import machine_conf, machine_info
   from scripts.utils import run_test
   import itertools
 
-  dry_run = 0
-  is_dp=0
+  dry_run = 1
+  is_dp=1
 
-  cs = machine_info['cache_size']/4
-  kr = [4,1,1,1,4,1,1]
-  k_time_scale = [1,1,1,1,2,2,20]
+  cs = 4096
+
+  # Test using rasonable time
+  # T = scale * size / perf
+  # scale = T*perf/size
+  desired_time = 20
+  if(machine_info['hostname']=='Haswell_18core'):
+    k_perf_order = {0:2000, 1:7000, 4:600, 5:2500 ,6:150}
+  else:
+    k_perf_order = {0:1200, 1:4000, 4:350, 5:1500 ,6:80}
+  k_time_scale={}
+  for k, v in k_perf_order.items():
+    k_time_scale[k] = desired_time*v
 
   points = list(range(32, 5000, 128))
   points = sorted(list(set(points)))
+
   if is_dp ==1:
     kernels_limits = [1057, 1057, 0, 0, 545, 680, 289]
   else:
@@ -25,29 +36,23 @@ def igs_test(target_dir, exp_name, tgs_l, th, params={}):
       kernels_limits = [2100, 0, 0, 0, 1200, 0, 0]
 
   count=0
-  for kernel in [0, 1, 4, 5, 6]:
-    for tgs in tgs_l:
-      ts = 2
-      if tgs == 0:
-        ts = 0
-        mwdt_list=[0]
-      elif tgs == 1:
+  for kernel in [0, 1, 4, 5]: #, 6]:
+    for ts in [0, 2]:
+      if ts == 0:
         mwdt_list=[0]
       else:
         mwdt_list=[0,1,2,3]
       for mwdt in mwdt_list:
         for N in points:
-          if (N < kernels_limits[kernel]) and (ts==0 or N >= (th/tgs)*4*kr[kernel]) and not (kernel==6 and mwdt==3):
-              tb, nwf, bsx = (-1,-1,100000)
-              key = (mwdt, kernel, tgs, N)
+          if (N < kernels_limits[kernel]):
+              tb, nwf, tgs, thx, thy, thz = (-1,-1,-1,-1,-1,-1)
+              key = (mwdt, kernel, N)
               if key in params.keys():
-                tb, nwf, bsx = params[key]
-#              if tgs==0 or tb !=-1: continue
+                tb, nwf, tgs, thx, thy, thz = params[key]
 
-              outfile=('kernel%d_isdp%d_ts%d_mwdt%d_tgs%d_N%d.txt' % (kernel, is_dp, ts, mwdt, tgs,  N))
-              nt = max(int(th * 4e9/(N**3*3)/k_time_scale[kernel]), 30)
-              run_test(dry_run=dry_run, is_dp=is_dp, th=th,  kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt,
-                                 outfile=outfile, target_dir=target_dir, tgs=tgs, cs=cs, mwdt=mwdt, tb=tb, nwf=nwf)
+              outfile=('kernel%d_isdp%d_ts%d_mwdt%d_N%d_%s.txt' % (kernel, is_dp, ts, mwdt, N, exp_name[-13:]))
+              nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
+              run_test(dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=mwdt, tb=tb, nwf=nwf)
               count = count+1
   print "experiments count =" + str(count)
 
@@ -57,6 +62,7 @@ def main():
   from scripts.conf.conf import machine_conf, machine_info
   import os
   from csv import DictReader
+  import time,datetime
 
   sockets=1 # number of processors to use in the experiments
 
@@ -72,18 +78,15 @@ def main():
 
   if(machine_info['hostname']=='Haswell_18core'):
     machine_conf['pinning_args'] = "-m -g MEM -C " + pin_str + machine_conf['pinning_args']
-    tgs_l = [0, 1, 3, 6, 9, 18]
   elif(machine_info['hostname']=='IVB_10core'):
     machine_conf['pinning_args'] = "-m -g MEM -C " + pin_str + machine_conf['pinning_args']
-#    machine_conf['pinning_args'] = "-c " + pin_str + machine_conf['pinning_args']
-    tgs_l = [0, 1, 2, 5, 10]
 
-  exp_name = "increasing_grid_size_SP_sockets_%d_at_%s" % (sockets,machine_info['hostname'])  
+  time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H_%M')
+  exp_name = "increasing_grid_size_sockets_%d_at_%s_%s" % (sockets,machine_info['hostname'], time_stamp)  
 
   tarball_dir='results/'+exp_name
   create_project_tarball(tarball_dir, "project_"+exp_name)
   target_dir='results/' + exp_name 
-
 
   # parse the results to obtain the selected parameters by the auto tuner
   data = []
@@ -119,7 +122,7 @@ def main():
       raise
 
 
-  igs_test(target_dir, exp_name, tgs_l=tgs_l, th=th, params=params) 
+  igs_test(target_dir, exp_name, th=th, params=params) 
 
 
 if __name__ == "__main__":
