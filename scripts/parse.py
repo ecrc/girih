@@ -17,6 +17,7 @@ def main():
     from csv import DictWriter
     import sys
     import os
+    import re
 
     output_name = "summary.csv"
     
@@ -27,14 +28,17 @@ def main():
             k = get_summary(fp)
         k['file_name'] = os.path.split(f)[-1]
         all_fields.update(set(k.keys()))
-        if (k.has_key('Time stepper name')) and (k.has_key('MStencil/s  MAX')):
+        has_res=0
+        for key in k.keys():
+          if re.search('MStencil/s * MAX', key): has_res=1
+        if (k.has_key('Time stepper name')) and has_res==1:
             data.append(k)
             print('Parsed the file: '+ f)
         else:
             print('Rejected the file: '+ f)
             
 
-    cols_order = ['Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'Global NX', 'MStencil/s  MAX']
+    cols_order = ['Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'Global NX']
 
     cols_order.append('Sustained Memory BW')
     cols_order.append('Total Memory Transfer')
@@ -86,9 +90,16 @@ def main():
     
     
 def get_summary(f):
-    float_fields =   ('MStencil/s  MIN',
+    import re
+
+    float_fields =   (
+                'MStencil/s  MIN',
                 'MStencil/s  AVG',
                 'MStencil/s  MAX',
+                'MWD main-loop RANK0 MStencil/s MIN', 
+                'MWD main-loop RANK0 MStencil/s MAX', 
+                'Total RANK0 MStencil/s MIN',
+                'Total RANK0 MStencil/s MAX',
                 'RANK0 Total',
                 'RANK0 Computation',
                 'RANK0 Communication',
@@ -109,7 +120,6 @@ def get_summary(f):
                 'MEAN Communication',
                 'MEAN Waiting',
                 'MEAN Other',
-                'WD main-loop RANK0 MStencil/s  MAX', 
                 'RANK0 ts main loop')
 
     str_fields = ('Time stepper name',
@@ -136,7 +146,10 @@ def get_summary(f):
                 'Cache block size/wf (kiB)',
                 'Block size in X',
                 'Total cache block size (kiB)',
-                'Threads per core')
+                'Threads per core',
+                'Threads along x-axis',
+                'Threads along y-axis',
+                'Threads along z-axis')
 
     mlist = []
     # default not cotiguous MPI datatype
@@ -147,28 +160,43 @@ def get_summary(f):
     mlist.append(('Cache block size/wf (kiB)', 0))
     mlist.append(('Total cache block size (kiB)', 0))
     mlist.append(('Thread group size', 0))
-    mlist.append(('WD main-loop RANK0 MStencil/s  MAX', 0))
     mlist.append(('Multi-wavefront updates', 0))
     mlist.append(('Intra-diamond prologue/epilogue MStencils', 0))
     mlist.append(('Wavefront parallel strategy',0))
 
     for line in f:
-        # General float cases
-        for field in float_fields:
-            if field in line:
-                val = float(line.split(':')[1].split()[0])
-                mlist.append((field,val))
+        try:
+            # General float cases
+            for field in float_fields:
+                if re.match('^'+re.escape(field)+':', line)!=None:
+                    val = float(line.split(':')[1].split()[0])
+                    mlist.append((field,val))
 
-        # General Integer cases
-        for field in int_fields:
-            if field in line:
+            # General Integer cases
+            for field in int_fields:
+                if re.match('^'+re.escape(field)+':', line)!=None:
+                    val = int(line.split(':')[1].split()[0])
+                    mlist.append((field,val))
+
+            # General string cases
+            for field in str_fields:
+                if re.match('^'+re.escape(field)+':', line)!=None:
+                    val = line.split(':')[1].strip()
+                    mlist.append((field,val))
+
+            # cache size filed
+            if 'Assumed usable cache size' in line:
+                cs = line.split(':')[1].strip()
+                cs = cs.split('K')[0]
+                mlist.append(('cache size',int(cs)))
+
+            # special case for modified fields
+            if 'Intra-diamond halo concatenation' in line:
                 val = int(line.split(':')[1].split()[0])
-                mlist.append((field,val))
-
-        # special case for modified fields
-        if 'Intra-diamond halo concatenation' in line:
-            val = int(line.split(':')[1].split()[0])
-            mlist.append(('Halo concatenation',val))
+                mlist.append(('Halo concatenation',val))
+        except:
+            print(field, line)
+            raise
 
         # Global size
 #Global domain    size:262144    nx:64    ny:64    nz:64
@@ -199,18 +227,6 @@ def get_summary(f):
             mlist.append(('npx',npx))
             mlist.append(('npy',npy))
             mlist.append(('npz',npz))
-
-        # General string cases
-        for field in str_fields:
-            if field in line:
-                val = line.split(':')[1].strip()
-                mlist.append((field,val))
-
-        # cache size filed
-        if 'Assumed usable cache size' in line:
-            cs = line.split(':')[1].strip()
-            cs = cs.split('K')[0]
-            mlist.append(('cache size',int(cs)))        
 
         # MWD statistics information
         measures =[
