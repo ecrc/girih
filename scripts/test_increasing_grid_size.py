@@ -16,7 +16,7 @@ def igs_test(target_dir, exp_name, th, params={}):
   if(machine_info['hostname']=='Haswell_18core'):
     k_perf_order = {0:2000, 1:7000, 4:600, 5:2500 ,6:150}
   else:
-    k_perf_order = {0:1200, 1:4000, 4:350, 5:1500 ,6:80}
+    k_perf_order = {0:1200, 1:3000, 4:350, 5:1500 ,6:80}
   k_time_scale={}
   for k, v in k_perf_order.items():
     k_time_scale[k] = desired_time*v
@@ -25,7 +25,7 @@ def igs_test(target_dir, exp_name, th, params={}):
   points = sorted(list(set(points)))
 
   if is_dp ==1:
-    kernels_limits = [1057, 1057, 0, 0, 545, 680, 289]
+    kernels_limits = [1057, 1200, 0, 0, 545, 680, 289]
   else:
     kernels_limits = [1350, 0, 0, 0, 801, 0, 0]
 
@@ -37,8 +37,7 @@ def igs_test(target_dir, exp_name, th, params={}):
 
   count=0
   for kernel, mwdt_list in [(0,[0,1]), (1,[0,2]), (4,[0,1]), (5,[1])]: #, 6]:
-    #for ts in [0, 2]:
-    for ts in [2]:
+    for ts in [0, 2]:
       if ts == 0:
         mwdt_list=[0]
       for mwdt in mwdt_list:
@@ -72,7 +71,6 @@ def main():
     pin_str = "S0:0-%d "%(th-1)
   if sockets == 2:
     pin_str = "S0:0-%d@S1:0-%d -i "%(th/2-1, th/2-1)
-
 
 
   if(machine_info['hostname']=='Haswell_18core'):
