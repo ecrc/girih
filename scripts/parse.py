@@ -30,11 +30,12 @@ def main():
         all_fields.update(set(k.keys()))
         has_res=0
         for key in k.keys():
-          if re.search('MStencil/s * MAX', key): has_res=1
+          if re.search('MStencil/s *MAX', key): has_res=1
         if (k.has_key('Time stepper name')) and has_res==1:
             data.append(k)
             print('Parsed the file: '+ f)
         else:
+#            for i,v in k.iteritems(): print i,' :',v
             print('Rejected the file: '+ f)
             
 
@@ -93,11 +94,12 @@ def get_summary(f):
     import re
 
     float_fields =   (
-                'MStencil/s  MIN',
-                'MStencil/s  AVG',
-                'MStencil/s  MAX',
+                'RANK0 MStencil/s  MIN',
+                'RANK0 MStencil/s  AVG',
+                'RANK0 MStencil/s  MAX',
                 'MWD main-loop RANK0 MStencil/s MIN', 
                 'MWD main-loop RANK0 MStencil/s MAX', 
+                'MWD main-loop RANK0 MStencil/s  MAX', # temporary for depricated format
                 'Total RANK0 MStencil/s MIN',
                 'Total RANK0 MStencil/s MAX',
                 'RANK0 Total',
@@ -163,6 +165,9 @@ def get_summary(f):
     mlist.append(('Multi-wavefront updates', 0))
     mlist.append(('Intra-diamond prologue/epilogue MStencils', 0))
     mlist.append(('Wavefront parallel strategy',0))
+    mlist.append(('Threads along x-axis',0))
+    mlist.append(('Threads along y-axis',0))
+    mlist.append(('Threads along z-axis',0))
 
     for line in f:
         try:

@@ -5,45 +5,73 @@ def main():
   raw_data = load_csv(sys.argv[1])
 
   k_l = set()
-  mwdt_l = set()
+#  mwdt_l = set()
   prec_l = set()
   prof_mem = True 
   prof_energy = True 
   for k in raw_data:
+
+    # Use single field to represent the performance
+    #if 'Total RANK0 MStencil/s MAX' in k.keys():
+    if 'MWD main-loop RANK0 MStencil/s MAX' in k.keys():
+      k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s MAX'] 
+    # temporary for deprecated format
+    if 'MWD main-loop RANK0 MStencil/s  MAX' in k.keys():
+      if k['MWD main-loop RANK0 MStencil/s  MAX']!='':
+        k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s  MAX'] 
+    if 'RANK0 MStencil/s  MAX' in k.keys():
+      if k['RANK0 MStencil/s  MAX']!='':
+        k['MStencil/s  MAX'] = k['RANK0 MStencil/s  MAX'] 
+
+
     # add stencil operator
     k['stencil'] = get_stencil_num(k)
     k_l.add(k['stencil'])
 
     # add mwd type
     mwd = k['Wavefront parallel strategy'].lower()
-    k['mwdt']=-1
+    k['mwdt']='none'
     if('fixed' in mwd) and ('relaxed' in mwd):
-      k['mwdt'] = 3
+      k['mwdt'] = 'fers'
     elif('fixed' in mwd):
-      k['mwdt'] = 1
+      k['mwdt'] = 'fe'
     elif('relaxed' in mwd):
-      k['mwdt'] = 2
+      k['mwdt'] = 'rs'
     elif('wavefront' in mwd):
-      k['mwdt'] = 0
-    if(k['mwdt']>=0): mwdt_l.add(k['mwdt'])
-    if 'Sustained Memory BW' not in k.keys(): prof_mem=False
+      k['mwdt'] = 'block'
+#d    mwdt_l.add(k['mwdt'])
+
+    # disable bandwidth and energy plots if missing from any entry
+    if 'Sustained Memory BW' in k.keys():
+      if k['Sustained Memory BW'] =='':
+        prof_mem=False
+    else: 
+      prof_mem=False
     if 'Energy' not in k.keys(): prof_energy=False
 
-    # add the precision information
+    # add the approach
+    if int(k['Thread group size']) == 0:
+      k['method'] = 'Spt.blk.'
+    elif ( (int(k['Thread group size']) == 1) and (int(k['Threads along z-axis']) == 0) ):
+      k['method'] = 'CATS2'
+    else:
+      k['method'] = 'MWD'
+
+    # add precision information
     p = 1 if k['Precision'] in 'DP' else 0
     k['Precision'] = p
     prec_l.add(p)
   k_l = list(k_l)
-  mwdt_l = list(mwdt_l)
+#  mwdt_l = list(mwdt_l)
   prec_l = list(prec_l)
 
   for k in k_l:
-    for mwdt in mwdt_l:
-      for is_dp in prec_l:
-        plot_lines(raw_data, k, mwdt, is_dp, prof_mem=prof_mem, prof_energy=prof_energy)
+#    for mwdt in mwdt_l:
+    for is_dp in prec_l:
+      plot_lines(raw_data, k, is_dp, prof_mem=prof_mem, prof_energy=prof_energy)
 
         
-def plot_lines(raw_data, stencil_kernel, mwdt, is_dp, prof_mem, prof_energy):
+def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
@@ -71,7 +99,7 @@ def plot_lines(raw_data, stencil_kernel, mwdt, is_dp, prof_mem, prof_energy):
 
   
 
-  req_fields = [('Local NX', int), ('Thread group size', int), ('Time stepper orig name', str), ('MStencil/s  MAX', float), ('mwdt', int), ('Precision', int), ('stencil', int), ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int)]
+  req_fields = [('Local NX', int), ('method', str), ('MStencil/s  MAX', float), ('mwdt', str), ('Precision', int), ('stencil', int), ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int)]
   if(prof_mem): req_fields = req_fields + [ ('Sustained Memory BW', float)]
   if(prof_energy):
     req_fields = req_fields + [('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]
@@ -90,8 +118,19 @@ def plot_lines(raw_data, stencil_kernel, mwdt, is_dp, prof_mem, prof_energy):
         return
     data.append(tup)
 
-  data = sorted(data, key=itemgetter('mwdt', 'Thread group size', 'Local NX'))
-  #for i in data: print i
+
+  method_l = set()
+  mwdt_l = set()
+  for k in data: 
+    method_l.add(k['method'])
+    if (k['mwdt']!=''): mwdt_l.add(k['mwdt'])
+  method_l = list(method_l)
+  mwdt_l = list(mwdt_l)
+  
+
+
+  data = sorted(data, key=itemgetter('method', 'mwdt', 'Local NX'))
+#  for i in data: print i
 
 
   # compute pJ/LUP
@@ -106,11 +145,6 @@ def plot_lines(raw_data, stencil_kernel, mwdt, is_dp, prof_mem, prof_energy):
       k['total energy pj/lup'] = k['cpu energy pj/lup'] + k['dram energy pj/lup']
 
 
-  tgs_l = set()
-  for k in data:
-    tgs_l.add(k['Thread group size'])
-  tgs_l = list(tgs_l)
-
   max_x = 0
   max_y = 0
 
@@ -119,33 +153,38 @@ def plot_lines(raw_data, stencil_kernel, mwdt, is_dp, prof_mem, prof_energy):
   line_s = '-' 
   cols = 'kbgmrcy'
   markers = '+xo^vx*'
-  for idx, tgs in enumerate(tgs_l):
-    marker = markers[idx]
-    col = cols[idx]
-    x = []
-    y = []
-    y_m = []
-    y_e = []
-    for k in data:
-      if ( (k['mwdt']==-1 or  k['mwdt'] == mwdt) and (k['Thread group size'] == tgs)  and (k['stencil']==stencil_kernel) and (k['Precision']==is_dp) ):
-        if(prof_mem): y_m.append(k['Sustained Memory BW']/10**3)
-        if(prof_energy): y_e.append(k['total energy pj/lup'])
-        x.append(k['Local NX'])
-        y.append(k['MStencil/s  MAX']/10**3)
-    ts2 = str(tgs) + 'WD' if tgs!=0 else 'Spt.blk.'
+  idx=0
+  for method in method_l:
 
-    if(x):
-      plt.figure(0)
-      plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
-      max_y = max(max(y), max_y)
-      max_x = max(max(x), max_x)
-    if( (prof_mem) and (x) ):
-      plt.figure(1)
-      plt.plot(x, y_m, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
+    mwdt_str_l = mwdt_l if(method=='MWD') else ['']
 
-    if( (prof_energy) and (x) ):
-      plt.figure(2)
-      plt.plot(x, y_e, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
+    for mwdt_str in mwdt_str_l:
+      marker = markers[idx]
+      col = cols[idx]
+      x = []
+      y = []
+      y_m = []
+      y_e = []
+      for k in data:
+        if ( (k['method'] == method) and ( k['method']!='MWD' or (k['method']=='MWD' and k['mwdt'] == mwdt_str) ) and (k['stencil']==stencil_kernel) and (k['Precision']==is_dp) ):
+          if(prof_mem): y_m.append(k['Sustained Memory BW']/10**3)
+          if(prof_energy): y_e.append(k['total energy pj/lup'])
+          x.append(k['Local NX'])
+          y.append(k['MStencil/s  MAX']/10**3)
+      ts2 = method + mwdt_str
+      if(x):
+        plt.figure(0)
+        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
+        max_y = max(max(y), max_y)
+        max_x = max(max(x), max_x)
+      if( (prof_mem) and (x) ):
+        plt.figure(1)
+        plt.plot(x, y_m, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
+
+      if( (prof_energy) and (x) ):
+        plt.figure(2)
+        plt.plot(x, y_e, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
+      idx=idx+1
 
 #  # add limits
 #  sus_mem_bw = 40.0 #IB
@@ -170,16 +209,16 @@ def plot_lines(raw_data, stencil_kernel, mwdt, is_dp, prof_mem, prof_energy):
 #  if(prof_mem):
 #    plt.plot([1, max_x], [mem_limit, mem_limit], color='.2', linestyle='--', label='Spt.lim.')
 
-  if mwdt==0:
-    mwd_str = 'block'
-  elif mwdt==1:
-    mwd_str = 'fe'
-  elif mwdt==2:
-    mwd_str = 'rs'
-  elif mwdt==3:
-    mwd_str = 'fers'
+#  if mwdt==0 or mwdt==-1:
+#    mwd_str = 'block'
+#  elif mwdt==1:
+#    mwd_str = 'fe'
+#  elif mwdt==2:
+#    mwd_str = 'rs'
+#  elif mwdt==3:
+#    mwd_str = 'fers'
 
-  title = '_inc_grid_size_mwdt_'+mwd_str
+  title = '_inc_grid_size'
   if stencil_kernel == 0:
     title = '25_pt_const' + title
   elif stencil_kernel == 1:
