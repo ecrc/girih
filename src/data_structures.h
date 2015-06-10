@@ -245,6 +245,7 @@ typedef struct{
   int array_padding;
 
   int in_auto_tuning;
+  int orig_thread_group_size; // to distingquish whether thread group size is set by the user
 
 }Parameters;
 
@@ -253,6 +254,11 @@ struct time_stepper {
   void (*func)(Parameters *p);
 };
 
+#define RAISE_ERROR_r(err) { \
+                              fprintf(stderr,"ERROR: "); \
+                              fprintf(stderr,err); \
+                              fprintf(stderr,"\n"); \
+                              exit(1); }
 
 #define RAISE_ERROR(err) { \
                             if(p->mpi_rank == 0) { \

@@ -755,11 +755,22 @@ void intra_diamond_info_init(Parameters *p){
   uint64_t diam_width;
   double tune_time;
 
+  // Disable relaxed synch for high order stencils
+  if( (p->mwd_type>1) &  (p->stencil.r>1) ) RAISE_ERROR("Relaxed synchronization implementations are disabled for stencil radius > 1 for performance reasons")
+
+  // if thread group size is set to 1 by the user, set the other group dimensions
+  if(p->stencil_ctx.thread_group_size ==1){
+    p->stencil_ctx.th_x = 1;
+    p->stencil_ctx.th_y = 1;
+    p->stencil_ctx.th_z = 1;
+  }
+
   if(p->in_auto_tuning==0){
     p->in_auto_tuning = 1;
     tune_time = MPI_Wtime();
     auto_tune_params(p);
-    printf("{AUTO TUNE]  Tuning time: %5.1f seconds\n", MPI_Wtime()-tune_time);
+    tune_time = MPI_Wtime()-tune_time;
+    if( tune_time > 1.0)  printf("{AUTO TUNE]  Tuning time: %5.1f seconds\n", tune_time);
     p->in_auto_tuning = 0;
 
   }

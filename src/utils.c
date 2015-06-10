@@ -523,7 +523,8 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->th_block = a.th_block;
   b->th_stride = a.th_stride;
   b->stencil_ctx.use_manual_cpu_bind = a.stencil_ctx.use_manual_cpu_bind;
-  
+  b->orig_thread_group_size = a.orig_thread_group_size;
+
   copyv(a.source_pt, b->source_pt, 3);
   copyv(a.lstencil_shape, b->lstencil_shape, 3);
   copyv(a.ldomain_shape, b->ldomain_shape, 3);
@@ -1023,6 +1024,7 @@ void print_param(Parameters p) {
     printf("Next larger cache block size/wf (kiB): %lu (diam_width=%d)\n", p.wf_larger_blk_size/1024, (p.larger_t_dim+1)*2*p.stencil.r);
     printf("Intra-diamond prologue/epilogue MStencils: %lu\n", p.idiamond_pro_epi_logue_updates/(1000*1000));
     printf("Multi-wavefront updates: %d\n", p.stencil_ctx.num_wf);
+    printf("User set thread group size: %d\n", p.orig_thread_group_size);
     printf("Thread group size: %d\n", p.stencil_ctx.thread_group_size);
     printf("Threads along z-axis: %d\n", p.stencil_ctx.th_z);
     printf("Threads along y-axis: %d\n", p.stencil_ctx.th_y);
@@ -1301,25 +1303,30 @@ void parse_args (int argc, char** argv, Parameters * p)
   if( (cache_size ==-1) && (p->target_ts == 2) ) p->cache_size = 0;
 
   // allow thread group size change only for methods supporting multiple thread groups
+  int num_threads=0;
   if(p->target_ts == 2) {
     // parse the thread affinity argument
     if(threads != NULL){
-      p->stencil_ctx.use_manual_cpu_bind = 1;
-      p->num_threads = atoi(threads); //parse threads
-      p->th_stride = 1;
-      p->th_block = 1;
-      threads = strtok (NULL, ":");
+      num_threads = atoi(threads); //parse threads
+      if(num_threads > 0){ // allow the user to disable manual thread binding by negative value
+        p->num_threads = num_threads;
+        p->stencil_ctx.use_manual_cpu_bind = 1;
+        p->th_stride = 1;
+        p->th_block = 1;
+        threads = strtok (NULL, ":");
+        if(threads != NULL){ //parse block
+          p->th_block = atoi(threads); 
+          threads = strtok (NULL, ":");
+        }
+        if(threads != NULL){ //parse stride
+          p->th_stride = atoi(threads); 
+        }
+      }
     }
-    if(threads != NULL){ //parse block
-      p->th_block = atoi(threads); 
-      threads = strtok (NULL, ":");
-    }
-    if(threads != NULL){ //parse stride
-      p->th_stride = atoi(threads); 
-    }
-
-    p->use_omp_stat_sched = 0;
   }
+
+  p->orig_thread_group_size =  p->stencil_ctx.thread_group_size;
+  p->use_omp_stat_sched = 0;
 }
 
 void print_3Darray(char *filename, real_t * restrict array, int nx, int ny, int nz, int halo) {
