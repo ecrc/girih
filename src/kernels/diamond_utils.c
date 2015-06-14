@@ -613,7 +613,7 @@ void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, in
 
 
 void auto_tune_params(Parameters *p){
-  int i, n_tune_cases, n_tgs, tune_case, best_case, tune_b, tune_e;
+  int i, n_tune_cases, n_tgs, tune_case, best_case, tune_b, tune_e, tmp_cache_size;
   Tune_Params *tune_cases_l=NULL, max_tune_case;
   int *tgs_l=NULL;
   Parameters tp;
@@ -651,6 +651,26 @@ void auto_tune_params(Parameters *p){
           free(time_blocks);
         }
       }
+
+      if(max_t_dim < 1){ // if no feasible diamond found, try without lower cache size limit
+        printf("[AUTO TUNE] Trying to find feasible diamond width witout lower cache block limits\n");
+        tmp_cache_size = p->cache_size;
+        p->cache_size = 0;
+        for(i=0; i<n_tgs; i++){
+          p->stencil_ctx.thread_group_size = tgs_l[i];
+          p->stencil_ctx.th_z = tgs_l[i];
+          get_feasible_time_blocks(*p, &time_blocks, &n_time_blocks);
+          if(n_time_blocks>0){
+            if(max_t_dim < time_blocks[0]){
+              max_t_dim = time_blocks[0];
+              max_tgs = tgs_l[i];
+            }
+            free(time_blocks);
+          }
+        }
+        if(max_t_dim < 1) p->cache_size = tmp_cache_size;
+      }
+
       if(max_t_dim < 1){
         printf("[AUTO TUNE] No feasible diamond width found. Using min width with max thread group size\n");
         max_t_dim = 1;
