@@ -113,7 +113,7 @@ def main():
   if sockets == 2:
     pin_str = "S0:0-%d@S1:0-%d -i "%(th/2-1, th/2-1)
 
-  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3']:
+  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = "-m -g " + group + " -C " + pin_str + '--'
     elif(machine_info['hostname']=='IVB_10core'):
