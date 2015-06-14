@@ -151,6 +151,7 @@ def get_summary(f):
                 'Threads per core',
                 'Threads along x-axis',
                 'Threads along y-axis',
+                'User set thread group size',
                 'Threads along z-axis')
 
     mlist = []
@@ -168,6 +169,7 @@ def get_summary(f):
     mlist.append(('Threads along x-axis',0))
     mlist.append(('Threads along y-axis',0))
     mlist.append(('Threads along z-axis',0))
+    mlist.append(('User set thread group size', -1))
 
     for line in f:
         try:

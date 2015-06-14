@@ -6,7 +6,7 @@ def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
   from scripts.conf import conf
 
   job_template=Template(
-"""$set_threads$th; $mpirun_cmd $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --mwd-type $mwdt --num-wavefronts $nwf --t-dim $tb --threads $th  --verify $verify | tee $outpath""")
+"""$set_threads$th; $mpirun_cmd $pinning_cmd $pinning_args $exec_path --n-tests $ntests --disable-source-point --npx $npx --npy $npy --npz $npz --nx $nx --ny $ny --nz $nz  --verbose $verbose --target-ts $ts --nt $nt --target-kernel $kernel --cache-size $cs --thread-group-size $tgs --thx $thx --thy $thy --thz $thz --mwd-type $mwdt --num-wavefronts $nwf --t-dim $tb --threads $th_bind  --verify $verify | tee $outpath""")
 
   # set default arguments
   defaults = {'dry_run':0, 'is_dp':1, 'tgs':-1, 'cs':4096, 'mwdt':2, 'npx':1, 'npy':1, 'npz':1, 'nwf':-1,
@@ -36,6 +36,12 @@ def run_test(kernel, ts, nx, ny, nz, nt, target_dir, **kwargs):
   if defaults['mpirun_cmd'] != '':
     np = defaults['npx']*defaults['npy']*defaults['npz']
     defaults['mpirun_cmd'] = defaults['mpirun_cmd'] + " -np %d "%np
+
+  # Disable manual binding if likwid is used
+  if('likwid' in defaults['pinning_cmd']):
+    defaults['th_bind'] = -1
+  else:
+    defaults['th_bind'] = defaults['th']
 
   job_cmd = job_template.substitute(nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel, ts=ts, outpath=outpath, 
                                     exec_path=exec_path, **defaults)
