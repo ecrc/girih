@@ -350,20 +350,16 @@ void init(Parameters *p) {
 
 
   // calculate the block size in Y to satisfy the layer condition at the spatially blocked code
-  if (p->cache_size >0){
-
-    int num_thread_groups = get_ntg(*p);
-
+  p->stencil_ctx.bs_y = p->ldomain_shape[1];
+  if( (p->cache_size >0) && (p->target_ts !=2) ){
     if(p->use_omp_stat_sched==0){
-      p->stencil_ctx.bs_y = (p->cache_size*1024)/((num_thread_groups* (p->stencil_ctx.thread_group_size+(2*p->stencil.r)))*p->ldomain_shape[0]*sizeof(real_t));
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/((p->num_threads+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(real_t));
     } else {// tailored for the Xeon Phi
-      p->stencil_ctx.bs_y = (p->cache_size*1024)/(p->stencil_ctx.thread_group_size*(1+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(real_t));
+      if(p->stencil_ctx.thread_group_size ==-1) p->stencil_ctx.thread_group_size = 1;
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/( (p->stencil_ctx.thread_group_size+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(real_t));
     }
     // set minimum block size if cache is not sufficient
     if(p->stencil_ctx.bs_y == 0) p->stencil_ctx.bs_y=p->stencil.r;
-
-  } else {
-    p->stencil_ctx.bs_y = p->ldomain_shape[0];
   }
 
   // set the local source point and other information
