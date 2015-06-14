@@ -58,6 +58,7 @@ def igs_test(dry_run, target_dir, exp_name, th, group='', params=[]):
   points = sorted(list(set(points)))
 
   kernels_limits = [1057, 1200, 0, 0, 545, 680, 289]
+  radius = {0:4, 1:1, 4:4, 5:1}
 
   if(machine_info['hostname']=='Haswell_18core'):
     kernels_limits = [1600, 1600, 0, 0, 960, 1000, 500]
@@ -71,6 +72,7 @@ def igs_test(dry_run, target_dir, exp_name, th, group='', params=[]):
          continue
         outfile=('pochoir_kernel%d_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
         nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
+        N = N + 2 * radius[kernel] # Pochoir takes the whole size including the halo region
         run_pochoir_test(dry_run=dry_run, th=th, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, pinning_cmd=machine_conf['pinning_cmd'], pinning_args=machine_conf['pinning_args'])
         count = count+1
   print "experiments count =" + str(count)
