@@ -1012,7 +1012,8 @@ void print_param(Parameters p) {
     break;
   case 2: // dynamic scheduling intra diamond methods
     printf("Enable wavefronts: %d\n", p.wavefront!=0);
-    if(p.stencil_ctx.thread_group_size!=1) printf("Wavefront parallel strategy: %s\n", MWD_name[p.mwd_type]);
+//    if(p.stencil_ctx.thread_group_size!=1) 
+      printf("Wavefront parallel strategy: %s\n", MWD_name[p.mwd_type]);
     printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*p.stencil.r);
     printf("Wavefront width:  %d\n", diam_height);
     printf("Cache block size/wf (kiB): %lu\n", p.wf_blk_size/1024);

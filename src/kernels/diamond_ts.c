@@ -669,14 +669,14 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 
 #pragma omp parallel num_threads(num_thread_groups) shared(head, tail) private(tid) PROC_BIND(spread)
   {
-    // initlaize the likwid markers according to the openmp nested parallelism
-    if(p->in_auto_tuning == 0) {
-      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
-      {
-         LIKWID_MARKER_THREADINIT;
-         LIKWID_MARKER_START("calc");
-      }
-    }
+//    // initlaize the likwid markers according to the openmp nested parallelism
+//    if(p->in_auto_tuning == 0) {
+//      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
+//      {
+//         LIKWID_MARKER_THREADINIT;
+//         LIKWID_MARKER_START("calc");
+//      }
+//    }
 
    tid = 0;
 #if defined(_OPENMP)
@@ -714,13 +714,13 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
         }
       }
     }
-    // stop the markers of the experiment
-    if(p->in_auto_tuning == 0) {
-      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
-      {
-         LIKWID_MARKER_STOP("calc");
-      }
-    }
+//    // stop the markers of the experiment
+//    if(p->in_auto_tuning == 0) {
+//      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
+//      {
+//         LIKWID_MARKER_STOP("calc");
+//      }
+//    }
 
   }
 }
@@ -824,6 +824,8 @@ void dynamic_intra_diamond_ts(Parameters *p) {
     t_len = 2*( (p->nt)/((t_dim+1)*2) ) - 1;
   }
 
+  int num_thread_groups = get_ntg(*p);
+
   y_len_l = p->lstencil_shape[1] / (diam_width);
   y_len_r = y_len_l;
   if(p->is_last == 1) y_len_r++;
@@ -860,6 +862,19 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   omp_set_nested(1);
 #endif
 
+
+  // initlaize the likwid markers according to the openmp nested parallelism
+  if(p->in_auto_tuning == 0) {
+    #pragma omp parallel num_threads(num_thread_groups) PROC_BIND(spread)
+    {
+      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
+      {
+         LIKWID_MARKER_THREADINIT;
+         LIKWID_MARKER_START("calc");
+      }
+    }
+  }
+
   // Prologue
   t1 = MPI_Wtime();
   if(p->in_auto_tuning == 0)
@@ -874,6 +889,18 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   if(p->in_auto_tuning == 0)
     dynamic_intra_diamond_epilogue(p);
   t4 = MPI_Wtime();
+
+
+  // stop the markers of the experiment
+  if(p->in_auto_tuning == 0) {
+    #pragma omp parallel num_threads(num_thread_groups) PROC_BIND(spread)
+    {
+      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
+      {
+         LIKWID_MARKER_STOP("calc");
+      }
+    }
+  }
 
   p->prof.ts_main += (t3-t2);
   p->prof.ts_others += (t2-t1) + (t4-t3);

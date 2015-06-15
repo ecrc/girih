@@ -39,7 +39,7 @@
 
 // Use thread affinity supported by 4.0 standard
 #if _OPENMP >= 201307
-#define PROC_BIND(x) proc_bind(x)
+#define PROC_BIND(x) //proc_bind(x)  //define only for NUMA domains
 #else
 #define PROC_BIND(x)
 #endif
