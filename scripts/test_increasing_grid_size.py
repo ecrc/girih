@@ -1,13 +1,16 @@
 #!/usr/bin/env python
-def igs_test(target_dir, exp_name, th, group='', params={}): 
+def igs_test(target_dir, exp_name, th, group='', params={}, dry_run=0): 
   from scripts.conf.conf import machine_conf, machine_info
   from scripts.utils import run_test
   import itertools
 
-  dry_run = 0
   is_dp=1
 
   cs = 4096
+
+  th = machine_info['n_cores']
+  k_r = {0:4, 1:1, 4:4, 5:1, 6:1}
+  kernels_min_limits = {n: k_r[n]*th*4 for n in k_r.keys()}
 
   # Test using rasonable time
   # T = scale * size / perf
@@ -16,24 +19,29 @@ def igs_test(target_dir, exp_name, th, group='', params={}):
   if(machine_info['hostname']=='Haswell_18core'):
     k_perf_order = {0:1500, 1:5000, 4:400, 5:2000 ,6:100}
     if is_dp == 1:
-      kernels_limits = [1600, 1600, 0, 0, 960, 1000, 500]
+      kernels_limits = {0:1600, 1:1600, 4:960, 5:1000, 6:500}
     else:
-      kernels_limits = [2100, 0, 0, 0, 1200, 0, 0]
+      kernels_limits = {0:2100, 4:1200}
+    points = dict()
+    points[0] = [64] + range(32, 5000, 128)
+    points[1] = points[0]
+    points[4] = points[0]
+    points[5] = points[0]
 
   elif(machine_info['hostname']=='IVB_10core'):
     k_perf_order = {0:1200, 1:3000, 4:350, 5:1500 ,6:80}
     if is_dp ==1:
-      kernels_limits = [1057, 1200, 0, 0, 545, 680, 289]
+      kernels_limits = {0:1057, 1:1200, 4:545, 5:680, 6:289}
     else:
-      kernels_limits = [1350, 0, 0, 0, 801, 0, 0]
+      kernels_limits = {0:1350, 4:801}
+    points = dict()
+    points[0] = [64] + range(32, 5000, 128)
+    points[1] = points[0]
+    points[4] = range(32, 5000, 64)
+    points[5] = points[4]
+
 
   k_time_scale = {n: desired_time*k_perf_order[n] for n in k_perf_order.keys()}
-
-  points = dict()
-  points[0] = [64] + range(32, 5000, 128)
-  points[1] = points[0]
-  points[4] = range(32, 5000, 64)
-  points[5] = points[4]
 
   count=0
   for ts, tgs_rl in [(2,[-1, 1])]:#, (0,[0])]:
@@ -44,7 +52,7 @@ def igs_test(target_dir, exp_name, th, group='', params={}):
           mwdt_list=[-1]
         for mwdt in mwdt_list:
           for N in points[kernel]:
-            if (N < kernels_limits[kernel]):
+            if( ((tgs_r!=1) or  (N >= kernels_min_limits[kernel])) and (N < kernels_limits[kernel]) ):
               tb, nwf, tgs, thx, thy, thz = (-1,-1,tgs_r,tgs_r,tgs_r,tgs_r)
               key = (mwdt, kernel, N, tgs_r)
               if key in params.keys():
@@ -66,13 +74,15 @@ def main():
   from csv import DictReader
   import time,datetime
 
+  dry_run = 0
+
   sockets=1 # number of processors to use in the experiments
 
   time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H_%M')
   exp_name = "increasing_grid_size_sockets_%d_at_%s_%s" % (sockets,machine_info['hostname'], time_stamp)  
 
   tarball_dir='results/'+exp_name
-  create_project_tarball(tarball_dir, "project_"+exp_name)
+  if(dry_run==0): create_project_tarball(tarball_dir, "project_"+exp_name)
   target_dir='results/' + exp_name 
 
   # parse the results to obtain the selected parameters by the auto tuner
@@ -131,7 +141,7 @@ def main():
 #    for k,v in params.iteritems():
 #      if k[1]==5: print k,v
 
-    count= count + igs_test(target_dir, exp_name, th=th, params=params, group=group) 
+    count= count + igs_test(target_dir, exp_name, th=th, params=params, group=group, dry_run=dry_run) 
 
   print "experiments count =" + str(count)
 
