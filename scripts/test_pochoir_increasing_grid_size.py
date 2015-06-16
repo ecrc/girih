@@ -6,8 +6,7 @@ def run_pochoir_test(dry_run, th, kernel, nx, ny, nz, nt, target_dir, outfile, p
   from scripts.utils import ensure_dir    
 
   job_template=Template(
-"""echo 'OpenMP Threads: $th' | tee $outpath
-$pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
+"""echo 'OpenMP Threads: $th' | tee $outpath; $pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
 
   # set the output path
   target_dir = os.path.join(os.path.abspath("."),target_dir)
@@ -75,8 +74,7 @@ def igs_test(dry_run, target_dir, exp_name, th, group='', params=[]):
         N = N + 2 * radius[kernel] # Pochoir takes the whole size including the halo region
         run_pochoir_test(dry_run=dry_run, th=th, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, pinning_cmd=machine_conf['pinning_cmd'], pinning_args=machine_conf['pinning_args'])
         count = count+1
-  print "experiments count =" + str(count)
-
+  return count
 
 def main():
   from scripts.utils import create_project_tarball, get_stencil_num
@@ -122,14 +120,17 @@ def main():
   if sockets == 2:
     pin_str = "S0:0-%d@S1:0-%d -i "%(th/2-1, th/2-1)
 
+  count = 0
   for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -g " + group + " -c " + pin_str + '-- numactl --physcpubind=%d-%d'%(18,18+th-1)
     elif(machine_info['hostname']=='IVB_10core'):
-      machine_conf['pinning_args'] = " -g MEM -c " + pin_str + '-- numactl --physcpubind=%d-%d'%(0,th-1)
-
+      group='TLB' if group=='TLB_DATA'
+      machine_conf['pinning_args'] = " -g " + group + " -c " + pin_str + '-- numactl --physcpubind=%d-%d'%(0,th-1)
 #    for k in params: print k
-    igs_test(dry_run, target_dir, exp_name, th=th, params=params, group=group) 
+    count = count + igs_test(dry_run, target_dir, exp_name, th=th, params=params, group=group) 
+
+  print "experiments count =" + str(count)
 
 
 if __name__ == "__main__":
