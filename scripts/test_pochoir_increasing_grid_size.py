@@ -44,7 +44,7 @@ def igs_test(dry_run, target_dir, exp_name, th, group='', params=[]):
   # Test using rasonable time
   # T = scale * size / perf
   # scale = T*perf/size
-  desired_time = 20
+  desired_time = 10
   if(machine_info['hostname']=='Haswell_18core'):
     k_perf_order = {0:1000, 1:2500, 4:200, 5:1000}
   else:
@@ -83,14 +83,13 @@ def main():
   from csv import DictReader
   import time,datetime
 
-  sockets=1 # number of processors to use in the experiments
   dry_run = 0
 
   time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H_%M')
-  exp_name = "pochoir_increasing_grid_size_sockets_%d_at_%s_%s" % (sockets,machine_info['hostname'], time_stamp)  
+  exp_name = "pochoir_increasing_grid_size_at_%s_%s" % (machine_info['hostname'], time_stamp)  
 
   tarball_dir='results/'+exp_name
-  create_project_tarball(tarball_dir, "project_"+exp_name)
+  if(dry_run==0): create_project_tarball(tarball_dir, "project_"+exp_name)
   target_dir='results/' + exp_name 
 
   # parse the results to find out which of the already exist
@@ -113,19 +112,16 @@ def main():
       raise
 
   #update the pinning information to use all cores
-  th = machine_info['n_cores']*sockets
+  th = machine_info['n_cores']
 
-  if sockets == 1:
-    pin_str = "S1:0-%d "%(th-1)
-  if sockets == 2:
-    pin_str = "S0:0-%d@S1:0-%d -i "%(th/2-1, th/2-1)
+  pin_str = "%d-%d "%(th, 2*th-1)
 
   count = 0
   for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
-      machine_conf['pinning_args'] = " -g " + group + " -c " + pin_str + '-- numactl --physcpubind=%d-%d'%(18,18+th-1)
+      machine_conf['pinning_args'] = " -m -g " + group + " -c " + pin_str + '-- numactl --physcpubind=%d-%d'%(th,2*th-1)
     elif(machine_info['hostname']=='IVB_10core'):
-      group='TLB' if group=='TLB_DATA'
+      if group=='TLB_DATA': group='TLB' 
       machine_conf['pinning_args'] = " -g " + group + " -c " + pin_str + '-- numactl --physcpubind=%d-%d'%(0,th-1)
 #    for k in params: print k
     count = count + igs_test(dry_run, target_dir, exp_name, th=th, params=params, group=group) 
