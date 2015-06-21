@@ -10,7 +10,6 @@
 #include <sys/time.h>
 
 #ifdef LIKWID_PERFMON
-#include <omp.h>
 #include <likwid.h>
 #endif
 #include "print_utils.h"
@@ -80,6 +79,11 @@ int main(int argc, char *argv[])
     }
   }
 
+  // tile size information, including extra element to decide the list length
+  int *tile_size = (int*) malloc(sizeof(int));
+  tile_size[0] = -1;
+  // The list is modified here before source-to-source transformations $reset_tile_sizes
+
   // for timekeeping
   int ts_return = -1;
   struct timeval start, end, result;
@@ -111,6 +115,11 @@ int main(int argc, char *argv[])
   #pragma omp barrier
       LIKWID_MARKER_START("calc");
   }
+#endif
+
+  int num_threads = 1;
+#if defined(_OPENMP)
+  num_threads = omp_get_max_threads();
 #endif
 
 

@@ -1,5 +1,6 @@
 SRC=3d7pt
-DST=lbpar_$(SRC)
+GEN_SRC=$(SRC)
+DST=lbpar_$(GEN_SRC)
 
 CC=icc
 PLC=polycc
@@ -14,11 +15,11 @@ LIKWID_FLAGS = -DLIKWID -DLIKWID_PERFMON  ${LIKWID_INCLUDE} ${LIKWID_LIB} -llikw
 
 all: $(DST)
 
-$(SRC).lbpar.c:  $(SRC).c
-	$(PLC) $(SRC).c $(PLC_FLAGS) -o $@
+$(GEN_SRC).lbpar.c:  $(SRC).c
+	$(PLC) $< $(PLC_FLAGS) -o $@
 
-$(DST): $(SRC).lbpar.c
-	$(CC) $(CFLAGS) $< -o $@  $(LDFLAGS) $(LIKWID_FLAGS)
+$(DST): $(GEN_SRC).lbpar.c
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS) $(LIKWID_FLAGS)
 
 clean:
 	rm -f *.lbpar.c  *.cloog lbpar_*
