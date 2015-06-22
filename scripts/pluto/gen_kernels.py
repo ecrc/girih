@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import itertools
-param_space = {'3d7pt':list(itertools.product([4,8,16,32], [8,16,32], [64, 128, 256, 512, 1024, 2048]))  }
+param_space = {'3d7pt':list(itertools.product([4,8,16,24,32], [8,16,24,32], [64,128,256,512,1024,2048]))  }
 
 def main():
   dry_run=0
@@ -10,8 +10,11 @@ def main():
   from string import Template
   from scripts.utils import ensure_dir
 
+  print("Compiler version")
+  subprocess.call('icc -v', shell=True)
+
   job_template=Template(
-"""echo "$t1\\n$t1\\n$t2\\n$t3" > ${kernel_path}/tile.sizes && make -C ${kernel_path} -f ../../Makefile SRC=$kernel GEN_SRC=${kernel_name} DST=${kernel_name} """)
+"""echo "$t1\\n$t1\\n$t2\\n$t3" > ${kernel_path}/tile.sizes && make -C ${kernel_path} -f ../../Makefile SRC=$kernel """)
 
   # set the output path
   base_dir = 'pluto_examples/gen_kernels/'
