@@ -159,8 +159,8 @@ int main(int argc, char *argv[])
   LIKWID_MARKER_CLOSE;
 #endif
 
-  // Free allocated arrays
- for(i=0; i<Nz; i++){
+  // Free allocated arrays (Causing performance degradation
+/* for(i=0; i<Nz; i++){
     for(j=0;j<Ny;j++){
       free(A[0][i][j]);
       free(A[1][i][j]);
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
   }
   free(A[0]);
   free(A[1]);
-
+*/
   return 0;
 }
 
