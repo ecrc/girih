@@ -35,13 +35,14 @@ def run_pluto_test(dry_run, kernel, nx, ny, nz, nt, params, outfile='', pinning_
   test_str=''
   if(auto_tuning):
     proc = subprocess.Popen(job_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    test_str = test_str + proc.stdout.read()
   else:
     print job_cmd
     test_str = job_cmd + '\n'
     if(dry_run==0): 
       sts = subprocess.call(job_cmd, shell=True)
       proc = subprocess.Popen(job_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  test_str = test_str + proc.stdout.read()
+      test_str = test_str + proc.stdout.read()
   return test_str
 
 
@@ -59,7 +60,7 @@ def set_runtime(kernel, nx, ny, nz, pinning_cmd, pinning_args, fp, params):
     cur_perf = get_performance(res)
     perf_err = abs((cur_perf-prev_perf)/cur_perf)
     tee(fp, "[AUTO TUNE] Testing Nt: %d  performance variation: %05.2f\n"%(nt, 100*perf_err))
-    if(perf_err < 0.03):
+    if(perf_err < 0.01):
       return nt
     else:
       nt = nt*2
@@ -68,6 +69,8 @@ def set_runtime(kernel, nx, ny, nz, pinning_cmd, pinning_args, fp, params):
 def pluto_tuner(kernel, nx, ny, nz, fp):
   from scripts.conf.conf import machine_conf, machine_info
   from scripts.pluto.gen_kernels import param_space 
+  from operator import itemgetter
+
   # Use pinning without HW counters measurements
   th = machine_info['n_cores']
   pinning_cmd = 'likwid-pin'
@@ -77,12 +80,23 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
 
   param_l = param_space[kernel]
   max_perf = -1
+
+  # prune test cases
+  next_nx=0
+  param_l = sorted(param_l, key=itemgetter(2))
+  for i in param_l:
+    if(i[2]>nx): 
+      next_nx = i[2]
+      break
+  if(next_nx!=0): param_l = [ i for i in param_l if i[2]<=next_nx]
+
+
   best_param = []
   n_params = len(param_l)
   for num, param in enumerate(param_l):
     res = run_pluto_test(dry_run=0, kernel=kernel, nx=nx, ny=ny, nz=nz, nt=nt, params=param, pinning_cmd=pinning_cmd, pinning_args=pinning_args, auto_tuning=1)
     perf = get_performance(res)
-    tee(fp, "[AUTO TUNE] kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (kernel, nx, ny, nz, perf, str(param).strip('[]')) )
+    tee(fp, "[AUTO TUNE] Test %d/%d kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (num+1, n_params, kernel, nx, ny, nz, perf, str(param).strip('[]')) )
     if(perf>max_perf):
       max_perf = perf
       best_param = param
@@ -90,7 +104,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
     tee(fp, "Tuner failed\n")
     raise
 
-  tee(fp, "[AUTO TUNE] Test %d/%d  best performance - kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (num, n_params, kernel, nx, ny, nz, max_perf, str(best_param).strip('[]')) )
+  tee(fp, "[AUTO TUNE] Best performance - kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (kernel, nx, ny, nz, max_perf, str(best_param).strip('[]')) )
   return best_param, nt
 
 
@@ -113,7 +127,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
 #  for k, v in k_perf_order.items():
 #    k_time_scale[k] = desired_time*v
 
-  points = list(range(32, 1010, 128))
+  points = list(range(32, 5000, 128))
   points = sorted(list(set(points)))
 
   kernels_limits = {'3d25pt':1057, '3d7pt':1200, '3d25pt_var':545, '3d7pt_var':680}
@@ -122,22 +136,25 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
     kernels_limits = {'3d25pt':1600, '3d7pt':1600, '3d25pt_var':960, '3d7pt_var':1000}
 
   count=0
-  for kernel in ['3d7pt']:# '3d25pt', '3d25pt_var', '3d7pt_var']:
+  for kernel in ['3d7pt', '3d7pt_var']:# '3d25pt', '3d25pt_var', '3d7pt_var']:
     for N in points:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
         outfile = jpath(target_dir, outfile)
-        fp = open(outfile, 'w')
+        if(dry_run==0): fp = open(outfile, 'w')
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
+        param =[32,32,1024]
+        nt =30
         key = (kernel, N)
         if key not in setup:
-          param, nt = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
+          if(dry_run==0): param, nt = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
 #         continue
 
-        tee(fp, outfile)
+        if(dry_run==0): tee(fp, outfile)
+        print outfile
         test_str = run_pluto_test(dry_run=dry_run, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, params=param, outfile=outfile)
-        tee(fp, test_str)
-        fp.close()
+        if(dry_run==0): tee(fp, test_str)
+        if(dry_run==0): fp.close()
         count = count+1
   return count
 

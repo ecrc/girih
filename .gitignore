@@ -5,6 +5,8 @@ results/*
 results
 scripts/verification/*pyc
 scripts/*.pyc
+scripts/conf/*.pyc
+scripts/pluto/*.pyc
 scripts/sisc/*.pyc
 src/.*.swp
 src/.*.swo
