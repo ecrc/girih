@@ -8,7 +8,7 @@ def run_pluto_test(dry_run, kernel, nx, ny, nz, nt, params, outfile='', pinning_
   from os.path import join as jpath
   from string import Template
   from scripts.conf.conf import machine_conf, machine_info
-
+  import time
 
   if(pinning_cmd==-1): pinning_cmd = machine_conf['pinning_cmd']
   if(pinning_args==-1): pinning_args = machine_conf['pinning_args']
@@ -31,7 +31,7 @@ def run_pluto_test(dry_run, kernel, nx, ny, nz, nt, params, outfile='', pinning_
                        outfile=outfile, exec_path=exec_path, pinning_cmd=pinning_cmd, 
                        pinning_args=pinning_args)
  
-
+  tstart = time.time()
   test_str=''
   if(auto_tuning):
     proc = subprocess.Popen(job_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -43,7 +43,8 @@ def run_pluto_test(dry_run, kernel, nx, ny, nz, nt, params, outfile='', pinning_
       sts = subprocess.call(job_cmd, shell=True)
       proc = subprocess.Popen(job_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       test_str = test_str + proc.stdout.read()
-  return test_str
+  tend = time.time()
+  return test_str, (tend-tstart)
 
 
 def get_performance(res_str):
@@ -56,11 +57,11 @@ def set_runtime(kernel, nx, ny, nz, pinning_cmd, pinning_args, fp, params):
   nt=32
   prev_perf = 0.
   while(1):
-    res = run_pluto_test(dry_run=0, kernel=kernel, nx=nx, ny=ny, nz=nz, nt=nt, params=params, pinning_cmd=pinning_cmd, pinning_args=pinning_args, auto_tuning=1)
+    res, telapsed = run_pluto_test(dry_run=0, kernel=kernel, nx=nx, ny=ny, nz=nz, nt=nt, params=params, pinning_cmd=pinning_cmd, pinning_args=pinning_args, auto_tuning=1)
     cur_perf = get_performance(res)
     perf_err = abs((cur_perf-prev_perf)/cur_perf)
-    tee(fp, "[AUTO TUNE] Testing Nt: %d  performance variation: %05.2f\n"%(nt, 100*perf_err))
-    if(perf_err < 0.01):
+    tee(fp, "[AUTO TUNE] Testing Nt: %d   elapsed_time:%ds   performance variation: %05.2f\n"%(nt, telapsed, 100*perf_err))
+    if( (perf_err < 0.01) or (telapsed>100) ):
       return nt
     else:
       nt = nt*2
@@ -70,6 +71,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   from scripts.conf.conf import machine_conf, machine_info
   from scripts.pluto.gen_kernels import param_space 
   from operator import itemgetter
+  import time
 
   # Use pinning without HW counters measurements
   th = machine_info['n_cores']
@@ -93,18 +95,21 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
 
   best_param = []
   n_params = len(param_l)
+  tstart = time.time()
   for num, param in enumerate(param_l):
-    res = run_pluto_test(dry_run=0, kernel=kernel, nx=nx, ny=ny, nz=nz, nt=nt, params=param, pinning_cmd=pinning_cmd, pinning_args=pinning_args, auto_tuning=1)
+    res, telapsed = run_pluto_test(dry_run=0, kernel=kernel, nx=nx, ny=ny, nz=nz, nt=nt, params=param, pinning_cmd=pinning_cmd, pinning_args=pinning_args, auto_tuning=1)
     perf = get_performance(res)
-    tee(fp, "[AUTO TUNE] Test %d/%d kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (num+1, n_params, kernel, nx, ny, nz, perf, str(param).strip('[]')) )
+    tee(fp, "[AUTO TUNE] Test %d/%d  elapsed_time:%ds   kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (num+1, n_params, telapsed,  kernel, nx, ny, nz, perf, str(param).strip('[]')) )
     if(perf>max_perf):
       max_perf = perf
       best_param = param
   if(max_perf == -1):
     tee(fp, "Tuner failed\n")
     raise
+  tend = time.time()
 
   tee(fp, "[AUTO TUNE] Best performance - kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (kernel, nx, ny, nz, max_perf, str(best_param).strip('[]')) )
+  tee(fp, "[AUTO TUNE] elapsed time: %d", (tend-tstart) )
   return best_param, nt
 
 
@@ -136,7 +141,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
     kernels_limits = {'3d25pt':1600, '3d7pt':1600, '3d25pt_var':960, '3d7pt_var':1000}
 
   count=0
-  for kernel in ['3d7pt', '3d7pt_var']:# '3d25pt', '3d25pt_var', '3d7pt_var']:
+  for kernel in ['3d7pt_var']:# '3d25pt', '3d25pt_var', '3d7pt_var']:
     for N in points:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
@@ -152,7 +157,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
 
         if(dry_run==0): tee(fp, outfile)
         print outfile
-        test_str = run_pluto_test(dry_run=dry_run, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, params=param, outfile=outfile)
+        test_str, telapsed = run_pluto_test(dry_run=dry_run, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, params=param, outfile=outfile)
         if(dry_run==0): tee(fp, test_str)
         if(dry_run==0): fp.close()
         count = count+1
