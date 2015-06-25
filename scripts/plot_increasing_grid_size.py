@@ -12,13 +12,10 @@ def main():
   for k in raw_data:
 
     # Use single field to represent the performance
-    #if 'Total RANK0 MStencil/s MAX' in k.keys():
-    if 'MWD main-loop RANK0 MStencil/s MAX' in k.keys():
-      k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s MAX'] 
+    if 'Total RANK0 MStencil/s MAX' in k.keys():
+      if(k['Total RANK0 MStencil/s MAX']!=''):
+        k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s MAX'] 
     # temporary for deprecated format
-    if 'MWD main-loop RANK0 MStencil/s  MAX' in k.keys():
-      if k['MWD main-loop RANK0 MStencil/s  MAX']!='':
-        k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s  MAX'] 
     if 'RANK0 MStencil/s  MAX' in k.keys():
       if k['RANK0 MStencil/s  MAX']!='':
         k['MStencil/s  MAX'] = k['RANK0 MStencil/s  MAX'] 
@@ -50,23 +47,27 @@ def main():
     if 'Energy' not in k.keys(): prof_energy=False
 
     # add the approach
-    if int(k['Thread group size']) == 0:
+    if(k['Time stepper orig name'] == 'Spatial Blocking'):
       k['method'] = 'Spt.blk.'
-    elif ( (int(k['Thread group size']) == 1) and (int(k['Threads along z-axis']) == 0) ):
-      k['method'] = 'CATS2'
+    elif(k['Time stepper orig name'] in ['PLUTO', 'Pochoir']):
+      k['method'] = k['Time stepper orig name']
+    elif(k['Time stepper orig name'] == 'Diamond'):
+      if('_tgs1_' in k['file_name']):
+        k['method'] = 'CATS2'
+      else:
+        k['method'] = 'MWD'
     else:
-      k['method'] = 'MWD'
+      print("ERROR: Unknow time stepper")
+      raise
 
     # add precision information
     p = 1 if k['Precision'] in 'DP' else 0
     k['Precision'] = p
     prec_l.add(p)
   k_l = list(k_l)
-#  mwdt_l = list(mwdt_l)
   prec_l = list(prec_l)
 
   for k in k_l:
-#    for mwdt in mwdt_l:
     for is_dp in prec_l:
       plot_lines(raw_data, k, is_dp, prof_mem=prof_mem, prof_energy=prof_energy)
 
@@ -88,7 +89,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
          'axes.labelsize': 6*m,
          'axes.linewidth': 0.25*m,
          'lines.linewidth': 0.75*m,
-         'text.fontsize': 7*m,
+         'font.size': 7*m,
          'legend.fontsize': 4*m,
          'xtick.labelsize': 6*m,
          'ytick.labelsize': 6*m,
@@ -99,7 +100,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
 
   
 
-  req_fields = [('Local NX', int), ('method', str), ('MStencil/s  MAX', float), ('mwdt', str), ('Precision', int), ('stencil', int), ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int)]
+  req_fields = [('method', str), ('MStencil/s  MAX', float), ('mwdt', str), ('Precision', int), ('stencil', int), ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int)]
   if(prof_mem): req_fields = req_fields + [ ('Sustained Memory BW', float)]
   if(prof_energy):
     req_fields = req_fields + [('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]
@@ -112,7 +113,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
       try:
         tup[f[0]] = map(f[1], [k[f[0]]] )[0]
       except:
-        print("ERROR: results entry missing essential data")
+        print("ERROR: results entry missing essential data at file:%s"%(k['file_name']))
         print f[0]
         print k
         return
@@ -129,7 +130,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
   
 
 
-  data = sorted(data, key=itemgetter('method', 'mwdt', 'Local NX'))
+  data = sorted(data, key=itemgetter('method', 'mwdt', 'Global NX'))
 #  for i in data: print i
 
 
@@ -169,7 +170,7 @@ def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
         if ( (k['method'] == method) and ( k['method']!='MWD' or (k['method']=='MWD' and k['mwdt'] == mwdt_str) ) and (k['stencil']==stencil_kernel) and (k['Precision']==is_dp) ):
           if(prof_mem): y_m.append(k['Sustained Memory BW']/10**3)
           if(prof_energy): y_e.append(k['total energy pj/lup'])
-          x.append(k['Local NX'])
+          x.append(k['Global NX'])
           y.append(k['MStencil/s  MAX']/10**3)
       ts2 = method + mwdt_str
       if(x):
