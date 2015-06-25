@@ -22,7 +22,7 @@ def main():
   base_dir = 'pluto_examples/gen_kernels/'
   ensure_dir(base_dir)
 
-  for kernel in ['3d7pt_var']:#, '3d25pt', '3d25pt_var', '3d7pt_var']:
+  for kernel in ['3d7pt', '3d7pt_var']:#, '3d25pt', '3d25pt_var', '3d7pt_var']:
 #    print param_space[kernel]
     for p in param_space[kernel]:
       kernel_name="lbpar_" + kernel + "%d_%d_%d_%d"%(p[0], p[0], p[1], p[2])
