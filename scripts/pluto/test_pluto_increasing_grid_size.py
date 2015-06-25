@@ -132,28 +132,31 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
 #  for k, v in k_perf_order.items():
 #    k_time_scale[k] = desired_time*v
 
-  points = list(range(32, 5000, 128))
-  points = sorted(list(set(points)))
 
   kernels_limits = {'3d25pt':1057, '3d7pt':1200, '3d25pt_var':545, '3d7pt_var':680}
 
   if(machine_info['hostname']=='Haswell_18core'):
     kernels_limits = {'3d25pt':1600, '3d7pt':1600, '3d25pt_var':960, '3d7pt_var':1000}
 
+  points = dict()
+  points['3d7pt'] = list(range(32, 5000, 128))
+  points['3d7pt_var'] = list(range(32, 5000, 64))
+
   count=0
-  for kernel in ['3d7pt_var']:# '3d25pt', '3d25pt_var', '3d7pt_var']:
-    for N in points:
+  for kernel in ['3d7pt', '3d7pt_var']:# '3d25pt', '3d25pt_var', '3d7pt_var']:
+    for N in points[kernel]:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
         outfile = jpath(target_dir, outfile)
         if(dry_run==0): fp = open(outfile, 'w')
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
-        param =[32,32,1024]
-        nt =30
-        key = (kernel, N)
-        if key not in setup:
+        if(dry_run==1): nt=32; param=[32,32,1024]
+        if (kernel, N) in setup.keys():
+          param, nt = setup[(kernel, N)]
+          nt = nt*2
+        else:
+          continue
           if(dry_run==0): param, nt = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
-#         continue
 
         if(dry_run==0): tee(fp, outfile)
         print outfile
@@ -200,10 +203,10 @@ def main():
         data.append(k)
   except:
      pass
-  setup = set()
+  setup = dict()
   for k in data:
     try:
-      setup.add( (k['stencil'], int(k['Global NX'])) )
+      setup[(k['stencil'], int(k['Global NX'])) ] = ([int(k['PLUTO tile size of loop 1']), int(k['PLUTO tile size of loop 3']), int(k['PLUTO tile size of loop 4'])], int(k['Number of time steps']) )
     except:
       print k
       raise
@@ -214,13 +217,14 @@ def main():
   pin_str = "0-%d "%(th-1)
 
   count = 0
-  for group in ['MEM']: #, 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+#  for group in ['MEM']:
+  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:" + pin_str
     elif(machine_info['hostname']=='IVB_10core'):
       if group=='TLB_DATA': group='TLB' 
       machine_conf['pinning_args'] = " -g " + group + " -C S0:" + pin_str
-#    for k in setup: print k
+#    for k,v in setup.iteritems(): print k,v
     count = count + igs_test(dry_run, target_dir, exp_name, setup=setup, group=group) 
 
   print "experiments count =" + str(count)
