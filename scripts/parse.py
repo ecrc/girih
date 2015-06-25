@@ -251,6 +251,10 @@ def get_summary(f):
                 for i in range(len(vals)):
                     mlist.append((m[:-1] + ' group %d'%i ,vals[i])) 
 
+        # PLUTO parameters
+        if 'PLUTO tile size of loop' in line:
+            mlist.append((line.split(':')[0].strip(), line.split(':')[1].strip()))
+
 
         # LIKWID performance results
 
