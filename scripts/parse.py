@@ -99,7 +99,7 @@ def get_summary(f):
                 'RANK0 MStencil/s  MAX',
                 'MWD main-loop RANK0 MStencil/s MIN', 
                 'MWD main-loop RANK0 MStencil/s MAX', 
-                'MWD main-loop RANK0 MStencil/s  MAX', # temporary for depricated format
+#                'MWD main-loop RANK0 MStencil/s  MAX', # temporary for depricated format
                 'Total RANK0 MStencil/s MIN',
                 'Total RANK0 MStencil/s MAX',
                 'RANK0 Total',
@@ -262,23 +262,23 @@ def get_summary(f):
             val = line.split(' ')[2].strip()
             mlist.append(('LIKWID performance counter',val))
 
-        if '|    Memory BW [MBytes/s]     |' in line or '|    Memory bandwidth [MBytes/s]' in line:
+        if '|    Memory BW [MBytes/s] STAT' in line or '|    Memory bandwidth [MBytes/s] STAT' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Sustained Memory BW',val))
-        if '| Memory data volume [GBytes] |' in line:
+        if 'Memory data volume [GBytes] STAT' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Total Memory Transfer',val))
 
 
-        snames = [('| %s bandwidth [MBytes/s] ','BW'),
-                  ('| %s data volume [GBytes] ', 'data volume'),
-                  ('|   %s Evict [MBytes/s] ', 'evict'),
-                  ('|   %s Load [MBytes/s] ', 'load')]
+        snames = [('%s bandwidth [MBytes/s] STAT ','BW'),
+                  ('%s data volume [GBytes] STAT', 'data volume'),
+                  ('%s Evict [MBytes/s] STAT', 'evict'),
+                  ('%s Load [MBytes/s] STAT', 'load')]
 
         for cache in ['L2', 'L3']:
             for sn in snames:
                 sn0 = sn[0]%(cache)
-                if ((sn0 in line) and ('STAT' in line)):
+                if (sn0 in line):
                     vals = [i.strip() for i in line.split('|')[2:6]]
                     for i, st in enumerate(['sum', 'max', 'min', 'avg']):
                         mlist.append((cache+' '+sn[1]+' '+st, vals[i]))
