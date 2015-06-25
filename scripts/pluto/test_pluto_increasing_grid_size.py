@@ -109,7 +109,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   tend = time.time()
 
   tee(fp, "[AUTO TUNE] Best performance - kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (kernel, nx, ny, nz, max_perf, str(best_param).strip('[]')) )
-  tee(fp, "[AUTO TUNE] elapsed time: %d", (tend-tstart) )
+  tee(fp, "[AUTO TUNE] elapsed time: %d"% (tend-tstart) )
   return best_param, nt
 
 
