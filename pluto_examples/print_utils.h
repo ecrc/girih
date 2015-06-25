@@ -8,7 +8,7 @@
   printf("Stencil Kernel name: star\n"); \
   printf("Stencil Kernel semi-bandwidth: %d\n", (r)); \
   printf("Stencil Kernel coefficients: %s\n", (coef)); \
-  printf("Global domain    size: %lu    nx:%d    ny:%d    nz:%d\n", l_stencils, sx, sy, sz); \
+  printf("Global domain    size:%lu    nx:%d    ny:%d    nz:%d\n", l_stencils, sx, sy, sz); \
   printf("Number of time steps: %d\n", Nt); \
   printf("Number of tests: %d\n", TESTS); \
   printf("OpenMP Threads: %d\n", num_threads); \
