@@ -140,22 +140,24 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
 
   points = dict()
   points['3d7pt'] = list(range(32, 5000, 128))
+  points['3d25pt'] = points['3d7pt'] 
   points['3d7pt_var'] = list(range(32, 5000, 64))
 
   count=0
-  for kernel in ['3d7pt', '3d7pt_var']:# '3d25pt', '3d25pt_var', '3d7pt_var']:
+  #for kernel in ['3d7pt', '3d25pt', '3d25pt_var', '3d7pt_var']:
+  for kernel in ['3d25pt']:
     for N in points[kernel]:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
         outfile = jpath(target_dir, outfile)
         if(dry_run==0): fp = open(outfile, 'w')
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
-        if(dry_run==1): nt=32; param=[32,32,1024]
+        if(dry_run==1): nt=32; param=[16,16,1024]
         if (kernel, N) in setup.keys():
           param, nt = setup[(kernel, N)]
           nt = nt*2
         else:
-          continue
+#          continue
           if(dry_run==0): param, nt = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
 
         if(dry_run==0): tee(fp, outfile)
@@ -217,8 +219,8 @@ def main():
   pin_str = "0-%d "%(th-1)
 
   count = 0
-#  for group in ['MEM']:
-  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+  for group in ['MEM']:
+#  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:" + pin_str
     elif(machine_info['hostname']=='IVB_10core'):

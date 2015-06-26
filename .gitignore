@@ -15,7 +15,7 @@ src/kernels/.*.swo
 src/.cproject
 src/.project
 pluto_examples/gen_kernels/lbpar*/.dumpstmttxt
-pluto_examples/gen_kernels/lbpar*/3d7p*.lbpar.pluto.cloog
-pluto_examples/gen_kernels/lbpar*/lbpar_3d7pt*
+pluto_examples/gen_kernels/lbpar*/3d*.lbpar.pluto.cloog
+pluto_examples/gen_kernels/lbpar*/lbpar_3d*
 pluto_examples/gen_kernels/lbpar*/print_utils.h
 pluto_examples/gen_kernels/lbpar*/tile.sizes
