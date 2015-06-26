@@ -13,8 +13,7 @@ def main():
 
     # Use single field to represent the performance
     if 'Total RANK0 MStencil/s MAX' in k.keys():
-      if(k['Total RANK0 MStencil/s MAX']!=''):
-        k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s MAX'] 
+      k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s MAX'] 
     # temporary for deprecated format
     if 'RANK0 MStencil/s  MAX' in k.keys():
       if k['RANK0 MStencil/s  MAX']!='':
@@ -47,27 +46,23 @@ def main():
     if 'Energy' not in k.keys(): prof_energy=False
 
     # add the approach
-    if(k['Time stepper orig name'] == 'Spatial Blocking'):
+    if int(k['Thread group size']) == 0:
       k['method'] = 'Spt.blk.'
-    elif(k['Time stepper orig name'] in ['PLUTO', 'Pochoir']):
-      k['method'] = k['Time stepper orig name']
-    elif(k['Time stepper orig name'] == 'Diamond'):
-      if('_tgs1_' in k['file_name']):
-        k['method'] = 'CATS2'
-      else:
-        k['method'] = 'MWD'
+    elif ( (int(k['Thread group size']) == 1) and (int(k['Threads along z-axis']) == 0) ):
+      k['method'] = 'CATS2'
     else:
-      print("ERROR: Unknow time stepper")
-      raise
+      k['method'] = 'MWD'
 
     # add precision information
     p = 1 if k['Precision'] in 'DP' else 0
     k['Precision'] = p
     prec_l.add(p)
   k_l = list(k_l)
+#  mwdt_l = list(mwdt_l)
   prec_l = list(prec_l)
 
   for k in k_l:
+#    for mwdt in mwdt_l:
     for is_dp in prec_l:
       plot_lines(raw_data, k, is_dp, prof_mem=prof_mem, prof_energy=prof_energy)
 
