@@ -287,16 +287,16 @@ def get_summary(f):
                     for i in range(len(vals)):
                         mlist.append((cache+' '+sn[1]+' c'+str(i), vals[i])) 
 
-        snames = [('|         CPI ', 'CPI'),
-                  ('| Load to Store ratio ', 'Load to Store ratio'),
-                  ('| L2_DATA_WRITE_MISS_MEM_FILL ', 'L2_DATA_WRITE_MISS_MEM_FILL'),
-                  ('| L2_DATA_READ_MISS_MEM_FILL ', 'L2_DATA_READ_MISS_MEM_FILL'),
-                  ('| HWP_L2MISS ', 'HWP_L2MISS'),
-                  ('| L2_VICTIM_REQ_WITH_DATA ', 'L2_VICTIM_REQ_WITH_DATA'),
-                  ('| SNP_HITM_L2 ', 'SNP_HITM_L2'),
-                  ('|   CPU_CLK_UNHALTED ', 'CPU_CLK_UNHALTED')]
+        snames = [('CPI STAT', 'CPI'),
+                  ('Load to Store ratio STAT', 'Load to Store ratio'),
+                  ('L2_DATA_WRITE_MISS_MEM_FILL ', 'L2_DATA_WRITE_MISS_MEM_FILL'),
+                  ('L2_DATA_READ_MISS_MEM_FILL ', 'L2_DATA_READ_MISS_MEM_FILL'),
+                  ('HWP_L2MISS ', 'HWP_L2MISS'),
+                  ('L2_VICTIM_REQ_WITH_DATA ', 'L2_VICTIM_REQ_WITH_DATA'),
+                  ('SNP_HITM_L2 ', 'SNP_HITM_L2'),
+                  ('CPU_CLK_UNHALTED ', 'CPU_CLK_UNHALTED')]
         for sn in snames:
-            if ((sn[0] in line) and ('STAT' in line)):
+            if ((sn[0].lower() in line.lower()) and ('STAT' in line)):
                 vals = [i.strip() for i in line.split('|')[2:6]]
                 for i, st in enumerate(['sum', 'max', 'min', 'avg']):
                     mlist.append((sn[1]+' '+st, vals[i]))
@@ -306,11 +306,17 @@ def get_summary(f):
                     mlist.append((sn[1]+' c'+str(i), vals[i])) 
 
 
-        if '|  L1 DTLB miss rate STAT   |' in line:
+        if 'L1 DTLB miss rate STAT' in line:
             vals = [i.strip() for i in line.split('|')[2:6]]
             for i, st in enumerate(['sum', 'max', 'min', 'avg']):
                 mlist.append(('L1 DTLB miss rate %s'%(st),vals[i]))
+                mlist.append(('L1 DTLB load miss rate %s'%(st),''))
 
+        if 'L1 DTLB load miss rate STAT' in line:
+            vals = [i.strip() for i in line.split('|')[2:6]]
+            for i, st in enumerate(['sum', 'max', 'min', 'avg']):
+                mlist.append(('L1 DTLB load miss rate %s'%(st),vals[i]))
+                mlist.append(('L1 DTLB miss rate %s'%(st),''))
 
         if 'Energy [J]' in line:
             val = line.split('|')[2].strip()
