@@ -9,6 +9,28 @@ def main():
   prec_l = set()
   prof_mem = True 
   prof_energy = True 
+
+
+  req_fields = [('method', str), ('MStencil/s  MAX', float), ('mwdt', str), ('Precision', int), ('stencil', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int), ('LIKWID performance counter', str), ('stencil_name', str)]
+  hw_ctr_fields = {
+                    '':[],
+                    'TLB':[('L1 DTLB miss rate sum', float)],
+                    'DATA':[('Load to Store ratio avg', float)],
+                    'L2':[('L2 data volume sum', float)],
+                    'L3':[('L3 data volume sum', float)],
+                    'MEM':[('Total Memory Transfer', float),('Sustained Memory BW', float)],
+                    'ENERGY':[('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]}
+  hw_ctr_labels = {
+                    '':(),
+                    'TLB':('L1 DTLB miss rate sum', 'tlb_'),
+                    'DATA':('Load to Store ratio avg', 'cpu_'),
+                    'L2':('Bytes/LUP', 'L2_'),
+                    'L3':('Bytes/LUP', 'L3_'),
+                    'MEM':('GB/s', 'bw_'),
+                    'ENERGY':('pJ/LUP', 'energy_') }
+  
+
+  plots = dict()
   for k in raw_data:
 
     # Use single field to represent the performance
@@ -24,19 +46,17 @@ def main():
     # add stencil operator
     k['stencil'] = get_stencil_num(k)
     k_l.add(k['stencil'])
+    if   k['stencil'] == 0:
+      k['stencil_name'] = '25_pt_const'
+    elif k['stencil'] == 1:
+      k['stencil_name'] = '7_pt_const'
+    elif k['stencil'] == 4:
+      k['stencil_name']  = '25_pt_var'
+    elif k['stencil'] == 5:
+      k['stencil_name']  = '7_pt_var'
+    elif k['stencil'] == 6:
+      k['stencil_name']  = 'solar'
 
-    # add mwd type
-    mwd = k['Wavefront parallel strategy'].lower()
-    k['mwdt']='none'
-    if('fixed' in mwd) and ('relaxed' in mwd):
-      k['mwdt'] = 'fers'
-    elif('fixed' in mwd):
-      k['mwdt'] = 'fe'
-    elif('relaxed' in mwd):
-      k['mwdt'] = 'rs'
-    elif('wavefront' in mwd):
-      k['mwdt'] = 'block'
-#d    mwdt_l.add(k['mwdt'])
 
     # disable bandwidth and energy plots if missing from any entry
     if 'Sustained Memory BW' in k.keys():
@@ -60,19 +80,98 @@ def main():
       print("ERROR: Unknow time stepper")
       raise
 
+    # add mwd type
+    k['mwdt']='none'
+    if(k['method'] == 'MWD'):
+      mwd = k['Wavefront parallel strategy'].lower()
+      if('fixed' in mwd) and ('relaxed' in mwd):
+        k['mwdt'] = 'fers'
+      elif('fixed' in mwd):
+        k['mwdt'] = 'fe'
+      elif('relaxed' in mwd):
+        k['mwdt'] = 'rs'
+      elif('wavefront' in mwd):
+        k['mwdt'] = 'block'
+
+
     # add precision information
     p = 1 if k['Precision'] in 'DP' else 0
     k['Precision'] = p
     prec_l.add(p)
-  k_l = list(k_l)
-  prec_l = list(prec_l)
 
-  for k in k_l:
-    for is_dp in prec_l:
-      plot_lines(raw_data, k, is_dp, prof_mem=prof_mem, prof_energy=prof_energy)
 
-        
-def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
+    entry = {}
+    # add the general fileds
+    for f in req_fields + hw_ctr_fields[k['LIKWID performance counter']]:
+      try:
+        entry[f[0]] = map(f[1], [k[f[0]]] )[0]
+      except:
+        print("ERROR: results entry missing essential data at file:%s"%(k['file_name']))
+        print f[0]
+        print k
+        return
+
+#    for m,n in entry.iteritems(): print m,n
+    plot_key = (entry['Precision'], entry['stencil_name'], entry['LIKWID performance counter'])
+    line_key = (k['mwdt'], k['method'])
+    if plot_key not in plots.keys():
+      plots[plot_key] = {}
+    if line_key not in plots[plot_key].keys():
+      plots[plot_key][line_key] = [[], [], []]
+
+
+    # append the data
+    plots[plot_key][line_key][0].append(entry['Global NX'])
+    plots[plot_key][line_key][1].append(entry['MStencil/s  MAX'])
+    N = entry['Global NX']**3 * entry['Number of time steps'] * entry['Number of tests']/1e9
+    # Memory
+    if k['LIKWID performance counter'] == 'MEM':
+      plots[plot_key][line_key][2].append(entry['Sustained Memory BW']/1e3)
+    # Energy
+    if k['LIKWID performance counter'] == 'ENERGY':
+      entry['cpu energy pj/lup'] = entry['Energy']/N
+      entry['dram energy pj/lup'] = entry['Energy DRAM']/N
+      entry['total energy pj/lup'] = entry['cpu energy pj/lup'] + entry['dram energy pj/lup']
+      if (entry['total energy pj/lup'] > 1e5): entry['total energy pj/lup'] = 0
+      plots[plot_key][line_key][2].append(entry['total energy pj/lup'])
+    # TLB
+    if k['LIKWID performance counter'] == 'TLB':
+      plots[plot_key][line_key][2].append(entry['L1 DTLB miss rate sum'])
+    # L2
+    if k['LIKWID performance counter'] == 'L2':
+      plots[plot_key][line_key][2].append(entry['L2 data volume sum']/N)
+    #L3
+    if k['LIKWID performance counter'] == 'L3':
+      plots[plot_key][line_key][2].append(entry['L3 data volume sum']/N)
+    #CPU
+    if k['LIKWID performance counter'] == 'DATA':
+      plots[plot_key][line_key][2].append(entry['Load to Store ratio avg'])
+ 
+  del raw_data
+  #sort the plot lines
+  for p in plots:
+    for l in plots[p]:
+      x = plots[p][l][0]
+      y = plots[p][l][1]
+      z = plots[p][l][2]
+      xyz = sorted(zip(x,y,z))
+      plots[p][l][0] = [x for (x,y,z) in xyz]
+      plots[p][l][1] = [y for (x,y,z) in xyz]
+      plots[p][l][2] = [z for (x,y,z) in xyz]
+
+#  for m,n in plots.iteritems(): 
+#    print "##############",m
+#    for i,j in n.iteritems():
+#      print i,j
+
+  for p in plots:
+    y_label, file_prefix = hw_ctr_labels[p[2]]
+    stencil = p[1]
+    plot_line(plots[p], stencil, y_label, file_prefix)
+
+
+
+def plot_line(p, stencil, y_label, file_prefix):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
@@ -98,172 +197,46 @@ def plot_lines(raw_data, stencil_kernel, is_dp, prof_mem, prof_energy):
          'figure.figsize': fig_size}
   pylab.rcParams.update(params)
 
-  
-
-  req_fields = [('method', str), ('MStencil/s  MAX', float), ('mwdt', str), ('Precision', int), ('stencil', int), ('Intra-diamond prologue/epilogue MStencils', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int)]
-  if(prof_mem): req_fields = req_fields + [ ('Sustained Memory BW', float)]
-  if(prof_energy):
-    req_fields = req_fields + [('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]
-  
-  data = []
-  for k in raw_data:
-    tup = {}
-    # add the general fileds
-    for f in req_fields:
-      try:
-        tup[f[0]] = map(f[1], [k[f[0]]] )[0]
-      except:
-        print("ERROR: results entry missing essential data at file:%s"%(k['file_name']))
-        print f[0]
-        print k
-        return
-    data.append(tup)
-
-
-  method_l = set()
-  mwdt_l = set()
-  for k in data: 
-    method_l.add(k['method'])
-    if (k['mwdt']!=''): mwdt_l.add(k['mwdt'])
-  method_l = list(method_l)
-  mwdt_l = list(mwdt_l)
-  
-
-
-  data = sorted(data, key=itemgetter('method', 'mwdt', 'Global NX'))
-#  for i in data: print i
-
-
-  # compute pJ/LUP
-  if(prof_energy):
-    for k in data:
-      ext_lups = k['Intra-diamond prologue/epilogue MStencils']*1e6
-      NT = k['Global NX']**3 * k['Number of time steps']
-      Neff = NT - ext_lups
-      N = k['Number of tests'] * Neff / 1e9
-      k['cpu energy pj/lup'] = k['Energy']/N
-      k['dram energy pj/lup'] = k['Energy DRAM']/N
-      k['total energy pj/lup'] = k['cpu energy pj/lup'] + k['dram energy pj/lup']
-
-
-  max_x = 0
-  max_y = 0
-
   marker_s = 7
   line_w = 1
   line_s = '-' 
   cols = 'kbgmrcy'
   markers = '+xo^vx*'
   idx=0
-  for method in method_l:
+  for idx, l in enumerate(p):
+    label = l[1]
+    marker = markers[idx]
+    col = cols[idx]
+    x = p[l][0]
+    y_p = p[l][1]
+    y = p[l][2]
 
-    mwdt_str_l = mwdt_l if(method=='MWD') else ['']
+    plt.figure(0)
+    plt.plot(x, y_p, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
-    for mwdt_str in mwdt_str_l:
-      marker = markers[idx]
-      col = cols[idx]
-      x = []
-      y = []
-      y_m = []
-      y_e = []
-      for k in data:
-        if ( (k['method'] == method) and ( k['method']!='MWD' or (k['method']=='MWD' and k['mwdt'] == mwdt_str) ) and (k['stencil']==stencil_kernel) and (k['Precision']==is_dp) ):
-          if(prof_mem): y_m.append(k['Sustained Memory BW']/10**3)
-          if(prof_energy): y_e.append(k['total energy pj/lup'])
-          x.append(k['Global NX'])
-          y.append(k['MStencil/s  MAX']/10**3)
-      ts2 = method + mwdt_str
-      if(x):
-        plt.figure(0)
-        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
-        max_y = max(max(y), max_y)
-        max_x = max(max(x), max_x)
-      if( (prof_mem) and (x) ):
-        plt.figure(1)
-        plt.plot(x, y_m, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
+    plt.figure(1)
+    plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
-      if( (prof_energy) and (x) ):
-        plt.figure(2)
-        plt.plot(x, y_e, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=ts2)
-      idx=idx+1
 
-#  # add limits
-#  sus_mem_bw = 40.0 #IB
-#  # divide by streams number
-#  if stencil_kernel == 0:
-#    mem_limit = sus_mem_bw/4.0
-#  elif stencil_kernel == 1:
-#    mem_limit = sus_mem_bw/3.0
-#  elif stencil_kernel == 2:
-#    mem_limit = sus_mem_bw/5.0
-#  elif stencil_kernel == 3:
-#    mem_limit = sus_mem_bw/6.0
-#  elif stencil_kernel == 4:
-#    mem_limit = sus_mem_bw/16.0
-#  elif stencil_kernel == 5:
-#    mem_limit = sus_mem_bw/10.0
-#  # divide by word size
-#  if is_dp == 1: 
-#    mem_limit = mem_limit/8.0
-#  else:
-#    mem_limit = mem_limit/4.0
-#  if(prof_mem):
-#    plt.plot([1, max_x], [mem_limit, mem_limit], color='.2', linestyle='--', label='Spt.lim.')
-
-#  if mwdt==0 or mwdt==-1:
-#    mwd_str = 'block'
-#  elif mwdt==1:
-#    mwd_str = 'fe'
-#  elif mwdt==2:
-#    mwd_str = 'rs'
-#  elif mwdt==3:
-#    mwd_str = 'fers'
-
-  title = '_inc_grid_size'
-  if stencil_kernel == 0:
-    title = '25_pt_const' + title
-  elif stencil_kernel == 1:
-    title = '7_pt_const' + title
-  elif stencil_kernel == 4:
-    title = '25_pt_var' + title
-  elif stencil_kernel == 5:
-    title = '7_pt_var' + title
-  elif stencil_kernel == 6:
-    title = 'solar' + title
-
+  f_name = stencil+'_inc_grid_size'
 
   plt.figure(0)
   plt.ylabel('GLUP/s')
   plt.grid()
-  plt.ylim([0,max_y*1.1])
-  f_name = title
   plt.xlabel('Size in each dimension')
   plt.legend(loc='best')
-  pylab.savefig('perf_'+f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+  pylab.savefig(file_prefix + 'perf_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
 
-  if prof_mem:
-    plt.figure(1)
-    plt.ylabel('GB/s')
-    plt.grid()
-    f_name = title
-    plt.xlabel('Size in each dimension')
-    plt.legend(loc='best')
-    pylab.savefig('bw_'+f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
-    plt.clf()
 
-  if prof_energy:
-    plt.figure(2)
-    plt.ylim([0, 150])
-    plt.ylabel('pJ/LUP')
-    plt.grid()
-    f_name = title
-    plt.xlabel('Size in each dimension')
-    plt.legend(loc='best')
-    pylab.savefig('energy_'+f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
-    plt.clf()
+  plt.figure(1)
+  plt.ylabel(y_label)
+  plt.grid()
+  plt.xlabel('Size in each dimension')
+  plt.legend(loc='best')
+  pylab.savefig(file_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+  plt.clf()
 
 
- 
 if __name__ == "__main__":
   main()
