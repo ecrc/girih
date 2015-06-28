@@ -4,14 +4,9 @@ def main():
   from scripts.utils import get_stencil_num, load_csv
   raw_data = load_csv(sys.argv[1])
 
-  k_l = set()
-#  mwdt_l = set()
-  prec_l = set()
-  prof_mem = True 
-  prof_energy = True 
 
+  req_fields = [('MStencil/s  MAX', float), ('Precision', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int)]
 
-  req_fields = [('method', str), ('MStencil/s  MAX', float), ('mwdt', str), ('Precision', int), ('stencil', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int), ('LIKWID performance counter', str), ('stencil_name', str)]
   hw_ctr_fields = {
                     '':[],
                     'TLB':[('L1 DTLB miss rate sum', float)],
@@ -20,6 +15,7 @@ def main():
                     'L3':[('L3 data volume sum', float)],
                     'MEM':[('Total Memory Transfer', float),('Sustained Memory BW', float)],
                     'ENERGY':[('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]}
+
   hw_ctr_labels = {
                     '':(),
                     'TLB':('L1 DTLB miss rate sum', 'tlb_'),
@@ -45,7 +41,6 @@ def main():
 
     # add stencil operator
     k['stencil'] = get_stencil_num(k)
-    k_l.add(k['stencil'])
     if   k['stencil'] == 0:
       k['stencil_name'] = '25_pt_const'
     elif k['stencil'] == 1:
@@ -57,14 +52,6 @@ def main():
     elif k['stencil'] == 6:
       k['stencil_name']  = 'solar'
 
-
-    # disable bandwidth and energy plots if missing from any entry
-    if 'Sustained Memory BW' in k.keys():
-      if k['Sustained Memory BW'] =='':
-        prof_mem=False
-    else: 
-      prof_mem=False
-    if 'Energy' not in k.keys(): prof_energy=False
 
     # add the approach
     if(k['Time stepper orig name'] == 'Spatial Blocking'):
@@ -97,11 +84,26 @@ def main():
     # add precision information
     p = 1 if k['Precision'] in 'DP' else 0
     k['Precision'] = p
-    prec_l.add(p)
+
+
+    # compatibility with LIKWID 4
+    if 'LIKWID performance counter' not in k.keys():
+      # TLB measurement
+      if 'L1 DTLB load miss rate avg' in k.keys():
+        if k['L1 DTLB load miss rate avg']!='':
+          hw_ctr_fields['TLB'] =  [('L1 DTLB load miss rate avg', float)]
+          hw_ctr_labels['TLB'] =  ('L1 DTLB load miss rate avg', 'tlb_')
+      k['LIKWID performance counter'] = ''
+      for ctr in hw_ctr_fields:
+        if(hw_ctr_fields[ctr]==[]): continue
+        field = hw_ctr_fields[ctr][0][0]
+        if field in k.keys():
+          if k[field] !='':
+            k['LIKWID performance counter'] = ctr
 
 
     entry = {}
-    # add the general fileds
+    # parse the general fileds' format
     for f in req_fields + hw_ctr_fields[k['LIKWID performance counter']]:
       try:
         entry[f[0]] = map(f[1], [k[f[0]]] )[0]
@@ -112,7 +114,7 @@ def main():
         return
 
 #    for m,n in entry.iteritems(): print m,n
-    plot_key = (entry['Precision'], entry['stencil_name'], entry['LIKWID performance counter'])
+    plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
     line_key = (k['mwdt'], k['method'])
     if plot_key not in plots.keys():
       plots[plot_key] = {}
@@ -122,7 +124,7 @@ def main():
 
     # append the data
     plots[plot_key][line_key][0].append(entry['Global NX'])
-    plots[plot_key][line_key][1].append(entry['MStencil/s  MAX'])
+    plots[plot_key][line_key][1].append(entry['MStencil/s  MAX']/1e3)
     N = entry['Global NX']**3 * entry['Number of time steps'] * entry['Number of tests']/1e9
     # Memory
     if k['LIKWID performance counter'] == 'MEM':
@@ -136,7 +138,7 @@ def main():
       plots[plot_key][line_key][2].append(entry['total energy pj/lup'])
     # TLB
     if k['LIKWID performance counter'] == 'TLB':
-      plots[plot_key][line_key][2].append(entry['L1 DTLB miss rate sum'])
+      plots[plot_key][line_key][2].append(entry[ hw_ctr_fields['TLB'][0][0] ])
     # L2
     if k['LIKWID performance counter'] == 'L2':
       plots[plot_key][line_key][2].append(entry['L2 data volume sum']/N)
@@ -200,13 +202,11 @@ def plot_line(p, stencil, y_label, file_prefix):
   marker_s = 7
   line_w = 1
   line_s = '-' 
-  cols = 'kbgmrcy'
-  markers = '+xo^vx*'
-  idx=0
-  for idx, l in enumerate(p):
+  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), 'CATS2':('r','+'),
+                  'PLUTO':('m','*'), 'Pochoir':('b','^')}
+  for l in p:
     label = l[1]
-    marker = markers[idx]
-    col = cols[idx]
+    col, marker = method_style[label]
     x = p[l][0]
     y_p = p[l][1]
     y = p[l][2]
