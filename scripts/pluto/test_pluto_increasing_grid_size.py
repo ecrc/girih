@@ -100,7 +100,9 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   if(lt3_l[0]>nx):
     lt3_l = [lt3_l[0]]
   else:
-    lt3_l = [i for i in lt3_l if i<=nx]
+    for idx,i in enumerate(lt3_l):
+      if i>nx: break
+    lt3_l = lt3_l[:idx+1]
 
   max_perf = -1
   n_params = len(lt1_l)*len(lt2_l)*len(lt3_l)
@@ -176,15 +178,16 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
         outfile = jpath(target_dir, outfile)
-        if(dry_run==0): fp = open(outfile, 'w')
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
         if(dry_run==1): nt=32; param=[16,16,1024]
         if (kernel, N) in param_l.keys():
           continue
+          if(dry_run==0): fp = open(outfile, 'w')
           param, nt = param_l[(kernel, N)]
           nt = nt*2
         else:
           if(dry_run==0): 
+            fp = open(outfile, 'w')
             param, nt, tune_res = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
             with open(outfile[:-3]+'p', 'w') as fpickle:
               pickle.dump(tune_res, fpickle)
