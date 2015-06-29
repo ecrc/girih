@@ -95,8 +95,6 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   nt = set_runtime(kernel, nx, ny, nz, pinning_cmd, pinning_args, fp, params=[32,32,1024])
 
   lt1_l, lt2_l, lt3_l = param_space[kernel]
-  param_l = list(itertools.product(lt1_l, lt2_l, lt3_l))
-  max_perf = -1
 
   # prune test cases
   if(lt3_l[0]>nx):
@@ -104,11 +102,12 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   else:
     lt3_l = [i for i in lt3_l if i<=nx]
 
-  best_param = []
+  max_perf = -1
   n_params = len(lt1_l)*len(lt2_l)*len(lt3_l)
   tstart = time.time()
   num=0
   lt1_prev_perf = -1
+  tune_res = []
   for lt1 in lt1_l:
 
     lt2_prev_perf = -1
@@ -125,6 +124,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
           lt3_prev_perf = perf
           lt3_best_perf = perf
           best_lt3 = lt3
+          tune_res.append((lt1, lt2, lt3, perf))
 
       if(lt3_best_perf < lt2_prev_perf):
         break
@@ -143,7 +143,6 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   max_perf = lt1_best_perf
   best_param = (best_lt1, best_lt2, best_lt3)
 
-
   if(max_perf == -1):
     tee(fp, "Tuner failed\n")
     raise
@@ -151,12 +150,12 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
 
   tee(fp, "[AUTO TUNE] Best performance - kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (kernel, nx, ny, nz, max_perf, str(best_param).strip('[]')) )
   tee(fp, "[AUTO TUNE] elapsed time: %d"% (tend-tstart) )
-  return best_param, nt
+  return best_param, nt, tune_res
 
 
 def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
   from scripts.conf.conf import machine_info
-  import itertools, os
+  import itertools, os, pickle
   from os.path import join as jpath
 
   target_dir = jpath(os.path.abspath("."),target_dir)
@@ -166,13 +165,13 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
     kernels_limits = {'3d25pt':1600, '3d7pt':1600, '3d25pt_var':960, '3d7pt_var':1000}
 
   points = dict()
-  points['3d7pt'] = [256]#list(range(32, 5000, 128))
+  points['3d7pt'] = list(range(32, 5000, 128))
   points['3d25pt'] = points['3d7pt']
   points['3d7pt_var'] = list(range(32, 5000, 64))
 
   count=0
-  #for kernel in ['3d7pt', '3d25pt', '3d25pt_var', '3d7pt_var']:
-  for kernel in ['3d7pt']:
+  for kernel in ['3d7pt', '3d25pt', '3d7pt_var']:#, '3d25pt_var']:
+  #for kernel in ['3d7pt']:
     for N in points[kernel]:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
@@ -181,12 +180,14 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
         if(dry_run==1): nt=32; param=[16,16,1024]
         if (kernel, N) in param_l.keys():
-#          continue
+          continue
           param, nt = param_l[(kernel, N)]
           nt = nt*2
         else:
-          if(dry_run==0): param, nt = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
-
+          if(dry_run==0): 
+            param, nt, tune_res = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
+            with open(outfile[:-3]+'p', 'w') as fpickle:
+              pickle.dump(tune_res, fpickle)
         if(dry_run==0): tee(fp, outfile)
 #        print outfile
         test_str, telapsed = run_pluto_test(dry_run=dry_run, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, params=param, outfile=outfile)
