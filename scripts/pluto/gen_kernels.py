@@ -1,17 +1,16 @@
 #!/usr/bin/env python
-import itertools
 param_space = {
-'3d7pt':    list(itertools.product([4,8,16,24,32], [8,16,24,32], [64,128,256,512,1024,2048])),
-'3d7pt_var':list(itertools.product([4,8,16,24,32], [8,16,24,32], [64,128,256,512,1024,2048])),
-'3d25pt':   list(itertools.product([4,8,16,24],  [4,8,16,24],    [64,128,256,512,1024,2048])) }
+'3d7pt':    ([4,8,16,24,32], [8,16,24,32], [64,128,256,512,1024,2048]),
+'3d7pt_var':([4,8,16,24,32], [8,16,24,32], [64,128,256,512,1024,2048]),
+'3d25pt':   ([4,8,16,24],  [4,8,16,24],    [64,128,256,512,1024,2048]) }
 
 def main():
-  dry_run=0
-
-  import os, subprocess, shutil
+  import os, subprocess, shutil, sys, itertools
   from os.path import join as joinp
   from string import Template
   from scripts.utils import ensure_dir
+
+  dry_run = 1 if len(sys.argv)<2 else int(sys.argv[1])
 
   print("Compiler version")
   subprocess.call('icc -v', shell=True)
@@ -24,9 +23,8 @@ def main():
   ensure_dir(base_dir)
 
   #for kernel in ['3d7pt', '3d25pt', '3d25pt_var', '3d7pt_var']:
-  for kernel in ['3d25pt']:
-#    print param_space[kernel]
-    for p in param_space[kernel]:
+  for kernel in ['3d7pt']:
+    for p in list(itertools.product(*param_space[kernel])):
       kernel_name="lbpar_" + kernel + "%d_%d_%d_%d"%(p[0], p[0], p[1], p[2])
       kernel_path = joinp(base_dir, kernel_name)
 

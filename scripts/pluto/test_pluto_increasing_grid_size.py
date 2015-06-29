@@ -25,22 +25,21 @@ def run_pluto_test(dry_run, kernel, nx, ny, nz, nt, params, outfile='', pinning_
   exec_dir = exec_name + "%d_%d_%d_%d"%(params[0], params[0], params[1], params[2])
 
   exec_path = jpath(os.path.abspath("."),'pluto_examples', 'gen_kernels', exec_dir,  exec_name)
- 
-   
+
+
   job_cmd = job_template.substitute(nx=nx, ny=ny, nz=nz, nt=nt, kernel=kernel,
-                       outfile=outfile, exec_path=exec_path, pinning_cmd=pinning_cmd, 
+                       outfile=outfile, exec_path=exec_path, pinning_cmd=pinning_cmd,
                        pinning_args=pinning_args)
- 
+
   tstart = time.time()
   test_str=''
   if(auto_tuning):
     proc = subprocess.Popen(job_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    test_str = test_str + proc.stdout.read()
+    test_str = proc.stdout.read()
   else:
     print job_cmd
     test_str = job_cmd + '\n'
-    if(dry_run==0): 
-      sts = subprocess.call(job_cmd, shell=True)
+    if(dry_run==0):
       proc = subprocess.Popen(job_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       test_str = test_str + proc.stdout.read()
   tend = time.time()
@@ -67,42 +66,84 @@ def set_runtime(kernel, nx, ny, nz, pinning_cmd, pinning_args, fp, params):
       nt = nt*2
       prev_perf = cur_perf
 
+
+def tuner_test(n_params, num, kernel, nx, ny, nz, nt, param, fp):
+  from scripts.conf.conf import machine_conf, machine_info
+  # Use pinning without HW counters measurements
+  th = machine_info['n_cores']
+  pinning_cmd = 'likwid-pin'
+  pinning_args = " -q -c S0:0-%d "%(th-1)
+
+  res, telapsed = run_pluto_test(dry_run=0, kernel=kernel, nx=nx, ny=ny, nz=nz, nt=nt, params=param, pinning_cmd=pinning_cmd, pinning_args=pinning_args, auto_tuning=1)
+  perf = get_performance(res)
+  tee(fp, "[AUTO TUNE] Test %03d/%d  elapsed_time:%ds   kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (num+1, n_params, telapsed,  kernel, nx, ny, nz, perf, str(param).strip('[]')) )
+  return perf
+
+
 def pluto_tuner(kernel, nx, ny, nz, fp):
   from scripts.conf.conf import machine_conf, machine_info
-  from scripts.pluto.gen_kernels import param_space 
+  from scripts.pluto.gen_kernels import param_space
   from operator import itemgetter
-  import time
+  import time, itertools
 
   # Use pinning without HW counters measurements
   th = machine_info['n_cores']
   pinning_cmd = 'likwid-pin'
   pinning_args = " -q -c S0:0-%d "%(th-1)
-  # get representative run time
+
+ # get representative run time
   nt = set_runtime(kernel, nx, ny, nz, pinning_cmd, pinning_args, fp, params=[32,32,1024])
 
-  param_l = param_space[kernel]
+  lt1_l, lt2_l, lt3_l = param_space[kernel]
+  param_l = list(itertools.product(lt1_l, lt2_l, lt3_l))
   max_perf = -1
 
   # prune test cases
-  next_nx=0
-  param_l = sorted(param_l, key=itemgetter(2))
-  for i in param_l:
-    if(i[2]>nx): 
-      next_nx = i[2]
-      break
-  if(next_nx!=0): param_l = [ i for i in param_l if i[2]<=next_nx]
-
+  if(lt3_l[0]>nx):
+    lt3_l = [lt3_l[0]]
+  else:
+    lt3_l = [i for i in lt3_l if i<=nx]
 
   best_param = []
-  n_params = len(param_l)
+  n_params = len(lt1_l)*len(lt2_l)*len(lt3_l)
   tstart = time.time()
-  for num, param in enumerate(param_l):
-    res, telapsed = run_pluto_test(dry_run=0, kernel=kernel, nx=nx, ny=ny, nz=nz, nt=nt, params=param, pinning_cmd=pinning_cmd, pinning_args=pinning_args, auto_tuning=1)
-    perf = get_performance(res)
-    tee(fp, "[AUTO TUNE] Test %d/%d  elapsed_time:%ds   kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (num+1, n_params, telapsed,  kernel, nx, ny, nz, perf, str(param).strip('[]')) )
-    if(perf>max_perf):
-      max_perf = perf
-      best_param = param
+  num=0
+  lt1_prev_perf = -1
+  for lt1 in lt1_l:
+
+    lt2_prev_perf = -1
+    for lt2 in lt2_l:
+
+      lt3_prev_perf = -1
+      for lt3 in sorted(lt3_l, reverse=True):
+        param = (lt1, lt2, lt3)
+        perf = tuner_test(n_params, num, kernel, nx, ny, nz, nt, param, fp)
+        num=num+1
+        if(perf<lt3_prev_perf):
+          break
+        else:
+          lt3_prev_perf = perf
+          lt3_best_perf = perf
+          best_lt3 = lt3
+
+      if(lt3_best_perf < lt2_prev_perf):
+        break
+      else:
+        lt2_prev_perf = lt3_best_perf
+        lt2_best_perf = lt3_best_perf
+        best_lt2 = lt2
+
+    if(lt2_best_perf < lt1_prev_perf):
+      break
+    else:
+      lt1_prev_perf = lt2_best_perf
+      lt1_best_perf = lt2_best_perf
+      best_lt1 = lt1
+
+  max_perf = lt1_best_perf
+  best_param = (best_lt1, best_lt2, best_lt3)
+
+
   if(max_perf == -1):
     tee(fp, "Tuner failed\n")
     raise
@@ -113,7 +154,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   return best_param, nt
 
 
-def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]): 
+def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
   from scripts.conf.conf import machine_info
   import itertools, os
   from os.path import join as jpath
@@ -125,8 +166,8 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
     kernels_limits = {'3d25pt':1600, '3d7pt':1600, '3d25pt_var':960, '3d7pt_var':1000}
 
   points = dict()
-  points['3d7pt'] = list(range(32, 5000, 128))
-  points['3d25pt'] = points['3d7pt'] 
+  points['3d7pt'] = [256]#list(range(32, 5000, 128))
+  points['3d25pt'] = points['3d7pt']
   points['3d7pt_var'] = list(range(32, 5000, 64))
 
   count=0
@@ -147,10 +188,11 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
           if(dry_run==0): param, nt = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
 
         if(dry_run==0): tee(fp, outfile)
-        print outfile
+#        print outfile
         test_str, telapsed = run_pluto_test(dry_run=dry_run, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, params=param, outfile=outfile)
-        if(dry_run==0): tee(fp, test_str)
-        if(dry_run==0): fp.close()
+        if(dry_run==0):
+          tee(fp, test_str)
+          fp.close()
         count = count+1
   return count
 
@@ -164,11 +206,11 @@ def main():
   dry_run = 1 if len(sys.argv)<2 else int(sys.argv[1])
 
   time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H_%M')
-  exp_name = "pluto_increasing_grid_size_at_%s_%s" % (machine_info['hostname'], time_stamp)  
+  exp_name = "pluto_increasing_grid_size_at_%s_%s" % (machine_info['hostname'], time_stamp)
 
   tarball_dir='results/'+exp_name
   if(dry_run==0): create_project_tarball(tarball_dir, "test_"+exp_name)
-  target_dir='results/' + exp_name 
+  target_dir='results/' + exp_name
 
   # parse the results to find out which of the already exist
   data = []
@@ -210,10 +252,10 @@ def main():
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:" + pin_str
     elif(machine_info['hostname']=='IVB_10core'):
-      if group=='TLB_DATA': group='TLB' 
+      if group=='TLB_DATA': group='TLB'
       machine_conf['pinning_args'] = " -g " + group + " -C S0:" + pin_str
-    for k,v in param_l.iteritems(): print k,v
-    count = count + igs_test(dry_run, target_dir, exp_name, param_l=param_l, group=group) 
+#    for k,v in param_l.iteritems(): print k,v
+    count = count + igs_test(dry_run, target_dir, exp_name, param_l=param_l, group=group)
 
   print "experiments count =" + str(count)
 
