@@ -15,9 +15,7 @@ def main():
     #from csv import reader, writer
     from operator import itemgetter
     from csv import DictWriter
-    import sys
-    import os
-    import re
+    import sys, os, re, subprocess
 
     output_name = "summary.csv"
     
@@ -37,6 +35,7 @@ def main():
         else:
 #            for i,v in k.iteritems(): print i,' :',v
             print('Rejected the file: '+ f)
+#            subprocess.call('rm '+ f, shell=True)
             
 
     cols_order = ['Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'Global NX']
