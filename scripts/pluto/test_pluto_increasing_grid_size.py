@@ -113,28 +113,14 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   return best_param, nt
 
 
-def igs_test(dry_run, target_dir, exp_name, group='', setup=[]): 
+def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]): 
   from scripts.conf.conf import machine_info
   import itertools, os
   from os.path import join as jpath
 
   target_dir = jpath(os.path.abspath("."),target_dir)
 
-  # Test using rasonable time
-  # T = scale * size / perf
-  # scale = T*perf/size
-#  desired_time = 10
-#  if(machine_info['hostname']=='Haswell_18core'):
-#    k_perf_order = {'3d25pt':1000, '3d7pt':2500, '3d25pt_var':200, '3d7pt_var':1000}
-#  else:
-#    k_perf_order = {'3d25pt':700, '3d7pt':1500, '3d25pt_var':200, '3d7pt_var':1000}
-#  k_time_scale={}
-#  for k, v in k_perf_order.items():
-#    k_time_scale[k] = desired_time*v
-
-
   kernels_limits = {'3d25pt':1057, '3d7pt':1200, '3d25pt_var':545, '3d7pt_var':680}
-
   if(machine_info['hostname']=='Haswell_18core'):
     kernels_limits = {'3d25pt':1600, '3d7pt':1600, '3d25pt_var':960, '3d7pt_var':1000}
 
@@ -145,7 +131,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
 
   count=0
   #for kernel in ['3d7pt', '3d25pt', '3d25pt_var', '3d7pt_var']:
-  for kernel in ['3d25pt']:
+  for kernel in ['3d7pt']:
     for N in points[kernel]:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
@@ -153,11 +139,11 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
         if(dry_run==0): fp = open(outfile, 'w')
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
         if(dry_run==1): nt=32; param=[16,16,1024]
-        if (kernel, N) in setup.keys():
-          param, nt = setup[(kernel, N)]
+        if (kernel, N) in param_l.keys():
+#          continue
+          param, nt = param_l[(kernel, N)]
           nt = nt*2
         else:
-#          continue
           if(dry_run==0): param, nt = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
 
         if(dry_run==0): tee(fp, outfile)
@@ -171,11 +157,11 @@ def igs_test(dry_run, target_dir, exp_name, group='', setup=[]):
 def main():
   from scripts.utils import create_project_tarball, get_stencil_num
   from scripts.conf.conf import machine_conf, machine_info
-  import os
+  import os, sys
   from csv import DictReader
   import time,datetime
 
-  dry_run = 0
+  dry_run = 1 if len(sys.argv)<2 else int(sys.argv[1])
 
   time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H_%M')
   exp_name = "pluto_increasing_grid_size_at_%s_%s" % (machine_info['hostname'], time_stamp)  
@@ -205,10 +191,10 @@ def main():
         data.append(k)
   except:
      pass
-  setup = dict()
+  param_l = dict()
   for k in data:
     try:
-      setup[(k['stencil'], int(k['Global NX'])) ] = ([int(k['PLUTO tile size of loop 1']), int(k['PLUTO tile size of loop 3']), int(k['PLUTO tile size of loop 4'])], int(k['Number of time steps']) )
+      param_l[(k['stencil'], int(k['Global NX'])) ] = ([int(k['PLUTO tile size of loop 1']), int(k['PLUTO tile size of loop 3']), int(k['PLUTO tile size of loop 4'])], int(k['Number of time steps']) )
     except:
       print k
       raise
@@ -226,8 +212,8 @@ def main():
     elif(machine_info['hostname']=='IVB_10core'):
       if group=='TLB_DATA': group='TLB' 
       machine_conf['pinning_args'] = " -g " + group + " -C S0:" + pin_str
-#    for k,v in setup.iteritems(): print k,v
-    count = count + igs_test(dry_run, target_dir, exp_name, setup=setup, group=group) 
+    for k,v in param_l.iteritems(): print k,v
+    count = count + igs_test(dry_run, target_dir, exp_name, param_l=param_l, group=group) 
 
   print "experiments count =" + str(count)
 

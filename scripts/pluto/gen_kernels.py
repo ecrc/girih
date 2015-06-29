@@ -30,7 +30,7 @@ def main():
       kernel_name="lbpar_" + kernel + "%d_%d_%d_%d"%(p[0], p[0], p[1], p[2])
       kernel_path = joinp(base_dir, kernel_name)
 
-      job_cmd = job_template.safe_substitute(t1=p[0], t2=p[1], t3=p[2], kernel=kernel, kernel_name=kernel_name, kernel_path=kernel_path)
+      job_cmd = job_template.substitute(t1=p[0], t2=p[1], t3=p[2], kernel=kernel, kernel_name=kernel_name, kernel_path=kernel_path)
       ensure_dir(kernel_path)
 
       # copy the source file and append the tile size information
