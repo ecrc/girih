@@ -18,7 +18,7 @@ def main():
     import sys, os, re, subprocess
 
     output_name = "summary.csv"
-    
+
     all_fields = set()
     data = []
     for f in sys.argv[1:]:
@@ -36,7 +36,7 @@ def main():
 #            for i,v in k.iteritems(): print i,' :',v
             print('Rejected the file: '+ f)
 #            subprocess.call('rm '+ f, shell=True)
-            
+
 
     cols_order = ['Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'Global NX']
 
@@ -55,7 +55,7 @@ def main():
     for cache in ['L2', 'L3']:
         for sn in snames:
             for i in range(1000):
-                cols_order.append(cache+' '+sn[1]+' c'+str(i)) 
+                cols_order.append(cache+' '+sn[1]+' c'+str(i))
     snames = [('|         CPI ', 'CPI'),
               ('| Load to Store ratio ', 'Load to Store ratio')]
     for sn in snames:
@@ -63,14 +63,14 @@ def main():
             cols_order.append(sn[1]+' '+st)
     for sn in snames:
         for i in range(1000):
-            cols_order.append(sn[1]+' c'+str(i)) 
+            cols_order.append(sn[1]+' c'+str(i))
 
     for i in range(1000):
-        cols_order.append('Wavefront barrier wait [%] group '+str(i)) 
+        cols_order.append('Wavefront barrier wait [%] group '+str(i))
 
 
     try:
-      fields = sort_cols(all_fields, cols_order) 
+      fields = sort_cols(all_fields, cols_order)
       data = sorted(data, key=itemgetter('Stencil Kernel semi-bandwidth', 'Stencil Kernel coefficients', 'Time stepper orig name', 'Thread group size', 'Wavefront parallel strategy', 'LIKWID performance counter', 'OpenMP Threads', 'MPI size', 'Global NX'))
     except:
       pass
@@ -87,8 +87,8 @@ def main():
         #data = izip(*reader(output_file))
     #with open(output_name, 'w') as output_file:
         #writer(output_file).writerows(data)
-    
-    
+
+
 def get_summary(f):
     import re
 
@@ -96,8 +96,8 @@ def get_summary(f):
                 'RANK0 MStencil/s  MIN',
                 'RANK0 MStencil/s  AVG',
                 'RANK0 MStencil/s  MAX',
-                'MWD main-loop RANK0 MStencil/s MIN', 
-                'MWD main-loop RANK0 MStencil/s MAX', 
+                'MWD main-loop RANK0 MStencil/s MIN',
+                'MWD main-loop RANK0 MStencil/s MAX',
 #                'MWD main-loop RANK0 MStencil/s  MAX', # temporary for depricated format
                 'Total RANK0 MStencil/s MIN',
                 'Total RANK0 MStencil/s MAX',
@@ -128,7 +128,7 @@ def get_summary(f):
                 'Stencil Kernel coefficients',
                 'Precision',
                 'Wavefront parallel strategy')
-                
+
     int_fields = ('Number of time steps',
                 'Alignment size',
                 'Number of tests',
@@ -248,7 +248,7 @@ def get_summary(f):
             if m in line:
                 vals = [i.strip() for i in line.split(':')[1].split(' ') if len(i.strip()) !=0]
                 for i in range(len(vals)):
-                    mlist.append((m[:-1] + ' group %d'%i ,vals[i])) 
+                    mlist.append((m[:-1] + ' group %d'%i ,vals[i]))
 
         # PLUTO parameters
         if 'PLUTO tile size of loop' in line:
@@ -284,7 +284,7 @@ def get_summary(f):
                 elif sn0 in line:
                     vals = [i.strip() for i in line.split('|')[2:-1]]
                     for i in range(len(vals)):
-                        mlist.append((cache+' '+sn[1]+' c'+str(i), vals[i])) 
+                        mlist.append((cache+' '+sn[1]+' c'+str(i), vals[i]))
 
         snames = [('CPI STAT', 'CPI'),
                   ('Load to Store ratio STAT', 'Load to Store ratio'),
@@ -302,7 +302,7 @@ def get_summary(f):
             elif sn[0] in line:
                 vals = [i.strip() for i in line.split('|')[2:-1]]
                 for i in range(len(vals)):
-                    mlist.append((sn[1]+' c'+str(i), vals[i])) 
+                    mlist.append((sn[1]+' c'+str(i), vals[i]))
 
 
         if 'L1 DTLB miss rate STAT' in line:
@@ -320,25 +320,25 @@ def get_summary(f):
         if 'Energy [J]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Energy',val))
- 
+
         if 'Power [W]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Power',val))
- 
+
         if 'Energy DRAM [J]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Energy DRAM',val))
- 
+
         if 'Power DRAM [W]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Power DRAM',val))
-         
+
         # kernel name
 #        field='Time stepper name'
 #        if field in line:
 #            val = line.split(':')[1].strip()
 #            mlist.append((field,val))
-        
+
         # cotiguous MPI datatype?
         field='contiguous across the Z direction'
         if field in line:
@@ -351,8 +351,29 @@ def get_summary(f):
         mlist.append(('contig-z', 0))
 
     mlist = dict(mlist)
-    
-    if mlist.has_key('Time stepper name'):  
+
+
+    # LIKWID 4 compatibility
+    hw_ctr_fields = {
+                    '':'',
+                    'TLB': 'L1 DTLB load miss rate avg',
+                    'DATA': 'Load to Store ratio avg',
+                    'L2': 'L2 data volume sum',
+                    'L3': 'L3 data volume sum',
+                    'MEM': 'Total Memory Transfer',
+                    'ENERGY': 'Energy'}
+    if 'LIKWID performance counter' not in mlist.keys():
+        mlist['LIKWID performance counter'] = ''
+        for ctr in hw_ctr_fields:
+            if(hw_ctr_fields[ctr]==[]): continue
+            field = hw_ctr_fields[ctr]
+            if field in mlist.keys():
+                if mlist[field] !='':
+                    mlist['LIKWID performance counter'] = ctr
+
+
+
+    if mlist.has_key('Time stepper name'):
         mlist['Time stepper orig name']= mlist['Time stepper name']
         # modify the time stepper name when the MPI datatype is contiguous
         if 'Diamond' not in mlist['Time stepper name'] and mlist['contig-z'] == 1:
