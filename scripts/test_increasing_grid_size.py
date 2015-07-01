@@ -37,7 +37,7 @@ def igs_test(target_dir, exp_name, th, group='', params={}, dry_run=0):
     points = dict()
     points[0] = [64] + range(32, 5000, 128)
     points[1] = points[0]
-    points[4] = range(32, 5000, 64)
+    points[4] = range(32, 5000, 32)
     points[5] = points[4]
 
 
@@ -46,17 +46,17 @@ def igs_test(target_dir, exp_name, th, group='', params={}, dry_run=0):
   count=0
   for ts, tgs_rl in [(2,[-1, 1])]:#, (0,[0])]:
     for tgs_r in tgs_rl:
-      for kernel, mwdt_list in [(0,[1]), (1,[2]), (4,[1]), (5,[2])]: #, 6]:
-#      for kernel, mwdt_list in [(5,[2])]:
+#      for kernel, mwdt_list in [(0,[1]), (1,[2]), (4,[1]), (5,[2])]: #, 6]:
+      for kernel, mwdt_list in [(4,[1]), (5,[2])]:
         if ts==0 or tgs_r==1:
           mwdt_list=[-1]
         for mwdt in mwdt_list:
           for N in points[kernel]:
             if( ((tgs_r!=1) or  (N >= kernels_min_limits[kernel])) and (N < kernels_limits[kernel]) ):
               tb, nwf, tgs, thx, thy, thz = (-1,-1,tgs_r,tgs_r,tgs_r,tgs_r)
-              key = (mwdt, kernel, N, tgs_r)
+              key = (mwdt, kernel, N, tgs_r, group)
               if key in params.keys():
-#                continue
+                continue
                 tb, nwf, tgs, thx, thy, thz = params[key]
               outfile=('kernel%d_isdp%d_ts%d_mwdt%d_tgs%d_N%d_%s_%s.txt' % (kernel, is_dp, ts, mwdt, tgs_r, N, group, exp_name[-13:]))
               nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
@@ -70,11 +70,11 @@ def igs_test(target_dir, exp_name, th, group='', params={}, dry_run=0):
 def main():
   from scripts.utils import create_project_tarball, get_stencil_num
   from scripts.conf.conf import machine_conf, machine_info
-  import os
+  import os, sys
   from csv import DictReader
   import time,datetime
 
-  dry_run = 0
+  dry_run = 1 if len(sys.argv)<2 else int(sys.argv[1])
 
   sockets=1 # number of processors to use in the experiments
 
@@ -115,12 +115,13 @@ def main():
   for k in data:
     try:
       if k['method']==2:
+        if('tgs-1_' in k['file_name']): k['User set thread group size'] = -1
         if( (int(k['User set thread group size'])==-1) and  k['mwdt']==-1 ): # special case when autotuner selects 1WD 
           for m in mwdt_l:
             if m > 0:
-              params[( m, k['stencil'], int(k['Global NX']), int(k['User set thread group size']) )] = (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Thread group size']), int(k['Threads along x-axis']), int(k['Threads along y-axis']), int(k['Threads along z-axis']))
+              params[( m, k['stencil'], int(k['Global NX']), int(k['User set thread group size']), k['LIKWID performance counter'] )] = (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Thread group size']), int(k['Threads along x-axis']), int(k['Threads along y-axis']), int(k['Threads along z-axis']))
         else: # regular case
-          params[( k['mwdt'], k['stencil'], int(k['Global NX']), int(k['User set thread group size']) )] = (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Thread group size']), int(k['Threads along x-axis']), int(k['Threads along y-axis']), int(k['Threads along z-axis']))
+          params[( k['mwdt'], k['stencil'], int(k['Global NX']), int(k['User set thread group size']), k['LIKWID performance counter'] )] = (int(k['Time unroll']), int(k['Multi-wavefront updates']), int(k['Thread group size']), int(k['Threads along x-axis']), int(k['Threads along y-axis']), int(k['Threads along z-axis']))
     except:
       print k
       raise
