@@ -25,7 +25,7 @@ def main():
                     'MEM':('GB/s', 'bw_'),
                     'ENERGY':('pJ/LUP', 'energy_') }
   
-
+  duplicates = set()
   plots = dict()
   for k in raw_data:
 
@@ -86,21 +86,11 @@ def main():
     k['Precision'] = p
 
 
-    # compatibility with LIKWID 4
-    if 'LIKWID performance counter' not in k.keys():
-      # TLB measurement
-      if 'L1 DTLB load miss rate avg' in k.keys():
-        if k['L1 DTLB load miss rate avg']!='':
-          hw_ctr_fields['TLB'] =  [('L1 DTLB load miss rate avg', float)]
-          hw_ctr_labels['TLB'] =  ('L1 DTLB load miss rate avg', 'tlb_')
-      k['LIKWID performance counter'] = ''
-      for ctr in hw_ctr_fields:
-        if(hw_ctr_fields[ctr]==[]): continue
-        field = hw_ctr_fields[ctr][0][0]
-        if field in k.keys():
-          if k[field] !='':
-            k['LIKWID performance counter'] = ctr
-
+    # TLB measurement
+    if 'L1 DTLB load miss rate avg' in k.keys():
+      if k['L1 DTLB load miss rate avg']!='':
+        hw_ctr_fields['TLB'] =  [('L1 DTLB load miss rate avg', float)]
+        hw_ctr_labels['TLB'] =  ('L1 DTLB load miss rate avg', 'tlb_')
 
     entry = {}
     # parse the general fileds' format
@@ -112,6 +102,15 @@ def main():
         print f[0]
         print k
         return
+
+    #find repeated data
+    key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'], k['mwdt'], k['method'], entry['Global NX'])
+    if key not in duplicates:
+      duplicates.add(key)
+    else:
+      print("Repeated result at: %s"%(k['file_name']))
+      continue
+
 
 #    for m,n in entry.iteritems(): print m,n
     plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
