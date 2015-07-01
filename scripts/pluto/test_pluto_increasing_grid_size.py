@@ -169,10 +169,10 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
   points = dict()
   points['3d7pt'] = list(range(32, 5000, 128))
   points['3d25pt'] = points['3d7pt']
-  points['3d7pt_var'] = list(range(32, 5000, 64))
+  points['3d7pt_var'] = list(range(32, 5000, 32))
 
   count=0
-  for kernel in ['3d7pt', '3d25pt', '3d7pt_var']:#, '3d25pt_var']:
+  for kernel in ['3d7pt', '3d7pt_var', '3d25pt']:#, '3d25pt_var']:
   #for kernel in ['3d7pt']:
     for N in points[kernel]:
       if (N < kernels_limits[kernel]):
@@ -180,12 +180,13 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
         outfile = jpath(target_dir, outfile)
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
         if(dry_run==1): nt=32; param=[16,16,1024]
-        if (kernel, N) in param_l.keys():
-          continue
+        if (kernel, N, group) in param_l.keys():
+#          continue
           if(dry_run==0): fp = open(outfile, 'w')
-          param, nt = param_l[(kernel, N)]
+          param, nt = param_l[(kernel, N, group)]
           nt = nt*2
         else:
+          continue
           if(dry_run==0): 
             fp = open(outfile, 'w')
             param, nt, tune_res = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
@@ -240,7 +241,7 @@ def main():
   param_l = dict()
   for k in data:
     try:
-      param_l[(k['stencil'], int(k['Global NX'])) ] = ([int(k['PLUTO tile size of loop 1']), int(k['PLUTO tile size of loop 3']), int(k['PLUTO tile size of loop 4'])], int(k['Number of time steps']) )
+      param_l[(k['stencil'], int(k['Global NX']), k['LIKWID performance counter']  ) ] = ([int(k['PLUTO tile size of loop 1']), int(k['PLUTO tile size of loop 3']), int(k['PLUTO tile size of loop 4'])], int(k['Number of time steps']) )
     except:
       print k
       raise
@@ -251,8 +252,8 @@ def main():
   pin_str = "0-%d "%(th-1)
 
   count = 0
-  for group in ['MEM']:
-#  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+#  for group in ['MEM']:
+  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:" + pin_str
     elif(machine_info['hostname']=='IVB_10core'):
