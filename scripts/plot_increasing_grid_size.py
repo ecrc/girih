@@ -6,7 +6,7 @@ hw_ctr_labels = {
                     'DATA':[('Load to Store ratio avg', 'cpu_', 'data')],
                     'L2':[('Bytes/LUP', 'L2_', 'l2 vol')],
                     'L3':[('Bytes/LUP', 'L3_', 'l3 vol')],
-                    'MEM':[('GB/s', 'bw_', 'mem bw'), ('Bytes/LUP', 'MEM_vol_', 'mem vol')],
+                    'MEM':[('GB/s', 'mem_bw_', 'mem bw'), ('Bytes/LUP', 'mem_vol_', 'mem vol')],
                     'ENERGY':[('pJ/LUP', 'energy_', 'total energy')] }
  
 def main():
@@ -116,7 +116,7 @@ def main():
 
     # Initialize plot entry if does not exist for current data entry
 #    for m,n in entry.iteritems(): print m,n
-    measure_list = ['n', 'perf', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data']
+    measure_list = ['n', 'perf', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width']
     plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
     line_key = (k['mwdt'], k['method'])
     if plot_key not in plots.keys():
@@ -152,7 +152,15 @@ def main():
     #CPU
     elif k['LIKWID performance counter'] == 'DATA':
       plots[plot_key][line_key]['data'].append(entry['Load to Store ratio avg'])
- 
+    #Diamond tiling data
+    if(k['method'] == 'CATS2' or k['method'] == 'MWD'):
+      plots[plot_key][line_key]['diam width'].append(int(k['Intra-diamond width']))
+      plots[plot_key][line_key]['tgs'].append(int(k['Thread group size']))
+      plots[plot_key][line_key]['thx'].append(int(k['Threads along x-axis']))
+      plots[plot_key][line_key]['thy'].append(int(k['Threads along y-axis']))
+      plots[plot_key][line_key]['thz'].append(int(k['Threads along z-axis']))
+      plots[plot_key][line_key]['blk size'].append(int(k['Total cache block size (kiB)'])/1024.0)
+
   del raw_data
 
   #sort the plot lines
@@ -258,6 +266,77 @@ def plot_line(p, stencil, plt_key):
     plt.legend(loc='best')
     pylab.savefig(file_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     plt.clf()
+
+
+  # Diamond tiling information
+  if any(method[1] in ['MWD', 'CATS2'] for method in p):
+    # Thread group size information
+    plt.figure(plt_idx)
+    plt_idx = plt_idx + 1
+    for l in p:
+      method=l[1]
+      if(method == 'MWD'):
+        tgs_labels =(
+               ('tgs', 'b', '^', 'MWD Group'),
+               ('thx', 'r', '+', 'Along x'),
+               ('thy', 'g', 'o', 'Along y'),
+               ('thz', 'm', '*', 'Along z') )
+        for measure, col, marker, label in tgs_labels:
+          x = p[l]['n']
+          y = p[l][measure]
+          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+
+      if(method == 'CATS2'):
+        x = p[l]['n']
+        y = p[l]['tgs']
+        plt.plot(x, y, color='k', marker='x', markersize=marker_s, linestyle=line_s, linewidth=line_w, label='CATS2 Group')
+
+    plt.ylabel('Intra-tile threads')
+    plt.grid()
+    plt.xlabel('Size in each dimension')
+    plt.legend(loc='upper left')
+    pylab.savefig('thread_group_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+    plt.clf()
+
+
+    #Cache block size and diamond width
+    for measure, y_label, f_prefix in [('blk size', 'Cache block size (MiB)', 'cache_block_size_'),
+                                        ('diam width', 'Diamond width', 'diamond_width_')]:
+      plt.figure(plt_idx)
+      plt_idx = plt_idx + 1
+      for l in p:
+        method=l[1]
+        if(method in ['MWD', 'CATS2']):
+          col, marker = method_style[method]
+          x = p[l]['n']
+          y = p[l][measure]
+          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
+
+      plt.ylabel(y_label)
+      plt.grid()
+      plt.xlabel('Size in each dimension')
+      plt.legend(loc='best')
+      plt.gca().set_ylim(bottom=0)
+      pylab.savefig(f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+      plt.clf()
+
+#    plt.figure(plt_idx)
+#    plt_idx = plt_idx + 1
+#    for l in p:
+#      method=l[1]
+#      if(method in ['MWD', 'CATS2']):
+#        col, marker = method_style[method]
+#        x = p[l]['n']
+#        y = p[l]['diam width']
+#        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
+#
+#    plt.ylabel('Diamond width')
+#    plt.grid()
+#    plt.xlabel('Size in each dimension')
+#    plt.legend(loc='upper left')
+#    plt.gca().set_ylim(bottom=0)
+#    pylab.savefig('diamond_width_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+#    plt.clf()
 
 
 if __name__ == "__main__":
