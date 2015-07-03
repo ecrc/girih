@@ -12,6 +12,8 @@ hw_ctr_labels = {
 def main():
   import sys
   from scripts.utils import get_stencil_num, load_csv
+  from collections import OrderedDict
+
   raw_data = load_csv(sys.argv[1])
 
 
@@ -29,6 +31,7 @@ def main():
  
   duplicates = set()
   plots = dict()
+  perf_fig = dict()
   for k in raw_data:
 
     # Use single field to represent the performance
@@ -124,8 +127,7 @@ def main():
     if line_key not in plots[plot_key].keys():
       plots[plot_key][line_key] = {meas:[] for meas in measure_list}
 
-
-    # append the data
+    # append the measurement data
     plots[plot_key][line_key]['n'].append(entry['Global NX'])
     plots[plot_key][line_key]['perf'].append(entry['MStencil/s  MAX']/1e3)
     N = entry['Global NX']**3 * entry['Number of time steps'] * entry['Number of tests']/1e9
@@ -161,7 +163,37 @@ def main():
       plots[plot_key][line_key]['thz'].append(int(k['Threads along z-axis']))
       plots[plot_key][line_key]['blk size'].append(int(k['Total cache block size (kiB)'])/1024.0)
 
+
+    # append the performance data
+    plot_key = (entry['Precision'], k['stencil_name'])
+    line_key = (k['mwdt'], k['method'])
+    if plot_key not in perf_fig.keys(): # figure
+      perf_fig[plot_key] = dict()
+
+    perf_line = perf_fig[plot_key]
+    if line_key not in perf_line.keys(): # line
+      perf_line[line_key] = dict()
+
+    perf_point = perf_line[line_key]
+    nx = entry['Global NX'] 
+    if nx not in perf_point.keys(): # points
+      perf_point[nx] = [entry['MStencil/s  MAX']/1e3]
+    else:
+      perf_point[nx].append(entry['MStencil/s  MAX']/1e3)
+
+
   del raw_data
+
+  #sort performance results
+  for k,v in perf_fig.iteritems():
+    for k2,v2 in perf_fig[k].iteritems():
+      perf_line = perf_fig[k][k2]
+      perf_fig[k][k2] = OrderedDict(sorted(perf_fig[k][k2].iteritems(), key=lambda x:x[0]))
+#  for k,v in perf_fig.iteritems():
+#    print(k, "##########")
+#    for k2,v2 in perf_fig[k].iteritems():
+#      print(k2,v2)
+
 
   #sort the plot lines
   for p in plots:
@@ -190,15 +222,21 @@ def main():
 #    for i,j in n.iteritems():
 #      print i,j
 
+  # Plot performance
+  for p in perf_fig:
+    plot_perf_fig(perf_fig[p], stencil=p[1])
+ 
+
+  # Plot other measurements
   for p in plots:
-    plot_line(plots[p], stencil=p[1], plt_key=p[2])
+    plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2])
 
 
-def plot_line(p, stencil, plt_key):
+def plot_perf_fig(p, stencil):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
-  import pylab
+  import pylab, itertools
   from pylab import arange,pi,sin,cos,sqrt
   from scripts.utils import get_stencil_num
 
@@ -236,16 +274,74 @@ def plot_line(p, stencil, plt_key):
   for l in p:
     label = l[1]
     col, marker = method_style[label]
-    x = p[l]['n']
-    y_p = p[l]['perf']
-    plt.plot(x, y_p, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+    x = []
+    y = []
+    for xp, y_l in p[l].iteritems():
+      for x1, y1 in (itertools.product([xp], y_l)):
+        x.append(x1)
+        y.append(y1)
+    plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
   plt.ylabel('GLUP/s')
   plt.grid()
   plt.xlabel('Size in each dimension')
   plt.legend(loc='best')
-  pylab.savefig('perf_' + f_name + '_' + plt_key + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+  pylab.savefig('perf_' + f_name + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
+
+
+def plot_meas_fig(p, stencil, plt_key):
+  from operator import itemgetter
+  import matplotlib.pyplot as plt
+  import matplotlib
+  import pylab
+  from pylab import arange,pi,sin,cos,sqrt
+  from scripts.utils import get_stencil_num
+
+  m = 3.0
+  fig_width = 4.0*0.393701*m # inches
+  fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
+
+  fig_size =  [fig_width,fig_height]
+  params = {
+         'axes.labelsize': 6*m,
+         'axes.linewidth': 0.25*m,
+         'lines.linewidth': 0.75*m,
+         'font.size': 7*m,
+         'legend.fontsize': 4*m,
+         'xtick.labelsize': 6*m,
+         'ytick.labelsize': 6*m,
+         'lines.markersize': 1,
+         'text.usetex': True,
+         'figure.figsize': fig_size}
+  pylab.rcParams.update(params)
+
+
+  marker_s = 7
+  line_w = 1
+  line_s = '-' 
+  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), 'CATS2':('r','+'),
+                  'PLUTO':('m','*'), 'Pochoir':('b','^')}
+
+
+  f_name = stencil+'_inc_grid_size'
+
+
+#  # performance
+#  plt.figure(0)
+#  for l in p:
+#    label = l[1]
+#    col, marker = method_style[label]
+#    x = p[l]['n']
+#    y_p = p[l]['perf']
+#    plt.plot(x, y_p, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+#
+#  plt.ylabel('GLUP/s')
+#  plt.grid()
+#  plt.xlabel('Size in each dimension')
+#  plt.legend(loc='best')
+#  pylab.savefig('perf_' + f_name + '_' + plt_key + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+#  plt.clf()
 
 
   # HW measurements
@@ -295,6 +391,7 @@ def plot_line(p, stencil, plt_key):
     plt.grid()
     plt.xlabel('Size in each dimension')
     plt.legend(loc='upper left')
+    plt.gca().set_ylim(bottom=0)
     pylab.savefig('thread_group_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     plt.clf()
 
