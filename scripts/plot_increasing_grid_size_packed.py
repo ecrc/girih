@@ -187,8 +187,11 @@ def main():
       entry['cpu energy pj/lup'] = entry['Energy']/N
       entry['dram energy pj/lup'] = entry['Energy DRAM']/N
       entry['total energy pj/lup'] = entry['cpu energy pj/lup'] + entry['dram energy pj/lup']
-      if (entry['total energy pj/lup'] > 1e5): entry['total energy pj/lup'] = 0
-      meas_figs[plot_key][line_key]['total energy'].append(entry['total energy pj/lup'])
+      if (entry['total energy pj/lup'] < 3e3):
+#        entry['total energy pj/lup'] = 0
+        meas_figs[plot_key][line_key]['total energy'].append(entry['total energy pj/lup'])
+      else:
+        del meas_figs[plot_key][line_key]['n'][-1]
     # TLB
     elif k['LIKWID performance counter'] == 'TLB':
       meas_figs[plot_key][line_key]['tlb'].append(entry[ hw_ctr_fields['TLB'][0][0] ])
