@@ -282,7 +282,7 @@ def plot_all(perf_fig, meas_figs):
 
   for stencil in stencils:
     print(stencil)
-    f, axarr = plt.subplots(plt_rows, plt_cols, sharex=True)
+    f, axarr = plt.subplots(plt_rows, plt_cols)
     # Plot performance
     for p in perf_fig:
       if p[1] == stencil:
@@ -299,7 +299,7 @@ def plot_all(perf_fig, meas_figs):
         plot_params_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axarr=axarr)
         break # because it will be the same for all HW counter data
 
-    pylab.savefig('1_'+ stencil + '_perf_inc_grid_size' + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+    pylab.savefig('all_'+ stencil + '_perf_inc_grid_size' + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     plt.clf()
 
 
@@ -358,54 +358,49 @@ def plot_params_fig(p, stencil, plt_key, axarr):
   import matplotlib.pyplot as plt
   from scripts.utils import get_stencil_num
 
+
   # Diamond tiling information
-  if any(method[1] in ['MWD', 'CATS2'] for method in p):
-    # Thread group size information
-    r,c = plt_loc['tgs']
+  # Thread group size information
+  tgs_labels =(
+         ('tgs', 'b', '^', 'TGS'),
+         ('thx', 'r', '+', 'x'),
+         ('thy', 'g', 'o', 'y'),
+         ('thz', 'm', '*', 'z') )
+  for l in p:
+    method=l[1]
+    if(method == 'MWD'):
+      r,c = plt_loc['tgs']
+      ax = axarr[r,c]
+      for measure, col, marker, label in tgs_labels:
+        x = p[l]['n']
+        y = p[l][measure]
+        ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+
+      ax.set_ylabel('MWD Intra-tile threads')
+      ax.grid()
+      if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
+      ax.legend(loc='best')
+      ax.set_ylim(bottom=0)
+
+  #Cache block size and diamond width
+  blk_width_labels = [('blk size', 'Cache block size (MiB)', 'cache_block_size_'),
+                      ('diam width', 'Diamond width', 'diamond_width_'),
+                      ('bs_z', 'Block size along z-axis', 'bs_z_')]
+  for measure, y_label, f_prefix in blk_width_labels:
+    r,c = plt_loc[measure]
     ax = axarr[r,c]
     for l in p:
       method=l[1]
-      if(method == 'MWD'):
-        tgs_labels =(
-               ('tgs', 'b', '^', 'MWD'),
-               ('thx', 'r', '+', 'x'),
-               ('thy', 'g', 'o', 'y'),
-               ('thz', 'm', '*', 'z') )
-        for measure, col, marker, label in tgs_labels:
-          x = p[l]['n']
-          y = p[l][measure]
-          ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
-
-      if(method == 'CATS2'):
+      if(method in ['MWD', 'CATS2']):
+        col, marker = method_style[method]
         x = p[l]['n']
-        y = p[l]['tgs']
-        ax.plot(x, y, color='k', marker='x', markersize=marker_s, linestyle=line_s, linewidth=line_w, label='CATS2')
+        y = p[l][measure]
+        ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
 
-    ax.set_ylabel('Intra-tile threads')
+    ax.set_ylabel(y_label)
     ax.grid()
     if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
-    ax.legend(loc='best')
     ax.set_ylim(bottom=0)
-
-
-    #Cache block size and diamond width
-    for measure, y_label, f_prefix in [('blk size', 'Cache block size (MiB)', 'cache_block_size_'),
-                                        ('diam width', 'Diamond width', 'diamond_width_'),
-                                        ('bs_z', 'Block size along z-axis', 'bs_z_')]:
-      r,c = plt_loc[measure]
-      ax = axarr[r,c]
-      for l in p:
-        method=l[1]
-        if(method in ['MWD', 'CATS2']):
-          col, marker = method_style[method]
-          x = p[l]['n']
-          y = p[l][measure]
-          ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
-
-      ax.set_ylabel(y_label)
-      ax.grid()
-      if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
-      ax.set_ylim(bottom=0)
 
 
 if __name__ == "__main__":
