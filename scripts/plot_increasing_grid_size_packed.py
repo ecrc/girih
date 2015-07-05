@@ -1,61 +1,18 @@
 #!/usr/bin/env python
 
-marker_s = 3
-line_w = 1
-line_s = '-' 
 method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), 'CATS2':('r','+'),
                 'PLUTO':('m','*'), 'Pochoir':('b','^')}
-import pylab
-
-fig_width = 20.0*0.393701 # inches
-fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
-
-fig_size =  [fig_width,fig_height]
-params = {
-       'axes.labelsize': 7,
-       'axes.linewidth': 0.25,
-       'lines.linewidth': 0.75,
-       'font.size': 7,
-       'legend.fontsize': 7,
-       'xtick.labelsize': 6,
-       'ytick.labelsize': 6,
-       'lines.markersize': 1,
-       'text.usetex': True,
-       'figure.figsize': fig_size}
-pylab.rcParams.update(params)
-
-
-
-n_plt = 12
-plt_rows = 4
-plt_cols = 3
-plt_loc = {
-  'perf':      (0,0),
-  'mem bw':    (0,1),
-  'tlb':       (0,2),
-
-  'mem vol':   (1,0),
-  'l3 vol':    (1,1),
-  'l2 vol':    (1,2),
-
-  'diam width':(2,0),
-  'bs_z':      (2,1),
-  'blk size':  (2,2),
-
-  'tgs':       (3,0),
-  'data':      (3,1),
-'total energy':(3,2)}
 
 
 hw_ctr_labels = {
-                    '':(),
-                    'TLB':[('L1 DTLB miss rate sum', 'tlb_', 'tlb')],
-                    'DATA':[('Load to Store ratio avg', 'cpu_', 'data')],
-                    'L2':[('L2 Bytes/LUP', 'L2_', 'l2 vol')],
-                    'L3':[('L3 Bytes/LUP', 'L3_', 'l3 vol')],
-                    'MEM':[('MEM GB/s', 'mem_bw_', 'mem bw'), ('MEM Bytes/LUP', 'mem_vol_', 'mem vol')],
-                    'ENERGY':[('Total pJ/LUP', 'energy_', 'total energy')] }
- 
+                '':(),
+                'TLB':[('L1 DTLB miss rate sum', 'tlb_', 'tlb')],
+                'DATA':[('Load to Store ratio avg', 'cpu_', 'data')],
+                'L2':[('L2 Bytes/LUP', 'L2_', 'l2 vol')],
+                'L3':[('L3 Bytes/LUP', 'L3_', 'l3 vol')],
+                'MEM':[('MEM GB/s', 'mem_bw_', 'mem bw'), ('MEM Bytes/LUP', 'mem_vol_', 'mem vol')],
+                'ENERGY':[('Total pJ/LUP', 'energy_', 'total energy')] }
+
 def main():
   import sys
   from scripts.utils import get_stencil_num, load_csv
@@ -75,7 +32,7 @@ def main():
                     'MEM':[('Total Memory Transfer', float),('Sustained Memory BW', float)],
                     'ENERGY':[('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]}
 
- 
+
   duplicates = set()
   meas_figs = dict()
   perf_fig = dict()
@@ -84,11 +41,11 @@ def main():
     # Use single field to represent the performance
     if 'Total RANK0 MStencil/s MAX' in k.keys():
       if(k['Total RANK0 MStencil/s MAX']!=''):
-        k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s MAX'] 
+        k['MStencil/s  MAX'] = k['MWD main-loop RANK0 MStencil/s MAX']
     # temporary for deprecated format
     if 'RANK0 MStencil/s  MAX' in k.keys():
       if k['RANK0 MStencil/s  MAX']!='':
-        k['MStencil/s  MAX'] = k['RANK0 MStencil/s  MAX'] 
+        k['MStencil/s  MAX'] = k['RANK0 MStencil/s  MAX']
 
 
     # add stencil operator
@@ -225,7 +182,7 @@ def main():
       perf_line[line_key] = dict()
 
     perf_point = perf_line[line_key]
-    nx = entry['Global NX'] 
+    nx = entry['Global NX']
     if nx not in perf_point.keys(): # points
       perf_point[nx] = [entry['MStencil/s  MAX']/1e3]
     else:
@@ -267,7 +224,7 @@ def main():
             pl[val] = [x[idx] for x in lines]
             idx = idx+1
 
-#  for m,n in meas_figs.iteritems(): 
+#  for m,n in meas_figs.iteritems():
 #    print "##############",m
 #    for i,j in n.iteritems():
 #      print i,j
@@ -275,43 +232,113 @@ def main():
   plot_all(perf_fig, meas_figs)
 
 
-def plot_all(perf_fig, meas_figs):
+def plot_setup():
   import matplotlib.pyplot as plt
+  import pylab
 
+  # figure size and params
+  fig_width = 20.0*0.393701 # inches
+  fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
+  fig_size =  [fig_width,fig_height]
+  params = {
+         'lines.linewidth': 1,
+         'lines.markersize': 3,
+         'lines.linestyle': '-',
+         'axes.labelsize': 7,
+         'axes.linewidth': 0.25,
+         'font.size': 7,
+         'legend.fontsize': 7,
+         'xtick.labelsize': 6,
+         'ytick.labelsize': 6,
+         'text.usetex': True,
+         'figure.figsize': fig_size}
+  pylab.rcParams.update(params)
+
+
+  #create figures instance
+  n_plt = 12
+  plt_rows = 4
+  plt_cols = 3
+  f, axarr = plt.subplots(plt_rows, plt_cols)
+
+  # set figures information
+  plt_info = {
+    'perf':      (0,0, 'GLUP/s'),
+    'mem bw':    (0,1, hw_ctr_labels['MEM'][0][0]),
+    'tlb':       (0,2, hw_ctr_labels['TLB'][0][0]),
+
+    'mem vol':   (1,0, hw_ctr_labels['MEM'][1][0]),
+    'l3 vol':    (1,1, hw_ctr_labels['L3'][0][0]),
+    'l2 vol':    (1,2, hw_ctr_labels['L2'][0][0]),
+
+    'diam width':(2,0, 'Diamond width'),
+    'bs_z':      (2,1, 'Block size along z-axis'),
+    'blk size':  (2,2, 'Cache block size (MiB)'),
+
+    'tgs':       (3,0, 'MWD Intra-tile threads'),
+    'data':      (3,1, hw_ctr_labels['DATA'][0][0]),
+  'total energy':(3,2, hw_ctr_labels['ENERGY'][0][0])}
+
+  axl = dict()
+  for (meas, (r,c, y_label)) in plt_info.iteritems():
+    axl[meas] = axarr[r,c]
+
+    # set the default parameters
+    ax = axl[meas]
+    ax.grid()
+    ax.set_ylabel(y_label, labelpad=1)
+    if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
+    if(meas in ['tlb', 'total energy']):
+      ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+  return axl
+
+
+def plot_finalize(stencil, axl):
+  import matplotlib.pyplot as plt
+  import pylab
+
+  # set figures limits
+  for meas in axl:
+    if meas in ['blk size', 'diam width', 'bs_z', 'tgs']:
+      axl[meas].set_ylim(bottom=0)
+
+  pylab.savefig('all_'+ stencil + '_perf_inc_grid_size' + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0.1)
+  plt.clf()
+
+
+def plot_all(perf_fig, meas_figs):
   stencils = [p[1] for p in perf_fig]
 
   for stencil in stencils:
     print(stencil)
-    f, axarr = plt.subplots(plt_rows, plt_cols)
+    axl = plot_setup()
     # Plot performance
     for p in perf_fig:
       if p[1] == stencil:
-        legend_handles_labels = plot_perf_fig(perf_fig[p], stencil, axarr)
+        plot_perf_fig(perf_fig[p], stencil, axl)
 
     # Plot hardware counters measurements
     for p in meas_figs:
       if p[1] == stencil:
-        plot_meas_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axarr=axarr,legend_handles_labels=legend_handles_labels)
+        plot_meas_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axl=axl)
 
     # Plot used parameters
     for p in meas_figs:
       if (p[1]==stencil and p[2]!=''):
-        plot_params_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axarr=axarr)
+        plot_params_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axl=axl)
         break # because it will be the same for all HW counter data
 
-    pylab.savefig('all_'+ stencil + '_perf_inc_grid_size' + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
-    plt.clf()
+    plot_finalize(stencil, axl)
 
 
-def plot_perf_fig(p, stencil, axarr):
+def plot_perf_fig(p, stencil, axl):
   import matplotlib.pyplot as plt
   import itertools
   from scripts.utils import get_stencil_num
 
 
   # performance
-  r,c = plt_loc['perf']
-  ax = axarr[r,c]
   for l in p:
     label = l[1]
     col, marker = method_style[label]
@@ -321,40 +348,28 @@ def plot_perf_fig(p, stencil, axarr):
       for x1, y1 in (itertools.product([xp], y_l)):
         x.append(x1)
         y.append(y1)
-    ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+    axl['perf'].plot(x, y, color=col, marker=marker, label=label)
 
-  ax.set_ylabel('GLUP/s')
-  ax.grid()
-  if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
-#  ax.legend(loc='best')
-  return ax.get_legend_handles_labels()
 
-def plot_meas_fig(p, stencil, plt_key, axarr, legend_handles_labels):
+def plot_meas_fig(p, stencil, plt_key, axl):
   import matplotlib.pyplot as plt
   from scripts.utils import get_stencil_num
 
   # HW measurements
   for y_label, file_prefix, measure in hw_ctr_labels[plt_key]:
-    r,c = plt_loc[measure]
-    ax = axarr[r,c]
     for l in p:
       label = l[1]
       col, marker = method_style[label]
       x = p[l]['n']
       y = p[l][measure]
-      ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+      axl[measure].plot(x, y, color=col, marker=marker, label=label)
 
-    ax.set_ylabel(y_label)
-    ax.grid()
-    if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
     if(measure == 'tlb'):
-      handles, labels = legend_handles_labels
-      ax.legend(handles, labels, loc='best')
+      handles, labels = axl['perf'].get_legend_handles_labels()
+      axl[measure].legend(handles, labels, loc='best')
 
-    if(measure in ['tlb', 'total energy']):
-      ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-def plot_params_fig(p, stencil, plt_key, axarr):
+def plot_params_fig(p, stencil, plt_key, axl):
   import matplotlib.pyplot as plt
   from scripts.utils import get_stencil_num
 
@@ -369,38 +384,25 @@ def plot_params_fig(p, stencil, plt_key, axarr):
   for l in p:
     method=l[1]
     if(method == 'MWD'):
-      r,c = plt_loc['tgs']
-      ax = axarr[r,c]
       for measure, col, marker, label in tgs_labels:
         x = p[l]['n']
         y = p[l][measure]
-        ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+        axl['tgs'].plot(x, y, color=col, marker=marker, label=label)
 
-      ax.set_ylabel('MWD Intra-tile threads')
-      ax.grid()
-      if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
-      ax.legend(loc='best')
-      ax.set_ylim(bottom=0)
+      axl['tgs'].legend(loc='best')
 
   #Cache block size and diamond width
   blk_width_labels = [('blk size', 'Cache block size (MiB)', 'cache_block_size_'),
                       ('diam width', 'Diamond width', 'diamond_width_'),
                       ('bs_z', 'Block size along z-axis', 'bs_z_')]
   for measure, y_label, f_prefix in blk_width_labels:
-    r,c = plt_loc[measure]
-    ax = axarr[r,c]
     for l in p:
       method=l[1]
       if(method in ['MWD', 'CATS2']):
         col, marker = method_style[method]
         x = p[l]['n']
         y = p[l][measure]
-        ax.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
-
-    ax.set_ylabel(y_label)
-    ax.grid()
-    if(r==plt_rows-1): ax.set_xlabel('Size in each dimension')
-    ax.set_ylim(bottom=0)
+        axl[measure].plot(x, y, color=col, marker=marker, label=method)
 
 
 if __name__ == "__main__":
