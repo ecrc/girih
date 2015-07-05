@@ -259,7 +259,7 @@ def plot_setup():
   n_plt = 12
   plt_rows = 4
   plt_cols = 3
-  f, axarr = plt.subplots(plt_rows, plt_cols)
+  fig, axarr = plt.subplots(plt_rows, plt_cols)
 
   # set figures information
   plt_info = {
@@ -291,10 +291,10 @@ def plot_setup():
     if(meas in ['tlb', 'total energy']):
       ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-  return axl
+  return axl, fig
 
 
-def plot_finalize(stencil, axl):
+def plot_finalize(stencil, axl, fig):
   import matplotlib.pyplot as plt
   import pylab
 
@@ -303,6 +303,8 @@ def plot_finalize(stencil, axl):
     if meas in ['blk size', 'diam width', 'bs_z', 'tgs']:
       axl[meas].set_ylim(bottom=0)
 
+  title = stencil.replace('_','-')
+  fig.get_axes()[0].annotate(title, (0.5, 0.94), xycoords='figure fraction', ha='center', fontsize=12)
   pylab.savefig('all_'+ stencil + '_perf_inc_grid_size' + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0.1)
   plt.clf()
 
@@ -312,7 +314,7 @@ def plot_all(perf_fig, meas_figs):
 
   for stencil in stencils:
     print(stencil)
-    axl = plot_setup()
+    axl, fig = plot_setup()
     # Plot performance
     for p in perf_fig:
       if p[1] == stencil:
@@ -329,7 +331,7 @@ def plot_all(perf_fig, meas_figs):
         plot_params_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axl=axl)
         break # because it will be the same for all HW counter data
 
-    plot_finalize(stencil, axl)
+    plot_finalize(stencil, axl, fig)
 
 
 def plot_perf_fig(p, stencil, axl):
