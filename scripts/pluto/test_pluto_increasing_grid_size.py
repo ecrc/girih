@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 def tee(fp, string):
-  print(string)
+  print string,
   fp.write(string)
 
 def run_pluto_test(dry_run, kernel, nx, ny, nz, nt, params, outfile='', pinning_cmd=-1, pinning_args=-1, auto_tuning=0):
@@ -109,6 +109,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
   tstart = time.time()
   num=0
   lt1_prev_perf = -1
+  best_param = [-1]*3
   tune_res = []
   for lt1 in lt1_l:
 
@@ -134,6 +135,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
         lt2_prev_perf = lt3_best_perf
         lt2_best_perf = lt3_best_perf
         best_lt2 = lt2
+        best_lt3_from_lt2 =  best_lt3
 
     if(lt2_best_perf < lt1_prev_perf):
       break
@@ -141,9 +143,12 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
       lt1_prev_perf = lt2_best_perf
       lt1_best_perf = lt2_best_perf
       best_lt1 = lt1
+      best_param[0] = best_lt1
+      best_param[1] = best_lt2
+      best_param[2] = best_lt3_from_lt2
+
 
   max_perf = lt1_best_perf
-  best_param = (best_lt1, best_lt2, best_lt3)
 
   if(max_perf == -1):
     tee(fp, "Tuner failed\n")
@@ -152,7 +157,7 @@ def pluto_tuner(kernel, nx, ny, nz, fp):
 
   tee(fp, "[AUTO TUNE] Best performance - kernel: %s Nx:%d Ny:%d Nz: %d  Peformance: %08.3f  params:%s\n"% (kernel, nx, ny, nz, max_perf, str(best_param).strip('[]')) )
   tee(fp, "[AUTO TUNE] elapsed time: %d"% (tend-tstart) )
-  return best_param, nt, tune_res
+  return tuple(best_param), nt, tune_res
 
 
 def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
@@ -162,18 +167,20 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
 
   target_dir = jpath(os.path.abspath("."),target_dir)
 
-  kernels_limits = {'3d25pt':1057, '3d7pt':1200, '3d25pt_var':545, '3d7pt_var':680}
+
+  kernels_limits = {'3d25pt':1089, '3d7pt':1217, '3d25pt_var':577, '3d7pt_var':769}
+  increment = 64
   if(machine_info['hostname']=='Haswell_18core'):
-    kernels_limits = {'3d25pt':1600, '3d7pt':1600, '3d25pt_var':960, '3d7pt_var':1000}
+    kernels_limits = {'3d25pt':1665, '3d7pt':1921, '3d25pt_var':1025, '3d7pt_var':1153}
+    increment = 128
 
   points = dict()
-  points['3d7pt'] = list(range(32, 5000, 128))
-  points['3d25pt'] = points['3d7pt']
-  points['3d7pt_var'] = list(range(32, 5000, 32))
+  points['3d7pt'] = [64] + list(range(128, 5000, increment))
+  points['3d7pt_var'] = points['3d7pt']
 
   count=0
-  for kernel in ['3d7pt', '3d7pt_var', '3d25pt']:#, '3d25pt_var']:
-  #for kernel in ['3d7pt']:
+  #for kernel in ['3d7pt', '3d7pt_var', '3d25pt']:#, '3d25pt_var']:
+  for kernel in ['3d7pt', '3d7pt_var']:
     for N in points[kernel]:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
@@ -181,12 +188,12 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
         if(dry_run==1): nt=32; param=[16,16,1024]
         if (kernel, N, group) in param_l.keys():
-#          continue
+          continue
           if(dry_run==0): fp = open(outfile, 'w')
           param, nt = param_l[(kernel, N, group)]
           nt = nt*2
         else:
-          continue
+#          continue
           if(dry_run==0): 
             fp = open(outfile, 'w')
             param, nt, tune_res = pluto_tuner(kernel=kernel, nx=N, ny=N, nz=N, fp=fp)
@@ -252,8 +259,8 @@ def main():
   pin_str = "0-%d "%(th-1)
 
   count = 0
-#  for group in ['MEM']:
-  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+  for group in ['MEM']:
+#  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:" + pin_str
     elif(machine_info['hostname']=='IVB_10core'):
