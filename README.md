@@ -24,8 +24,8 @@ supported groups at LIKWID.
 
 
 #### Installation & compilation
-Use make.inc file (at the root directory) to set the Makefile variables to the 
-desired compiler binaries and flags. The maim arguments that can be passed to 
+Use conf/make.conf file to set the Makefile variables to the 
+desired compiler binaries and flags. The main arguments that can be passed to 
 the make command:
   DP: Used to specify the precision of the build (DP=1 for double and DP=0 for 
   	single precision).
