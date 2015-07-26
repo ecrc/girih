@@ -25,7 +25,12 @@ void param_default(Parameters *p) {
   p->stencil_shape[1] = 64;
   p->stencil_shape[2] = 64;
 
+#ifdef __MIC__
   p->alignment = 16;
+#else
+  p->alignment = 8;
+#endif
+
   p->target_ts = 0; //Naive TS
   p->target_kernel = 0; //Basic ISO stencil kernel
   p->stencil.r = stencil_info_list[p->target_kernel].r;
