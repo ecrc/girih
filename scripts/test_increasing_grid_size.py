@@ -17,37 +17,36 @@ def igs_test(target_dir, exp_name, th, group='', params={}, dry_run=0):
   # scale = T*perf/size
   desired_time = 20
   if(machine_info['hostname']=='Haswell_18core'):
+    increment = 128
     k_perf_order = {0:1500, 1:5000, 4:400, 5:2000 ,6:100}
     if is_dp == 1:
-      kernels_limits = {0:1600, 1:1600, 4:960, 5:1000, 6:500}
+      kernels_limits = {0:1665, 1:1921, 4:1025, 5:1025, 6:500}
     else:
       kernels_limits = {0:2100, 4:1200}
-    points = dict()
-    points[0] = [64] + range(32, 5000, 128)
-    points[1] = points[0]
-    points[4] = points[0]
-    points[5] = points[0]
 
   elif(machine_info['hostname']=='IVB_10core'):
+    increment = 64
     k_perf_order = {0:1200, 1:3000, 4:350, 5:1500 ,6:80}
     if is_dp ==1:
-      kernels_limits = {0:1057, 1:1200, 4:545, 5:680, 6:289}
+      kernels_limits = {0:1089, 1:1217, 4:577, 5:769, 6:289}
     else:
       kernels_limits = {0:1350, 4:801}
-    points = dict()
-    points[0] = [64] + range(32, 5000, 128)
-    points[1] = points[0]
-    points[4] = range(32, 5000, 32)
-    points[5] = points[4]
+
+
+  points = dict()
+  points[0] = [64] + list(range(128, 5000, increment)) 
+  points[1] = points[0]
+  points[4] = points[0]
+  points[5] = points[4]
 
 
   k_time_scale = {n: desired_time*k_perf_order[n] for n in k_perf_order.keys()}
 
   count=0
-  for ts, tgs_rl in [(2,[-1, 1])]:#, (0,[0])]:
+  for ts, tgs_rl in [(2,[-1, 1]), (0,[0])]:
     for tgs_r in tgs_rl:
-#      for kernel, mwdt_list in [(0,[1]), (1,[2]), (4,[1]), (5,[2])]: #, 6]:
-      for kernel, mwdt_list in [(4,[1]), (5,[2])]:
+      for kernel, mwdt_list in [(0,[1]), (1,[2]), (4,[1]), (5,[2])]: #, 6]:
+#      for kernel, mwdt_list in [(4,[1]), (5,[2])]:
         if ts==0 or tgs_r==1:
           mwdt_list=[-1]
         for mwdt in mwdt_list:
@@ -135,8 +134,8 @@ def main():
     pin_str = "S0:0-%d@S1:0-%d -i "%(th/2-1, th/2-1)
 
   count=0
-#  for group in ['MEM']:
-  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+  for group in ['MEM']:
+#  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if( (machine_info['hostname']=='IVB_10core') and (group=='TLB_DATA') ): group='TLB'
     machine_conf['pinning_args'] = "-m -g " + group + " -C " + pin_str + ' -s 0x03 --'
 #    for k,v in params.iteritems():
