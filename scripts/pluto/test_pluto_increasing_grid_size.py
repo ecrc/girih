@@ -171,7 +171,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
   kernels_limits = {'3d25pt':1089, '3d7pt':1217, '3d25pt_var':577, '3d7pt_var':769}
   increment = 64
   if(machine_info['hostname']=='Haswell_18core'):
-    kernels_limits = {'3d25pt':1665, '3d7pt':1921, '3d25pt_var':1025, '3d7pt_var':1153}
+    kernels_limits = {'3d25pt':1665, '3d7pt':1921, '3d25pt_var':1025, '3d7pt_var':1025}
     increment = 128
 
   points = dict()
@@ -185,12 +185,14 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
         outfile = jpath(target_dir, outfile)
+        if(dry_run==1):
+          nt=32; param=[-1,-1,-1]
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
-        if(dry_run==1): nt=32; param=[16,16,1024]
         if (kernel, N, group) in param_l.keys():
-          continue
+          continue # results exist for this test case
+        if (kernel, N, 'MEM') in param_l.keys(): # use the tuned params of memory results
           if(dry_run==0): fp = open(outfile, 'w')
-          param, nt = param_l[(kernel, N, group)]
+          param, nt = param_l[(kernel, N, 'MEM')]
           nt = nt*2
         else:
 #          continue
