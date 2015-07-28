@@ -38,6 +38,13 @@ def main():
   perf_fig = dict()
   for k in raw_data:
 
+    # get processor name from the file names
+    if(k['OpenMP Threads']!=''):
+      if(int(k['OpenMP Threads']) == 10):
+        machine_name = 'ivb10'
+      elif(int(k['OpenMP Threads']) == 18):
+        machine_name = 'hw18'
+
     # Use single field to represent the performance
     if 'Total RANK0 MStencil/s MAX' in k.keys():
       if(k['Total RANK0 MStencil/s MAX']!=''):
@@ -229,7 +236,7 @@ def main():
 #    for i,j in n.iteritems():
 #      print i,j
 
-  plot_all(perf_fig, meas_figs)
+  plot_all(perf_fig, meas_figs, machine_name)
 
 
 def plot_setup():
@@ -294,7 +301,7 @@ def plot_setup():
   return axl, fig
 
 
-def plot_finalize(stencil, axl, fig):
+def plot_finalize(stencil, axl, fig, machine_name):
   import matplotlib.pyplot as plt
   import pylab
 
@@ -305,11 +312,11 @@ def plot_finalize(stencil, axl, fig):
 
   title = stencil.replace('_','-')
   fig.get_axes()[0].annotate(title, (0.5, 0.94), xycoords='figure fraction', ha='center', fontsize=12)
-  pylab.savefig('all_'+ stencil + '_perf_inc_grid_size' + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0.1)
+  pylab.savefig(machine_name + '_all_'+ stencil + '_perf_inc_grid_size' + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0.1)
   plt.clf()
 
 
-def plot_all(perf_fig, meas_figs):
+def plot_all(perf_fig, meas_figs, machine_name):
   stencils = [p[1] for p in perf_fig]
 
   for stencil in stencils:
@@ -331,7 +338,7 @@ def plot_all(perf_fig, meas_figs):
         plot_params_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axl=axl)
         break # because it will be the same for all HW counter data
 
-    plot_finalize(stencil, axl, fig)
+    plot_finalize(stencil, axl, fig, machine_name)
 
 
 def plot_perf_fig(p, stencil, axl):

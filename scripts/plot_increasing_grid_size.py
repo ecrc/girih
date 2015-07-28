@@ -4,10 +4,10 @@ hw_ctr_labels = {
                     '':(),
                     'TLB':[('L1 DTLB miss rate sum', 'tlb_', 'tlb')],
                     'DATA':[('Load to Store ratio avg', 'cpu_', 'data')],
-                    'L2':[('Bytes/LUP', 'L2_', 'l2 vol')],
-                    'L3':[('Bytes/LUP', 'L3_', 'l3 vol')],
-                    'MEM':[('GB/s', 'mem_bw_', 'mem bw'), ('Bytes/LUP', 'mem_vol_', 'mem vol')],
-                    'ENERGY':[('pJ/LUP', 'energy_', 'total energy')] }
+                    'L2':[('L2 Bytes/LUP', 'L2_', 'l2 vol')],
+                    'L3':[('L3 Bytes/LUP', 'L3_', 'l3 vol')],
+                    'MEM':[('MEM GB/s', 'mem_bw_', 'mem bw'), ('MEM Bytes/LUP', 'mem_vol_', 'mem vol')],
+                    'ENERGY':[('Total pJ/LUP', 'energy_', 'total energy')] }
  
 def main():
   import sys
@@ -32,7 +32,16 @@ def main():
   duplicates = set()
   plots = dict()
   perf_fig = dict()
+  machine_name = ''
   for k in raw_data:
+
+    # get processor name from the file names
+    if(k['OpenMP Threads']!=''):
+      if(int(k['OpenMP Threads']) == 10):
+        machine_name = 'ivb10'
+      elif(int(k['OpenMP Threads']) == 18):
+        machine_name = 'hw18'
+
 
     # Use single field to represent the performance
     if 'Total RANK0 MStencil/s MAX' in k.keys():
@@ -224,15 +233,15 @@ def main():
 
   # Plot performance
   for p in perf_fig:
-    plot_perf_fig(perf_fig[p], stencil=p[1])
+    plot_perf_fig(perf_fig[p], stencil=p[1], machine_name=machine_name)
  
 
   # Plot other measurements
   for p in plots:
-    plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2])
+    plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2], machine_name=machine_name)
 
 
-def plot_perf_fig(p, stencil):
+def plot_perf_fig(p, stencil, machine_name):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
@@ -251,7 +260,7 @@ def plot_perf_fig(p, stencil):
          'lines.linewidth': 0.75*m,
          'font.size': 7*m,
          'legend.fontsize': 4*m,
-         'xtick.labelsize': 6*m,
+         'xtick.labelsize': 5*m,
          'ytick.labelsize': 6*m,
          'lines.markersize': 1,
          'text.usetex': True,
@@ -286,11 +295,11 @@ def plot_perf_fig(p, stencil):
   plt.grid()
   plt.xlabel('Size in each dimension')
   plt.legend(loc='best')
-  pylab.savefig('perf_' + f_name + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+  pylab.savefig(machine_name + '_perf_' + f_name + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
 
 
-def plot_meas_fig(p, stencil, plt_key):
+def plot_meas_fig(p, stencil, plt_key, machine_name):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
@@ -309,7 +318,7 @@ def plot_meas_fig(p, stencil, plt_key):
          'lines.linewidth': 0.75*m,
          'font.size': 7*m,
          'legend.fontsize': 4*m,
-         'xtick.labelsize': 6*m,
+         'xtick.labelsize': 5*m,
          'ytick.labelsize': 6*m,
          'lines.markersize': 1,
          'text.usetex': True,
@@ -360,7 +369,7 @@ def plot_meas_fig(p, stencil, plt_key):
     plt.grid()
     plt.xlabel('Size in each dimension')
     plt.legend(loc='best')
-    pylab.savefig(file_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+    pylab.savefig(machine_name + '_' + file_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     plt.clf()
 
 
@@ -392,7 +401,7 @@ def plot_meas_fig(p, stencil, plt_key):
     plt.xlabel('Size in each dimension')
     plt.legend(loc='upper left')
     plt.gca().set_ylim(bottom=0)
-    pylab.savefig('thread_group_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+    pylab.savefig(machine_name + '_thread_group_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     plt.clf()
 
 
@@ -414,7 +423,7 @@ def plot_meas_fig(p, stencil, plt_key):
       plt.xlabel('Size in each dimension')
       plt.legend(loc='best')
       plt.gca().set_ylim(bottom=0)
-      pylab.savefig(f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+      pylab.savefig(machine_name + '_' + f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
       plt.clf()
 
 #    plt.figure(plt_idx)
