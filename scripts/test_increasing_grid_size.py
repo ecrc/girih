@@ -55,13 +55,16 @@ def igs_test(target_dir, exp_name, th, group='', params={}, dry_run=0):
               tb, nwf, tgs, thx, thy, thz = (-1,-1,tgs_r,tgs_r,tgs_r,tgs_r)
               key = (mwdt, kernel, N, tgs_r, group)
               if key in params.keys():
-                continue
+                continue #already computed
+
+              key = (mwdt, kernel, N, tgs_r, 'MEM')
+              if key in params.keys(): #reuse the conf of existing test
                 tb, nwf, tgs, thx, thy, thz = params[key]
               outfile=('kernel%d_isdp%d_ts%d_mwdt%d_tgs%d_N%d_%s_%s.txt' % (kernel, is_dp, ts, mwdt, tgs_r, N, group, exp_name[-13:]))
               nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
               c_mwdt = mwdt # to avoid negative array access at the c code
               if mwdt==-1: c_mwdt=1
-#              print outfile
+#              print outfile, tb, nwf, tgs, thx, thy, thz
               run_test(dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=c_mwdt, tb=tb, nwf=nwf)
               count = count+1
   return count
@@ -134,8 +137,8 @@ def main():
     pin_str = "S0:0-%d@S1:0-%d -i "%(th/2-1, th/2-1)
 
   count=0
-  for group in ['MEM']:
-#  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+#  for group in ['MEM']:
+  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
     if( (machine_info['hostname']=='IVB_10core') and (group=='TLB_DATA') ): group='TLB'
     machine_conf['pinning_args'] = "-m -g " + group + " -C " + pin_str + ' -s 0x03 --'
 #    for k,v in params.iteritems():

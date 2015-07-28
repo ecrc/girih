@@ -53,14 +53,17 @@ def igs_test(dry_run, target_dir, exp_name, th, group='', params=[]):
   for k, v in k_perf_order.items():
     k_time_scale[k] = desired_time*v
 
-  points = list(range(32, 1010, 128))
-  points = sorted(list(set(points)))
-
-  kernels_limits = [1057, 1200, 0, 0, 545, 680, 289]
-  radius = {0:4, 1:1, 4:4, 5:1}
 
   if(machine_info['hostname']=='Haswell_18core'):
-    kernels_limits = [1600, 1600, 0, 0, 960, 1000, 500]
+    increment = 128
+    kernels_limits = [897, 897, 0, 0, 897, 897]
+  else:
+    increment = 64
+    kernels_limits = [961, 961, 0, 0, 577, 769]
+
+  radius = {0:4, 1:1, 4:4, 5:1}
+
+  points = [64] + list(range(128, 5000, increment)) 
 
   count=0
   for kernel in [0, 1, 4, 5]:

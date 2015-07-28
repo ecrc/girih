@@ -190,6 +190,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
 #        nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
         if (kernel, N, group) in param_l.keys():
           continue # results exist for this test case
+
         if (kernel, N, 'MEM') in param_l.keys(): # use the tuned params of memory results
           if(dry_run==0): fp = open(outfile, 'w')
           param, nt = param_l[(kernel, N, 'MEM')]
@@ -202,7 +203,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
             with open(outfile[:-3]+'p', 'w') as fpickle:
               pickle.dump(tune_res, fpickle)
         if(dry_run==0): tee(fp, outfile)
-#        print outfile
+#        print outfile, param
         test_str, telapsed = run_pluto_test(dry_run=dry_run, kernel=kernel, nx=N, ny=N, nz=N, nt=nt, params=param, outfile=outfile)
         if(dry_run==0):
           tee(fp, test_str)
@@ -261,8 +262,8 @@ def main():
   pin_str = "0-%d "%(th-1)
 
   count = 0
-  for group in ['MEM']:
-#  for group in ['DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+#  for group in ['MEM']:
+  for group in ['MEM', 'L2', 'L3', 'DATA', 'TLB_DATA', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:" + pin_str
     elif(machine_info['hostname']=='IVB_10core'):
