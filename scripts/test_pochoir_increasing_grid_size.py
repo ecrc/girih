@@ -119,7 +119,7 @@ def main():
   th = machine_info['n_cores']
 
   count = 0
-  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+  for group in ['MEM', 'TLB_DATA', 'L2', 'L3', 'DATA', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(th, 2*th-1) + '-- numactl --physcpubind=%d-%d'%(th,2*th-1)
     elif(machine_info['hostname']=='IVB_10core'):

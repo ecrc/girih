@@ -20,7 +20,7 @@ def igs_test(target_dir, exp_name, th, group='', params={}, dry_run=0):
     increment = 128
     k_perf_order = {0:1500, 1:5000, 4:400, 5:2000 ,6:100}
     if is_dp == 1:
-      kernels_limits = {0:1665, 1:1921, 4:1025, 5:1025, 6:500}
+      kernels_limits = {0:1281, 1:1409, 4:769, 5:897, 6:513}
     else:
       kernels_limits = {0:2100, 4:1200}
 
@@ -138,7 +138,7 @@ def main():
 
   count=0
 #  for group in ['MEM']:
-  for group in ['MEM', 'DATA', 'TLB_DATA', 'L2', 'L3', 'ENERGY']:
+  for group in [ 'L2', 'L3', 'TLB_DATA', 'DATA', 'ENERGY']:
     if( (machine_info['hostname']=='IVB_10core') and (group=='TLB_DATA') ): group='TLB'
     machine_conf['pinning_args'] = "-m -g " + group + " -C " + pin_str + ' -s 0x03 --'
 #    for k,v in params.iteritems():
