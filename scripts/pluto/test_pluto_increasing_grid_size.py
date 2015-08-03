@@ -173,7 +173,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
   increment = 64
 
   if(machine_info['hostname']=='Haswell_18core'):
-    kernels_limits = {'3d25pt':1281, '3d7pt':11409, '3d25pt_var':769, '3d7pt_var':897}
+    kernels_limits = {'3d25pt':1281, '3d7pt':1409, '3d25pt_var':769, '3d7pt_var':897}
     increment = 128
 
   points = dict()
@@ -184,7 +184,7 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
 
   count=0
   #for kernel in ['3d7pt', '3d7pt_var', '3d25pt']:#, '3d25pt_var']:
-  for kernel in ['3d25pt', '3d25pt_var']:
+  for kernel in [ '3d25pt', '3d25pt_var']:
     for N in points[kernel]:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
