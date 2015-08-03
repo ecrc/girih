@@ -1,5 +1,5 @@
 /*
- * Order-2, 3D 25 point stencil
+ * Order-1, 3D 25 point stencil with axis-symmetric ariable coefficients
  * Adapted from PLUTO and Pochoir test bench
  *
  * Tareq Malas
@@ -18,9 +18,7 @@
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
-#ifndef min
-#define min(x,y)    ((x) < (y)? (x) : (y))
-#endif
+
 
 /* Subtract the `struct timeval' values X and Y,
  * storing the result in RESULT.
@@ -58,7 +56,7 @@ int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *
 
 int main(int argc, char *argv[])
 {
-  int t, i, j, k, test;
+  int t, i, j, k, m, test;
   int Nx, Ny, Nz, Nt;
   if (argc > 3) {
     Nx = atoi(argv[1])+8;
@@ -69,19 +67,29 @@ int main(int argc, char *argv[])
     Nt = atoi(argv[4]);
 
 
+  // allocate the arrays
   double ****A = (double ****) malloc(sizeof(double***)*2);
-  double ***roc2 = (double ***) malloc(sizeof(double**));
-  A[0] = (double ***) malloc(sizeof(double**)*Nz);
-  A[1] = (double ***) malloc(sizeof(double**)*Nz);
-  roc2 = (double ***) malloc(sizeof(double**)*Nz);
-  for(i=0; i<Nz; i++){
-    A[0][i] = (double**) malloc(sizeof(double*)*Ny);
-    A[1][i] = (double**) malloc(sizeof(double*)*Ny);
-    roc2[i] = (double**) malloc(sizeof(double*)*Ny);
-    for(j=0;j<Ny;j++){
-      A[0][i][j] = (double*) malloc(sizeof(double)*Nx);
-      A[1][i][j] = (double*) malloc(sizeof(double)*Nx);
-      roc2[i][j] = (double*) malloc(sizeof(double)*Nx);
+
+  for(m=0; m<2;m++){
+    A[m] = (double ***) malloc(sizeof(double**)*Nz);
+    for(i=0; i<Nz; i++){
+      A[m][i] = (double**) malloc(sizeof(double*)*Ny);
+      for(j=0;j<Ny;j++){
+        A[m][i][j] = (double*) malloc(sizeof(double)*Nx);
+      }
+    }
+  }  
+
+  double ****coef = (double ****) malloc(sizeof(double***)*13);
+  for(m=0; m<13;m++){
+    coef[m] = (double ***) malloc(sizeof(double**)*Nz);
+
+    for(i=0; i<Nz; i++){
+      coef[m][i] = (double**) malloc(sizeof(double*)*Ny);
+
+      for(j=0;j<Ny;j++){
+        coef[m][i][j] = (double*) malloc(sizeof(double)*Nx);
+      }
     }
   }
 
@@ -95,21 +103,27 @@ int main(int argc, char *argv[])
   struct timeval start, end, result;
   double tdiff = 0.0, min_tdiff=1.e100;
 
-
   const int BASE = 1024;
-
 
   // initialize variables
   //
   srand(42);
-    for (i = 1; i < Nz; i++) {
-        for (j = 1; j < Ny; j++) {
-            for (k = 1; k < Nx; k++) {
-                A[0][i][j][k] = 1.0 * (rand() % BASE);
-                roc2[i][j][k] = 2.0 * (rand() % BASE);
-            }
-        }
-    }
+  for (i = 1; i < Nz; i++) {
+      for (j = 1; j < Ny; j++) {
+          for (k = 1; k < Nx; k++) {
+              A[0][i][j][k] = 1.0 * (rand() % BASE);
+          }
+      }
+  }
+  for (m=0; m<13; m++) {
+      for (i=1; i<Nz; i++) {
+          for (j=1; j<Ny; j++) {
+              for (k=1; k<Nx; k++) {
+                  coef[m][i][j][k] = 1.0 * (rand() % BASE);
+              }
+          }
+      }
+  }
 
 
 #ifdef LIKWID_PERFMON
@@ -127,11 +141,6 @@ int main(int argc, char *argv[])
   num_threads = omp_get_max_threads();
 #endif
 
-  const double coef0 = -0.28472;
-  const double coef1 = 0.16000;
-  const double coef2 = -0.02000;
-  const double coef3 = 0.00254;
-  const double coef4 = -0.00018;
 
   for(test=0; test<TESTS; test++){
       gettimeofday(&start, 0);
@@ -142,20 +151,20 @@ int main(int argc, char *argv[])
               for (j = 4; j < Ny-4; j++) {
                   for (k = 4; k < Nx-4; k++) {
 
-                      A[(t+1)%2][i][j][k] = 2.0*A[t%2][i][j][k] - A[(t+1)%2][i][j][k] + roc2[i][j][k]*( 
-                        coef0* A[t%2][i  ][j  ][k  ] +
-                        coef1*(A[t%2][i-1][j  ][k  ] + A[t%2][i+1][j  ][k  ]  +
-                               A[t%2][i  ][j-1][k  ] + A[t%2][i  ][j+1][k  ]  +
-                               A[t%2][i  ][j  ][k-1] + A[t%2][i  ][j  ][k+1]) +
-                        coef2*(A[t%2][i-2][j  ][k  ] + A[t%2][i+2][j  ][k  ]  +
-                               A[t%2][i  ][j-2][k  ] + A[t%2][i  ][j+2][k  ]  +
-                               A[t%2][i  ][j  ][k-2] + A[t%2][i  ][j  ][k+2]) +
-                        coef3*(A[t%2][i-3][j  ][k  ] + A[t%2][i+3][j  ][k  ]  +
-                               A[t%2][i  ][j-3][k  ] + A[t%2][i  ][j+3][k  ]  +
-                               A[t%2][i  ][j  ][k-3] + A[t%2][i  ][j  ][k+3]) +
-                        coef4*(A[t%2][i-4][j  ][k  ] + A[t%2][i+4][j  ][k  ]  +
-                               A[t%2][i  ][j-4][k  ] + A[t%2][i  ][j+4][k  ]  +
-                               A[t%2][i  ][j  ][k-4] + A[t%2][i  ][j  ][k+4]) );
+                      A[(t+1)%2][i][j][k] =
+                       coef[0][i][j][k] *  A[(t)%2][i  ][j  ][k  ] +
+                       coef[1][i][j][k] * (A[(t)%2][i-1][j  ][k  ] + A[(t)%2][i+1][j  ][k  ]) +
+                       coef[2][i][j][k] * (A[(t)%2][i  ][j-1][k  ] + A[(t)%2][i  ][j+1][k  ]) +
+                       coef[3][i][j][k] * (A[(t)%2][i  ][j  ][k-1] + A[(t)%2][i  ][j  ][k+1]) +
+                       coef[4][i][j][k] * (A[(t)%2][i-2][j  ][k  ] + A[(t)%2][i+2][j  ][k  ]) +
+                       coef[5][i][j][k] * (A[(t)%2][i  ][j-2][k  ] + A[(t)%2][i  ][j+2][k  ]) +
+                       coef[6][i][j][k] * (A[(t)%2][i  ][j  ][k-2] + A[(t)%2][i  ][j  ][k+2]) +
+                       coef[7][i][j][k] * (A[(t)%2][i-3][j  ][k  ] + A[(t)%2][i+3][j  ][k  ]) +
+                       coef[8][i][j][k] * (A[(t)%2][i  ][j-3][k  ] + A[(t)%2][i  ][j+3][k  ]) +
+                       coef[9][i][j][k] * (A[(t)%2][i  ][j  ][k-3] + A[(t)%2][i  ][j  ][k+3]) +
+                       coef[10][i][j][k]* (A[(t)%2][i-4][j  ][k  ] + A[(t)%2][i+4][j  ][k  ]) +
+                       coef[11][i][j][k]* (A[(t)%2][i  ][j-4][k  ] + A[(t)%2][i  ][j+4][k  ]) +
+                       coef[12][i][j][k]* (A[(t)%2][i  ][j  ][k-4] + A[(t)%2][i  ][j  ][k+4]) ;
                   }
               }
           }
@@ -164,12 +173,12 @@ int main(int argc, char *argv[])
       gettimeofday(&end, 0);
       ts_return = timeval_subtract(&result, &end, &start);
       tdiff = (double) (result.tv_sec + result.tv_usec * 1.0e-6);
-      min_tdiff = MIN(min_tdiff, tdiff);
+      min_tdiff = min(min_tdiff, tdiff);
       printf("Rank 0 TEST# %d time: %f\n", test, tdiff);
 
   }
 
-  PRINT_RESULTS(4, "constant")
+  PRINT_RESULTS(4, "variable axis-symmetric")
 
 #ifdef LIKWID_PERFMON
   #pragma omp parallel
@@ -180,20 +189,29 @@ int main(int argc, char *argv[])
 #endif
 
   // Free allocated arrays
- for(i=0; i<Nz; i++){
+  for(i=0; i<Nz; i++){
     for(j=0;j<Ny;j++){
       free(A[0][i][j]);
       free(A[1][i][j]);
-      free(roc2[i][j]);
     }
     free(A[0][i]);
     free(A[1][i]);
-    free(roc2[i]);
   }
   free(A[0]);
   free(A[1]);
-  free(roc2);
  
+  for(m=0; m<13;m++){
+    for(i=0; i<Nz; i++){
+      for(j=0;j<Ny;j++){
+        free(coef[m][i][j]);
+      }
+
+      free(coef[m][i]);
+    }
+
+    free(coef[m]);
+  }
+
   return 0;
 }
 
