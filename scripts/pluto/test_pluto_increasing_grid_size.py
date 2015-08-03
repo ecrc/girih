@@ -168,19 +168,23 @@ def igs_test(dry_run, target_dir, exp_name, group='', param_l=[]):
   target_dir = jpath(os.path.abspath("."),target_dir)
 
 
+  # machine_info['hostname']=='IVB_10core'
   kernels_limits = {'3d25pt':1089, '3d7pt':1217, '3d25pt_var':577, '3d7pt_var':769}
   increment = 64
+
   if(machine_info['hostname']=='Haswell_18core'):
-    kernels_limits = {'3d25pt':1665, '3d7pt':1921, '3d25pt_var':1025, '3d7pt_var':1025}
+    kernels_limits = {'3d25pt':1281, '3d7pt':11409, '3d25pt_var':769, '3d7pt_var':897}
     increment = 128
 
   points = dict()
   points['3d7pt'] = [64] + list(range(128, 5000, increment))
   points['3d7pt_var'] = points['3d7pt']
+  points['3d25pt'] = points['3d7pt']
+  points['3d25pt_var'] = points['3d7pt']
 
   count=0
   #for kernel in ['3d7pt', '3d7pt_var', '3d25pt']:#, '3d25pt_var']:
-  for kernel in ['3d7pt', '3d7pt_var']:
+  for kernel in ['3d25pt', '3d25pt_var']:
     for N in points[kernel]:
       if (N < kernels_limits[kernel]):
         outfile=('pluto_kernel_%s_N%d_%s_%s.txt' % (kernel, N, group, exp_name[-13:]))
@@ -262,8 +266,8 @@ def main():
   pin_str = "0-%d "%(th-1)
 
   count = 0
-#  for group in ['MEM']:
-  for group in ['MEM', 'L2', 'L3', 'DATA', 'TLB_DATA', 'ENERGY']:
+  for group in ['MEM']:
+#  for group in ['MEM', 'L2', 'L3', 'DATA', 'TLB_DATA', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:" + pin_str
     elif(machine_info['hostname']=='IVB_10core'):
