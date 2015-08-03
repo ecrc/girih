@@ -144,25 +144,25 @@ int main(int argc, char *argv[])
       gettimeofday(&start, 0);
   // serial execution - Addition: 6 && Multiplication: 2
 #pragma scop
-      for (t = 0; t < Nt-4; t++) {
+      for (t = 0; t < Nt; t++) {
           for (i = 4; i < Nz-4; i++) {
               for (j = 4; j < Ny-4; j++) {
                   for (k = 4; k < Nx-4; k++) {
 
                       A[(t+1)%2][i][j][k] = 2.0*A[t%2][i][j][k] - A[(t+1)%2][i][j][k] + roc2[i][j][k]*( 
-                        coef0* A[(t+1)%2][i  ][j  ][k  ] +
-                        coef1*(A[(t+1)%2][i-1][j  ][k  ] + A[(t+1)%2][i+1][j  ][k  ]  +
-                               A[(t+1)%2][i  ][j-1][k  ] + A[(t+1)%2][i  ][j+1][k  ]  +
-                               A[(t+1)%2][i  ][j  ][k-1] + A[(t+1)%2][i  ][j  ][k+1]) +
-                        coef2*(A[(t+1)%2][i-2][j  ][k  ] + A[(t+1)%2][i+2][j  ][k  ]  +
-                               A[(t+1)%2][i  ][j-2][k  ] + A[(t+1)%2][i  ][j+2][k  ]  +
-                               A[(t+1)%2][i  ][j  ][k-2] + A[(t+1)%2][i  ][j  ][k+2]) +
-                        coef3*(A[(t+1)%2][i-3][j  ][k  ] + A[(t+1)%2][i+3][j  ][k  ]  +
-                               A[(t+1)%2][i  ][j-3][k  ] + A[(t+1)%2][i  ][j+3][k  ]  +
-                               A[(t+1)%2][i  ][j  ][k-3] + A[(t+1)%2][i  ][j  ][k+3]) +
-                        coef4*(A[(t+1)%2][i-4][j  ][k  ] + A[(t+1)%2][i+4][j  ][k  ]  +
-                               A[(t+1)%2][i  ][j-4][k  ] + A[(t+1)%2][i  ][j+4][k  ]  +
-                               A[(t+1)%2][i  ][j  ][k-4] + A[(t+1)%2][i  ][j  ][k+4]) );
+                        coef0* A[t%2][i  ][j  ][k  ] +
+                        coef1*(A[t%2][i-1][j  ][k  ] + A[t%2][i+1][j  ][k  ]  +
+                               A[t%2][i  ][j-1][k  ] + A[t%2][i  ][j+1][k  ]  +
+                               A[t%2][i  ][j  ][k-1] + A[t%2][i  ][j  ][k+1]) +
+                        coef2*(A[t%2][i-2][j  ][k  ] + A[t%2][i+2][j  ][k  ]  +
+                               A[t%2][i  ][j-2][k  ] + A[t%2][i  ][j+2][k  ]  +
+                               A[t%2][i  ][j  ][k-2] + A[t%2][i  ][j  ][k+2]) +
+                        coef3*(A[t%2][i-3][j  ][k  ] + A[t%2][i+3][j  ][k  ]  +
+                               A[t%2][i  ][j-3][k  ] + A[t%2][i  ][j+3][k  ]  +
+                               A[t%2][i  ][j  ][k-3] + A[t%2][i  ][j  ][k+3]) +
+                        coef4*(A[t%2][i-4][j  ][k  ] + A[t%2][i+4][j  ][k  ]  +
+                               A[t%2][i  ][j-4][k  ] + A[t%2][i  ][j+4][k  ]  +
+                               A[t%2][i  ][j  ][k-4] + A[t%2][i  ][j  ][k+4]) );
                   }
               }
           }
