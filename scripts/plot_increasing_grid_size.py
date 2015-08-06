@@ -74,7 +74,7 @@ def main():
       k['method'] = k['Time stepper orig name']
     elif(k['Time stepper orig name'] == 'Diamond'):
       if('_tgs1_' in k['file_name']):
-        k['method'] = 'CATS2'
+        k['method'] = '1WD'
       else:
         k['method'] = 'MWD'
     else:
@@ -164,7 +164,7 @@ def main():
     elif k['LIKWID performance counter'] == 'DATA':
       plots[plot_key][line_key]['data'].append(entry['Load to Store ratio avg'])
     #Diamond tiling data
-    if(k['method'] == 'CATS2' or k['method'] == 'MWD'):
+    if(k['method'] == '1WD' or k['method'] == 'MWD'):
       plots[plot_key][line_key]['diam width'].append(int(k['Intra-diamond width']))
       plots[plot_key][line_key]['tgs'].append(int(k['Thread group size']))
       plots[plot_key][line_key]['thx'].append(int(k['Threads along x-axis']))
@@ -271,7 +271,7 @@ def plot_perf_fig(p, stencil, machine_name):
   marker_s = 7
   line_w = 1
   line_s = '-' 
-  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), 'CATS2':('r','+'),
+  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), '1WD':('r','+'),
                   'PLUTO':('m','*'), 'Pochoir':('b','^')}
 
 
@@ -295,6 +295,7 @@ def plot_perf_fig(p, stencil, machine_name):
   plt.grid()
   plt.xlabel('Size in each dimension')
   plt.legend(loc='best')
+  plt.gca().set_ylim(bottom=0)
   pylab.savefig(machine_name + '_perf_' + f_name + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
 
@@ -329,7 +330,7 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
   marker_s = 7
   line_w = 1
   line_s = '-' 
-  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), 'CATS2':('r','+'),
+  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), '1WD':('r','+'),
                   'PLUTO':('m','*'), 'Pochoir':('b','^')}
 
 
@@ -369,12 +370,13 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
     plt.grid()
     plt.xlabel('Size in each dimension')
     plt.legend(loc='best')
+    plt.gca().set_ylim(bottom=0)
     pylab.savefig(machine_name + '_' + file_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     plt.clf()
 
 
   # Diamond tiling information
-  if any(method[1] in ['MWD', 'CATS2'] for method in p):
+  if any(method[1] in ['MWD', '1WD'] for method in p):
     # Thread group size information
     plt.figure(plt_idx)
     plt_idx = plt_idx + 1
@@ -391,10 +393,10 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
           y = p[l][measure]
           plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
-      if(method == 'CATS2'):
+      if(method == '1WD'):
         x = p[l]['n']
         y = p[l]['tgs']
-        plt.plot(x, y, color='k', marker='x', markersize=marker_s, linestyle=line_s, linewidth=line_w, label='CATS2 Group')
+        plt.plot(x, y, color='k', marker='x', markersize=marker_s, linestyle=line_s, linewidth=line_w, label='1WD Group')
 
     plt.ylabel('Intra-tile threads')
     plt.grid()
@@ -412,7 +414,7 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
       plt_idx = plt_idx + 1
       for l in p:
         method=l[1]
-        if(method in ['MWD', 'CATS2']):
+        if(method in ['MWD', '1WD']):
           col, marker = method_style[method]
           x = p[l]['n']
           y = p[l][measure]
@@ -430,7 +432,7 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
 #    plt_idx = plt_idx + 1
 #    for l in p:
 #      method=l[1]
-#      if(method in ['MWD', 'CATS2']):
+#      if(method in ['MWD', '1WD']):
 #        col, marker = method_style[method]
 #        x = p[l]['n']
 #        y = p[l]['diam width']

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), 'CATS2':('r','+'),
+method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), '1WD':('r','+'),
                 'PLUTO':('m','*'), 'Pochoir':('b','^')}
 
 
@@ -76,7 +76,7 @@ def main():
       k['method'] = k['Time stepper orig name']
     elif(k['Time stepper orig name'] == 'Diamond'):
       if('_tgs1_' in k['file_name']):
-        k['method'] = 'CATS2'
+        k['method'] = '1WD'
       else:
         k['method'] = 'MWD'
     else:
@@ -169,7 +169,7 @@ def main():
     elif k['LIKWID performance counter'] == 'DATA':
       meas_figs[plot_key][line_key]['data'].append(entry['Load to Store ratio avg'])
     #Diamond tiling data
-    if(k['method'] == 'CATS2' or k['method'] == 'MWD'):
+    if(k['method'] == '1WD' or k['method'] == 'MWD'):
       meas_figs[plot_key][line_key]['diam width'].append(int(k['Intra-diamond width']))
       meas_figs[plot_key][line_key]['tgs'].append(int(k['Thread group size']))
       meas_figs[plot_key][line_key]['thx'].append(int(k['Threads along x-axis']))
@@ -307,7 +307,7 @@ def plot_finalize(stencil, axl, fig, machine_name):
 
   # set figures limits
   for meas in axl:
-    if meas in ['blk size', 'diam width', 'bs_z', 'tgs']:
+    if meas in ['perf', 'mem bw', 'l2 vol', 'l3 vol', 'blk size', 'diam width', 'bs_z', 'tgs']:
       axl[meas].set_ylim(bottom=0)
 
   title = stencil.replace('_','-')
@@ -407,7 +407,7 @@ def plot_params_fig(p, stencil, plt_key, axl):
   for measure, y_label, f_prefix in blk_width_labels:
     for l in p:
       method=l[1]
-      if(method in ['MWD', 'CATS2']):
+      if(method in ['MWD', '1WD']):
         col, marker = method_style[method]
         x = p[l]['n']
         y = p[l][measure]
