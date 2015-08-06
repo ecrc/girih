@@ -128,7 +128,7 @@ def main():
 
     # Initialize plot entry if does not exist for current data entry
 #    for m,n in entry.iteritems(): print m,n
-    measure_list = ['n', 'perf', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width']
+    measure_list = ['n', 'perf', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'pluto z tile', 'pluto y tile', 'pluto x tile']
     plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
     line_key = (k['mwdt'], k['method'])
     if plot_key not in plots.keys():
@@ -172,6 +172,11 @@ def main():
       plots[plot_key][line_key]['thz'].append(int(k['Threads along z-axis']))
       plots[plot_key][line_key]['blk size'].append(int(k['Total cache block size (kiB)'])/1024.0)
 
+    #PLUTO data
+    if(k['method'] == 'PLUTO'):
+      plots[plot_key][line_key]['pluto z tile'].append(int(k['PLUTO tile size of loop 1']))
+      plots[plot_key][line_key]['pluto y tile'].append(int(k['PLUTO tile size of loop 3']))
+      plots[plot_key][line_key]['pluto x tile'].append(int(k['PLUTO tile size of loop 4']))
 
     # append the performance data
     plot_key = (entry['Precision'], k['stencil_name'])
@@ -337,23 +342,6 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
   f_name = stencil+'_inc_grid_size'
 
 
-#  # performance
-#  plt.figure(0)
-#  for l in p:
-#    label = l[1]
-#    col, marker = method_style[label]
-#    x = p[l]['n']
-#    y_p = p[l]['perf']
-#    plt.plot(x, y_p, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
-#
-#  plt.ylabel('GLUP/s')
-#  plt.grid()
-#  plt.xlabel('Size in each dimension')
-#  plt.legend(loc='best')
-#  pylab.savefig('perf_' + f_name + '_' + plt_key + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
-#  plt.clf()
-
-
   # HW measurements
   plt_idx=1
   for y_label, file_prefix, measure in hw_ctr_labels[plt_key]:
@@ -375,8 +363,33 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
     plt.clf()
 
 
+  # PLUTO tiling information
+  if (any(method[1] == 'PLUTO' for method in p) and plt_key=='MEM'):
+    plt.figure(plt_idx)
+    plt_idx = plt_idx + 1
+    for l in p:
+      method=l[1]
+      if(method == 'PLUTO'):
+        tgs_labels =(
+               ('pluto z tile', 'b', '^', 'Z'),
+               ('pluto y tile', 'r', '+', 'Y'),
+               ('pluto x tile', 'm', '*', 'X') )
+        for measure, col, marker, label in tgs_labels:
+          x = p[l]['n']
+          y = p[l][measure]
+          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+
+    plt.ylabel('PLUTO tile size')
+    plt.grid()
+    plt.xlabel('Size in each dimension')
+    plt.legend(loc='upper left')
+    plt.gca().set_ylim(bottom=0)
+    pylab.savefig(machine_name + '_pluto_tile_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+    plt.clf()
+
+
   # Diamond tiling information
-  if any(method[1] in ['MWD', '1WD'] for method in p):
+  if (any(method[1] in ['MWD', '1WD'] for method in p) and plt_key=='MEM'):
     # Thread group size information
     plt.figure(plt_idx)
     plt_idx = plt_idx + 1
@@ -427,24 +440,6 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
       plt.gca().set_ylim(bottom=0)
       pylab.savefig(machine_name + '_' + f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
       plt.clf()
-
-#    plt.figure(plt_idx)
-#    plt_idx = plt_idx + 1
-#    for l in p:
-#      method=l[1]
-#      if(method in ['MWD', '1WD']):
-#        col, marker = method_style[method]
-#        x = p[l]['n']
-#        y = p[l]['diam width']
-#        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
-#
-#    plt.ylabel('Diamond width')
-#    plt.grid()
-#    plt.xlabel('Size in each dimension')
-#    plt.legend(loc='upper left')
-#    plt.gca().set_ylim(bottom=0)
-#    pylab.savefig('diamond_width_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
-#    plt.clf()
 
 
 if __name__ == "__main__":

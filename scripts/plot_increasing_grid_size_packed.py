@@ -334,9 +334,8 @@ def plot_all(perf_fig, meas_figs, machine_name):
 
     # Plot used parameters
     for p in meas_figs:
-      if (p[1]==stencil and p[2]!=''):
+      if (p[1]==stencil and p[2]=='MEM'):
         plot_params_fig(meas_figs[p], stencil=p[1], plt_key=p[2], axl=axl)
-        break # because it will be the same for all HW counter data
 
     plot_finalize(stencil, axl, fig, machine_name)
 
