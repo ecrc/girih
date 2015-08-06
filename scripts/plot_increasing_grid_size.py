@@ -1,5 +1,34 @@
 #!/usr/bin/env python
 
+import pylab
+
+m = 3.0
+fig_width = 4.0*0.393701*m # inches
+fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
+
+fig_size =  [fig_width,fig_height]
+params = {
+       'axes.labelsize': 6*m,
+       'axes.linewidth': 0.25*m,
+       'lines.linewidth': 0.75*m,
+       'font.size': 7*m,
+       'legend.fontsize': 4*m,
+       'xtick.labelsize': 5*m,
+       'ytick.labelsize': 6*m,
+       'lines.markersize': 1,
+       'text.usetex': True,
+       'figure.figsize': fig_size}
+pylab.rcParams.update(params)
+
+
+marker_s = 7
+line_w = 1
+line_s = '-' 
+method_style = {'MWD':('k','x'), '1WD':('r','+'),
+                'Spt.blk.':('g','o'), 'PLUTO':('m','*'), 'Pochoir':('b','^'),
+                     '2WD':('g','o'),   '3WD':('m','*'),     '6WD':('b','^'), '9WD':('c','v'), '18WD':('y','>'), '5WD':('m','*')}
+
+
 hw_ctr_labels = {
                     '':(),
                     'TLB':[('L1 DTLB miss rate sum', 'tlb_', 'tlb')],
@@ -15,9 +44,9 @@ def main():
   from collections import OrderedDict
 
   raw_data = load_csv(sys.argv[1])
+  is_tgs_only = 0 if len(sys.argv)<3 else int(sys.argv[2])
 
-
-  req_fields = [('MStencil/s  MAX', float), ('Precision', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int)]
+  req_fields = [('MStencil/s  MAX', float), ('Precision', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int)]
 
   hw_ctr_fields = {
                     '':[],
@@ -117,8 +146,15 @@ def main():
         print k
         return
 
+
+    k['tgsl'] = entry['Thread group size']
+    if(is_tgs_only==0): # regular mode for all MWD
+      if(k['method']=='MWD'):
+        k['tgsl'] = 100
+
+
     #find repeated data
-    key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'], k['mwdt'], k['method'], entry['Global NX'])
+    key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'], k['mwdt'], k['method'], k['tgsl'], entry['Global NX'])
     if key not in duplicates:
       duplicates.add(key)
     else:
@@ -130,7 +166,7 @@ def main():
 #    for m,n in entry.iteritems(): print m,n
     measure_list = ['n', 'perf', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'pluto z tile', 'pluto y tile', 'pluto x tile']
     plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
-    line_key = (k['mwdt'], k['method'])
+    line_key = (k['mwdt'], k['method'], k['tgsl'])
     if plot_key not in plots.keys():
       plots[plot_key] = {}
     if line_key not in plots[plot_key].keys():
@@ -180,7 +216,7 @@ def main():
 
     # append the performance data
     plot_key = (entry['Precision'], k['stencil_name'])
-    line_key = (k['mwdt'], k['method'])
+    line_key = (k['mwdt'], k['method'], k['tgsl'])
     if plot_key not in perf_fig.keys(): # figure
       perf_fig[plot_key] = dict()
 
@@ -238,47 +274,21 @@ def main():
 
   # Plot performance
   for p in perf_fig:
-    plot_perf_fig(perf_fig[p], stencil=p[1], machine_name=machine_name)
+    plot_perf_fig(perf_fig[p], stencil=p[1], machine_name=machine_name, is_tgs_only=is_tgs_only)
  
 
   # Plot other measurements
   for p in plots:
-    plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2], machine_name=machine_name)
+    plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2], machine_name=machine_name, is_tgs_only=is_tgs_only)
 
 
-def plot_perf_fig(p, stencil, machine_name):
+def plot_perf_fig(p, stencil, machine_name, is_tgs_only):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
   import pylab, itertools
   from pylab import arange,pi,sin,cos,sqrt
   from scripts.utils import get_stencil_num
-
-  m = 3.0
-  fig_width = 4.0*0.393701*m # inches
-  fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
-
-  fig_size =  [fig_width,fig_height]
-  params = {
-         'axes.labelsize': 6*m,
-         'axes.linewidth': 0.25*m,
-         'lines.linewidth': 0.75*m,
-         'font.size': 7*m,
-         'legend.fontsize': 4*m,
-         'xtick.labelsize': 5*m,
-         'ytick.labelsize': 6*m,
-         'lines.markersize': 1,
-         'text.usetex': True,
-         'figure.figsize': fig_size}
-  pylab.rcParams.update(params)
-
-
-  marker_s = 7
-  line_w = 1
-  line_s = '-' 
-  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), '1WD':('r','+'),
-                  'PLUTO':('m','*'), 'Pochoir':('b','^')}
-
 
   f_name = stencil+'_inc_grid_size'
 
@@ -287,6 +297,9 @@ def plot_perf_fig(p, stencil, machine_name):
   plt.figure(0)
   for l in p:
     label = l[1]
+    tgsl = l[2]
+    if((label=='MWD') and (is_tgs_only==1)):
+      label= str(tgsl) + 'WD'
     col, marker = method_style[label]
     x = []
     y = []
@@ -305,39 +318,13 @@ def plot_perf_fig(p, stencil, machine_name):
   plt.clf()
 
 
-def plot_meas_fig(p, stencil, plt_key, machine_name):
+def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
   import pylab
   from pylab import arange,pi,sin,cos,sqrt
   from scripts.utils import get_stencil_num
-
-  m = 3.0
-  fig_width = 4.0*0.393701*m # inches
-  fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
-
-  fig_size =  [fig_width,fig_height]
-  params = {
-         'axes.labelsize': 6*m,
-         'axes.linewidth': 0.25*m,
-         'lines.linewidth': 0.75*m,
-         'font.size': 7*m,
-         'legend.fontsize': 4*m,
-         'xtick.labelsize': 5*m,
-         'ytick.labelsize': 6*m,
-         'lines.markersize': 1,
-         'text.usetex': True,
-         'figure.figsize': fig_size}
-  pylab.rcParams.update(params)
-
-
-  marker_s = 7
-  line_w = 1
-  line_s = '-' 
-  method_style = {'Spt.blk.':('g','o'), 'MWD':('k','x'), '1WD':('r','+'),
-                  'PLUTO':('m','*'), 'Pochoir':('b','^')}
-
 
   f_name = stencil+'_inc_grid_size'
 
@@ -349,6 +336,9 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
     plt_idx = plt_idx + 1
     for l in p:
       label = l[1]
+      tgsl = l[2]
+      if((label=='MWD') and (is_tgs_only==1)):
+        label= str(tgsl) + 'WD'
       col, marker = method_style[label]
       x = p[l]['n']
       y = p[l][measure]
@@ -390,6 +380,32 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
 
   # Diamond tiling information
   if (any(method[1] in ['MWD', '1WD'] for method in p) and plt_key=='MEM'):
+
+    #Cache block size and diamond width
+    for measure, y_label, f_prefix in [('blk size', 'Cache block size (MiB)', 'cache_block_size_'),
+                                        ('diam width', 'Diamond width', 'diamond_width_')]:
+      plt.figure(plt_idx)
+      plt_idx = plt_idx + 1
+      for l in p:
+        method=l[1]
+        tgsl = l[2]
+        if(method in ['MWD', '1WD']):
+          if(is_tgs_only==1):
+            method= str(tgsl) + 'WD'
+          col, marker = method_style[method]
+          x = p[l]['n']
+          y = p[l][measure]
+          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
+
+      plt.ylabel(y_label)
+      plt.grid()
+      plt.xlabel('Size in each dimension')
+      plt.legend(loc='best')
+      plt.gca().set_ylim(bottom=0)
+      pylab.savefig(machine_name + '_' + f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
+      plt.clf()
+
+    if(is_tgs_only==1): return
     # Thread group size information
     plt.figure(plt_idx)
     plt_idx = plt_idx + 1
@@ -406,11 +422,6 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
           y = p[l][measure]
           plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
-      if(method == '1WD'):
-        x = p[l]['n']
-        y = p[l]['tgs']
-        plt.plot(x, y, color='k', marker='x', markersize=marker_s, linestyle=line_s, linewidth=line_w, label='1WD Group')
-
     plt.ylabel('Intra-tile threads')
     plt.grid()
     plt.xlabel('Size in each dimension')
@@ -418,28 +429,6 @@ def plot_meas_fig(p, stencil, plt_key, machine_name):
     plt.gca().set_ylim(bottom=0)
     pylab.savefig(machine_name + '_thread_group_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
     plt.clf()
-
-
-    #Cache block size and diamond width
-    for measure, y_label, f_prefix in [('blk size', 'Cache block size (MiB)', 'cache_block_size_'),
-                                        ('diam width', 'Diamond width', 'diamond_width_')]:
-      plt.figure(plt_idx)
-      plt_idx = plt_idx + 1
-      for l in p:
-        method=l[1]
-        if(method in ['MWD', '1WD']):
-          col, marker = method_style[method]
-          x = p[l]['n']
-          y = p[l][measure]
-          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
-
-      plt.ylabel(y_label)
-      plt.grid()
-      plt.xlabel('Size in each dimension')
-      plt.legend(loc='best')
-      plt.gca().set_ylim(bottom=0)
-      pylab.savefig(machine_name + '_' + f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
-      plt.clf()
 
 
 if __name__ == "__main__":
