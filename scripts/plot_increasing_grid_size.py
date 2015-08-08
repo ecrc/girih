@@ -26,7 +26,7 @@ line_w = 1
 line_s = '-' 
 method_style = {'MWD':('k','x'), '1WD':('r','+'),
                 'Spt.blk.':('g','o'), 'PLUTO':('m','*'), 'Pochoir':('b','^'),
-                     '2WD':('g','o'),   '3WD':('m','*'),     '6WD':('b','^'), '9WD':('c','v'), '18WD':('y','>'), '5WD':('m','*')}
+                     '2WD':('g','o'),   '3WD':('m','*'),     '6WD':('b','^'), '9WD':('c','v'), '18WD':('y','>'), '5WD':('m','*'), '10WD':('b','^')}
 
 
 hw_ctr_labels = {
@@ -274,11 +274,13 @@ def main():
 
   # Plot performance
   for p in perf_fig:
+    print p[1], ' Perf'
     plot_perf_fig(perf_fig[p], stencil=p[1], machine_name=machine_name, is_tgs_only=is_tgs_only)
  
 
   # Plot other measurements
   for p in plots:
+    print p[1], p[2]
     plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2], machine_name=machine_name, is_tgs_only=is_tgs_only)
 
 
