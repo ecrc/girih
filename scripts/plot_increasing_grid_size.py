@@ -36,7 +36,9 @@ hw_ctr_labels = {
                     'L2':[('L2 Bytes/LUP', 'L2_', 'l2 vol')],
                     'L3':[('L3 Bytes/LUP', 'L3_', 'l3 vol')],
                     'MEM':[('MEM GB/s', 'mem_bw_', 'mem bw'), ('MEM Bytes/LUP', 'mem_vol_', 'mem vol')],
-                    'ENERGY':[('Total pJ/LUP', 'energy_', 'total energy')] }
+                    'ENERGY':[('CPU pJ/LUP', 'energy_cpu_', 'cpu energy'),
+                              ('DRAM pJ/LUP', 'energy_dram_', 'dram energy'),
+                              ('Total pJ/LUP', 'energy_total_', 'total energy')] }
  
 def main():
   import sys
@@ -164,7 +166,7 @@ def main():
 
     # Initialize plot entry if does not exist for current data entry
 #    for m,n in entry.iteritems(): print m,n
-    measure_list = ['n', 'perf', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'pluto z tile', 'pluto y tile', 'pluto x tile']
+    measure_list = ['n', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'pluto z tile', 'pluto y tile', 'pluto x tile']
     plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
     line_key = (k['mwdt'], k['method'], k['tgsl'])
     if plot_key not in plots.keys():
@@ -185,8 +187,12 @@ def main():
       entry['cpu energy pj/lup'] = entry['Energy']/N
       entry['dram energy pj/lup'] = entry['Energy DRAM']/N
       entry['total energy pj/lup'] = entry['cpu energy pj/lup'] + entry['dram energy pj/lup']
-      if (entry['total energy pj/lup'] > 1e5): entry['total energy pj/lup'] = 0
-      plots[plot_key][line_key]['total energy'].append(entry['total energy pj/lup'])
+      if (entry['cpu energy pj/lup'] < 1e5): 
+        plots[plot_key][line_key]['cpu energy'].append(entry['cpu energy pj/lup'])
+      if (entry['dram energy pj/lup'] < 1e5): 
+        plots[plot_key][line_key]['dram energy'].append(entry['dram energy pj/lup'])
+      if (entry['total energy pj/lup'] < 1e5): 
+        plots[plot_key][line_key]['total energy'].append(entry['total energy pj/lup'])
     # TLB
     elif k['LIKWID performance counter'] == 'TLB':
       plots[plot_key][line_key]['tlb'].append(entry[ hw_ctr_fields['TLB'][0][0] ])
@@ -293,7 +299,8 @@ def plot_perf_fig(p, stencil, machine_name, is_tgs_only):
   from scripts.utils import get_stencil_num
 
   f_name = stencil+'_inc_grid_size'
-
+  if(is_tgs_only==1):
+    f_name = f_name+'_tgs'
 
   # performance
   plt.figure(0)
@@ -329,7 +336,8 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
   from scripts.utils import get_stencil_num
 
   f_name = stencil+'_inc_grid_size'
-
+  if(is_tgs_only==1):
+    f_name = f_name+'_tgs'
 
   # HW measurements
   plt_idx=1
