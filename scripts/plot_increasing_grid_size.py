@@ -166,7 +166,7 @@ def main():
 
     # Initialize plot entry if does not exist for current data entry
 #    for m,n in entry.iteritems(): print m,n
-    measure_list = ['n', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'pluto z tile', 'pluto y tile', 'pluto x tile']
+    measure_list = ['n', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'wavefront width', 'pluto bs_x']
     plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
     line_key = (k['mwdt'], k['method'], k['tgsl'])
     if plot_key not in plots.keys():
@@ -208,6 +208,7 @@ def main():
     #Diamond tiling data
     if(k['method'] == '1WD' or k['method'] == 'MWD'):
       plots[plot_key][line_key]['diam width'].append(int(k['Intra-diamond width']))
+      plots[plot_key][line_key]['wavefront width'].append(int(k['Multi-wavefront updates']))
       plots[plot_key][line_key]['tgs'].append(int(k['Thread group size']))
       plots[plot_key][line_key]['thx'].append(int(k['Threads along x-axis']))
       plots[plot_key][line_key]['thy'].append(int(k['Threads along y-axis']))
@@ -216,9 +217,9 @@ def main():
 
     #PLUTO data
     if(k['method'] == 'PLUTO'):
-      plots[plot_key][line_key]['pluto z tile'].append(int(k['PLUTO tile size of loop 1']))
-      plots[plot_key][line_key]['pluto y tile'].append(int(k['PLUTO tile size of loop 3']))
-      plots[plot_key][line_key]['pluto x tile'].append(int(k['PLUTO tile size of loop 4']))
+      plots[plot_key][line_key]['diam width'].append(int(k['PLUTO tile size of loop 1']))
+      plots[plot_key][line_key]['wavefront width'].append(int(k['PLUTO tile size of loop 3']))
+      plots[plot_key][line_key]['pluto bs_x'].append(int(k['PLUTO tile size of loop 4']))
 
     # append the performance data
     plot_key = (entry['Precision'], k['stencil_name'])
@@ -370,14 +371,10 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
     for l in p:
       method=l[1]
       if(method == 'PLUTO'):
-        tgs_labels =(
-               ('pluto z tile', 'b', '^', 'Z'),
-               ('pluto y tile', 'r', '+', 'Y'),
-               ('pluto x tile', 'm', '*', 'X') )
-        for measure, col, marker, label in tgs_labels:
-          x = p[l]['n']
-          y = p[l][measure]
-          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+        measure, col, marker, label = ('pluto bs_x', 'm', '*', 'X')
+        x = p[l]['n']
+        y = p[l][measure]
+        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
     plt.ylabel('PLUTO tile size')
     plt.grid()
@@ -388,18 +385,19 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
     plt.clf()
 
 
-  # Diamond tiling information
+  # Tiling information
   if (any(method[1] in ['MWD', '1WD'] for method in p) and plt_key=='MEM'):
 
     #Cache block size and diamond width
     for measure, y_label, f_prefix in [('blk size', 'Cache block size (MiB)', 'cache_block_size_'),
-                                        ('diam width', 'Diamond width', 'diamond_width_')]:
+                                        ('diam width', 'Diamond width', 'diamond_width_'),
+                                        ('wavefront width', 'Wavefront width', 'wavefront_width_')]:
       plt.figure(plt_idx)
       plt_idx = plt_idx + 1
       for l in p:
         method=l[1]
         tgsl = l[2]
-        if(method in ['MWD', '1WD']):
+        if((method in ['MWD', '1WD']) or (method =='PLUTO' and measure!='blk size')):
           if(is_tgs_only==1):
             method= str(tgsl) + 'WD'
           col, marker = method_style[method]
@@ -416,7 +414,7 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
       plt.clf()
 
     if(is_tgs_only==1): return
-    # Thread group size information
+    # MWD Thread group size information
     plt.figure(plt_idx)
     plt_idx = plt_idx + 1
     for l in p:
