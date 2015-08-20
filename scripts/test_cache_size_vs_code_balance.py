@@ -20,32 +20,31 @@ def igs_test(target_dir, exp_name, th, group='', dry_run=0):
 
   k_time_scale = {n: desired_time*k_perf_order[n] for n in k_perf_order.keys()}
 
-  #exp = is_dp, ts, k, N, tb_l
+  #exp = is_dp, ts, k, N, bs_z,  tb_l
   # spatial blocking
-  exp_l = [(0, 0, 0, 960, [-1])
-          ,(1, 0, 0, 960, [-1])
-          ,(1, 0, 1, 960, [-1])
-          ,(1, 0, 4, 480, [-1])
-          ,(1, 0, 5, 680, [-1])
+  exp_l = [(0, 0, 0, 960, 0, [-1])
+          ,(1, 0, 0, 960, 0, [-1])
+          ,(1, 0, 1, 960, 0, [-1])
+          ,(1, 0, 4, 480, 0, [-1])
+          ,(1, 0, 5, 680, 0, [-1])
           ]
   # 1WD
   exp_l = exp_l + \
-          [(1, 2, 0, 960, [1, 3, 5])
-          ,(1, 2, 1, 960, [1, 3, 5, 7, 9, 11, 15, 19, 23, 29])
-          ,(1, 2, 1, 480, [1, 3, 5])
-          ,(1, 2, 1, 680, [1, 3, 9, 19])
+          [(1, 2, 0, 960, 1, [1, 3, 5])
+          ,(1, 2, 1, 960, 1, [1, 3, 5, 7, 9, 11, 15, 19, 23, 29])
+          ,(1, 2, 4, 480, 1, [1, 3, 5])
+          ,(1, 2, 5, 680, 1, [1, 3, 9, 19])
           ]
 
   mwdt=1
-  nwf = -1
   tgs, thx, thy, thz = (1,1,1,1)
   count=0
-  for is_dp, ts, kernel, N, tb_l in exp_l:
+  for is_dp, ts, kernel, N, bs_z, tb_l in exp_l:
     for tb in tb_l:
       outfile=('kernel%d_isdp%d_ts%d_tb%d_N%d_%s_%s.txt' % (kernel, is_dp, ts, tb, N, group, exp_name[-13:]))
       nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
 #      print outfile, ts, kernel, tb, N  
-      run_test(dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=mwdt, tb=tb, nwf=nwf)
+      run_test(dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=mwdt, tb=tb, nwf=bs_z)
       count = count+1
 
   return count
