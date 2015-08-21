@@ -21,8 +21,10 @@ def igs_test(target_dir, exp_name, th, group='', dry_run=0):
   k_time_scale = {n: desired_time*k_perf_order[n] for n in k_perf_order.keys()}
 
   #exp = is_dp, ts, k, N, bs_z,  tb_l
+  exp_l = []
   # spatial blocking
-  exp_l = [(0, 0, 0, 960, 0, [-1])
+  exp_l = exp_l + \
+          [(0, 0, 0, 960, 0, [-1])
           ,(1, 0, 0, 960, 0, [-1])
           ,(1, 0, 1, 960, 0, [-1])
           ,(1, 0, 4, 480, 0, [-1])
@@ -30,7 +32,8 @@ def igs_test(target_dir, exp_name, th, group='', dry_run=0):
           ]
   # 1WD
   exp_l = exp_l + \
-          [(1, 2, 0, 960, 1, [1, 3, 5])
+          [(0, 2, 0, 960, 1, [1, 3, 5])
+          ,(1, 2, 0, 960, 1, [1, 3, 5])
           ,(1, 2, 1, 960, 1, [1, 3, 5, 7, 9, 11, 15, 19, 23, 29])
           ,(1, 2, 4, 480, 1, [1, 3, 5])
           ,(1, 2, 5, 680, 1, [1, 3, 9, 19])
