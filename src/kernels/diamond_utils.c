@@ -139,6 +139,7 @@ void cpu_bind_finalize(Parameters *p){
 }
 
 
+/* OLD implementation
 uint64_t get_mwf_size(Parameters p, int t_dim){
   uint64_t diam_width, diam_height, wf_updates, wf_elements, lnx, t_order, total_points;
 
@@ -181,6 +182,24 @@ uint64_t get_mwf_size(Parameters p, int t_dim){
   }
   //printf("npx:%d  nx:%d  lnx:%lu  updates:%lu  elements:%lu  total:%lu\n", p.t.shape[0],  p.ldomain_shape[0], lnx, wf_updates, wf_elements, total_points);
   return total_points;
+}
+*/
+uint64_t get_mwf_size(Parameters p, int t_dim){
+
+  uint64_t Dw, Nd, Nf, Nx, WS, R, bs_z, Ww, Bs;
+
+  Dw = (t_dim+1)*2*p.stencil.r;
+  Nd = p.stencil.nd;
+  Nx = p.ldomain_shape[0];
+  WS = sizeof(real_t);
+  R = p.stencil.r;
+  bs_z = p.stencil_ctx.num_wf;
+
+  Ww = Dw + bs_z - 2.*R;
+  Bs = WS*Nx*( Nd*(Dw**2/2.0 + Dw*(Nf-R)) + 2.0*R*(Dw+Ww) );
+
+  //printf("npx:%d  nx:%d  lnx:%lu  updates:%lu  elements:%lu  total:%lu\n", p.t.shape[0],  p.ldomain_shape[0], lnx, wf_updates, wf_elements, total_points);
+  return Bs;
 }
 double run_tuning_test(Parameters *tp){
   double t = 0.0;
