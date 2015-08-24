@@ -271,6 +271,8 @@ void set_kernels(Parameters *p){
     p->stencil.spt_blk_func = stat_sched_func_list[p->target_kernel];
   }
 
+  if(p->target_ts != 2) return;
+
   p->stencil.mwd_func = mwd_list[p->mwd_type][p->target_kernel];
   if(p->stencil_ctx.thread_group_size == 1){ //1WD use implementation
     p->stencil.mwd_func = swd_func_list[p->target_kernel];
