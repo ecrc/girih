@@ -196,7 +196,7 @@ uint64_t get_mwf_size(Parameters p, int t_dim){
   bs_z = p.stencil_ctx.num_wf;
 
   Ww = Dw + bs_z - 2.*R;
-  Bs = WS*Nx*( Nd*(Dw**2/2.0 + Dw*(Nf-R)) + 2.0*R*(Dw+Ww) );
+  Bs = WS*Nx*( Nd*(Dw*Dw/2.0 + Dw*(Nf-R)) + 2.0*R*(Dw+Ww) );
 
   //printf("npx:%d  nx:%d  lnx:%lu  updates:%lu  elements:%lu  total:%lu\n", p.t.shape[0],  p.ldomain_shape[0], lnx, wf_updates, wf_elements, total_points);
   return Bs;
