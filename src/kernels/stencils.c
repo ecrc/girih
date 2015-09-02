@@ -254,7 +254,7 @@ mwd_func_t mwd_func_list[] = {  /* 0 */
     mwd_iso_ref_2space_1time_var_axsym,
     mwd_iso_ref_8space_1time_var_axsym,
     mwd_iso_ref_2space_1time_var_nosym,
-    mwd_solar,};
+    not_supported_mwd,};
 
 mwd_func_t femwd_func_list[] = { /* 1 */
     femwd_iso_ref,
@@ -272,7 +272,7 @@ mwd_func_t rsmwd_func_list[] = { /* 2 */
     rsmwd_iso_ref_2space_1time_var_axsym,
     rsmwd_iso_ref_8space_1time_var_axsym,
     rsmwd_iso_ref_2space_1time_var_nosym,
-    rsmwd_solar,};
+    not_supported_mwd,};
 
 mwd_func_t rsfemwd_func_list[] = { /* 3 */
     rsfemwd_iso_ref,
