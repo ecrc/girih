@@ -185,22 +185,30 @@ uint64_t get_mwf_size(Parameters p, int t_dim){
 }
 */
 uint64_t get_mwf_size(Parameters p, int t_dim){
-
-  uint64_t Dw, Nd, Nf, Nx, WS, R, bs_z, Ww, Bs;
+  uint64_t Dw, Nd, Nx, WS, R, bs_z, Ww, Bs, Nsol;
 
   Dw = (t_dim+1)*2*p.stencil.r;
   Nd = p.stencil.nd;
   Nx = p.ldomain_shape[0];
-  WS = sizeof(real_t);
   R = p.stencil.r;
   bs_z = p.stencil_ctx.num_wf;
 
-  Ww = Dw + bs_z - 2.*R;
-  Bs = WS*Nx*( Nd*(Dw*Dw/2.0 + Dw*(Nf-R)) + 2.0*R*(Dw+Ww) );
+  // Consider the differences of the solar kernel
+  if(p.stencil.type == REGULAR){
+    WS = sizeof(real_t);
+    Nsol = 2; // Number of arrays used in the solution domain
+  }else if(p.stencil.type == SOLAR) {
+    WS = 8*2;
+    Nsol = 6*2;
+  }
+
+  Ww = Dw + bs_z - 2*R;
+  Bs = WS*Nx*( Nd*(Dw*Dw/2.0 + Dw*(bs_z-R)) + 1.0*Nsol*R*(Dw+Ww) );
 
   //printf("npx:%d  nx:%d  lnx:%lu  updates:%lu  elements:%lu  total:%lu\n", p.t.shape[0],  p.ldomain_shape[0], lnx, wf_updates, wf_elements, total_points);
   return Bs;
 }
+
 double run_tuning_test(Parameters *tp){
   double t = 0.0;
   int reps = 0;
@@ -802,6 +810,7 @@ void intra_diamond_info_init(Parameters *p){
     p->stencil_ctx.th_x = 1;
     p->stencil_ctx.th_y = 1;
     p->stencil_ctx.th_z = 1;
+    p->stencil_ctx.th_c = 1;
   }
 
   if(p->in_auto_tuning==0){
