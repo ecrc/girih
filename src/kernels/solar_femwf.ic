@@ -1,24 +1,78 @@
-void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
+void femwd_solar( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
-  int tgs_mc = stencil_ctx.thread_group_size/stencil_ctx.th_c;
+  int tgs_mc;// = stencil_ctx.thread_group_size/stencil_ctx.th_c;
 
-#pragma omp parallel default(none) shared(tgs_mc, stencil_ctx, shape, roc2, coef, mtid, xb, xe, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO, u) \
-        num_threads(tgs_mc)
+#pragma omp parallel default(none) shared(tgs_mc, stencil_ctx, shape, roc2, coef, mtid, xb, xe, zb, ze, yb_r0, ye_r0, tb, te, t_dim, b_inc, e_inc, NHALO, u) num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
-    int i, j, k, t, yb, ye, zi, kt,kb, ke, nwf, th_nwf, tid, gtid, q, r;
+    int i, j, k, t, yb, ye, zi, kt,kb, ke, nwf, th_nwf, tid, gtid, q, r, tgs, err, ib, ie;
     double t_start;
+
+
+
+
+
+
+    tgs = stencil_ctx.thread_group_size;
+    nwf = stencil_ctx.num_wf;
 
     tid = 0;
     gtid = 0;
 #if defined(_OPENMP)
     tid = omp_get_thread_num();
-    gtid = tid + mtid * stencil_ctx.thread_group_size;
+    gtid = tid + mtid * tgs;
 #endif
 
-    nwf = stencil_ctx.num_wf;
-    th_nwf = nwf/tgs_mc;
+    if(stencil_ctx.use_manual_cpu_bind == 1){
+      err = sched_setaffinity(0, stencil_ctx.setsize, stencil_ctx.bind_masks[mtid*tgs+tid]);
+      if(err==-1) printf("WARNING: Could not set CPU Affinity\n");
+    }
+
+
+
+
+
+    int th_x = stencil_ctx.th_x;
+    int th_y = stencil_ctx.th_y;
+    int th_z = stencil_ctx.th_z;
+
+    // tid = tid_z*(th_x*th_y) + tid_y*th_x + tid_x
+    int tid_x = tid%th_x;
+    int tid_y = tid/th_x;
+    int tid_z = tid/(th_x*th_y);
+
+    int yb_r = yb_r0;
+    int ye_r = ye_r0;
+
+    if(stencil_ctx.th_y>1 ){  // most likely, this par. wont work because of load balance issues
+      if(b_inc !=0 && e_inc!=0 && 0){ // split only at full diamonds 
+        if (tid_y%2 == 0){ // left thread
+          ye_r = (yb_r + ye_r)/2;
+          e_inc = 0;
+        } else{
+          yb_r = (yb_r + ye_r)/2;
+          b_inc = 0;
+        }
+      }else{// use the y-threads along z-axis make sure to use sufficient number of frontlines
+        th_z *= th_y;
+        tid_z = tid/th_x;
+        if (nwf < th_z) nwf = th_z;
+      }
+    }
+
+    int nbx = (xe-xb)/th_x;
+    q = (int)((xe-xb)/th_x);
+    r = (xe-xb)%th_x;
+    if(tid_x < r) {
+      ib = xb + tid_x * (q+1);
+      ie = ib + (q+1);
+    }else {
+      ib = xb + r * (q+1) + (tid_x - r) * q;
+      ie = ib + q;
+    }
+
+    th_nwf = nwf/th_z;
 
 //      printf("[%d, %d] bs_x:%d  xb:%d  xe:%d  ib_r:%03d  ie_r:%03d  ib:%03d  ie:%03d\n", gtid, tid, bs_x, xb, xe, ib_r, ie_r, ib, ie);
     for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
@@ -38,16 +92,16 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
         // Update E-field when more than silce available and not first iteration of the prologue
         if( (yb<ye) && (tb==0 | t!=tb)){
           for(k=kt; k<kt+nwf; k++){
-            if( ((k-NHALO)/th_nwf)%tgs_mc == tid ){
+            if( ((k-NHALO)/th_nwf)%th_z == tid_z ){
               kb=k;
 
               ke=kb+1;
-              while( (ke<kt+nwf) && (((ke-NHALO)/th_nwf)%tgs_mc == tid) )
+              while( (ke<kt+nwf) && (((ke-NHALO)/th_nwf)%th_z == tid_z) )
                 ke++;
               k=ke;
 
               // compute E-field (except at first and last time steps of right-half diamond)
-              solar_e_field_kernel_par_comp(shape, xb, yb, kb, xe, ye, ke, coef, u, stencil_ctx);
+              solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx);
               // Update block size in Y
             }
           }
@@ -60,16 +114,16 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
         stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start; 
         if( (yb<ye) && (te>(t_dim*2) | t!=te-1) ){ // More than slice available and not epilogue's last time step
           for(k=kt; k<kt+nwf; k++){
-            if( ((k-NHALO)/th_nwf)%tgs_mc == tid ){
+            if( ((k-NHALO)/th_nwf)%th_z == tid_z ){
               kb=k;
 
               ke=kb+1;
-              while( (ke<kt+nwf) && (((ke-NHALO)/th_nwf)%tgs_mc == tid) )
+              while( (ke<kt+nwf) && (((ke-NHALO)/th_nwf)%th_z == tid_z) )
                 ke++;
               k=ke;
 
               // compute H-field
-              solar_h_field_kernel_par_comp(shape, xb, yb, kb, xe, ye, ke, coef, u, stencil_ctx);
+              solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx);
               // Update block size in Y
             }
           }
