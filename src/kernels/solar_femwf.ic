@@ -58,7 +58,7 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
         t_start = MPI_Wtime();
 #pragma omp barrier
         stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start; 
-        if(yb<ye){
+        if( (yb<ye) && (te>(t_dim*2) | t!=te-1) ){ // More than slice available and not epilogue's last time step
           for(k=kt; k<kt+nwf; k++){
             if( ((k-NHALO)/th_nwf)%tgs_mc == tid ){
               kb=k;

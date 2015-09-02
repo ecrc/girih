@@ -530,7 +530,9 @@ void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, 
 
     // compute H-field
 //printf("Main H -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
+    // More than slice available and not epilogue's last time step
+    if( (yb<ye) && (te>(p->t_dim*2) | t!=te-1) )
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
                                          ye, ze, p->coef, p->U1, p->U2, p->U3, H_FIELD, p->stencil_ctx);
     if(t < p->t_dim) yb -= b_inc; // lower half of the diamond
     else             ye -= e_inc; // upper half of the diamond
@@ -818,13 +820,25 @@ void dynamic_intra_diamond_epilogue_std(Parameters *p){
   }
 }
 void dynamic_intra_diamond_epilogue_solar(Parameters *p){
-  int yb, ye, yb_r, ye_r, i;
-  yb_r = p->stencil.r + diam_width/2 - p->stencil.r;
-  ye_r = yb_r + p->stencil.r;
-  for(i=0; i<y_len_l; i++){
-    yb = yb_r + i*diam_width;
-    ye = ye_r + i*diam_width;
-    intra_diamond_inv_trapzd_comp(p, yb, ye);
+  int yb, ye, i;
+  int ntg = get_ntg(*p);
+#pragma omp parallel num_threads(ntg) PROC_BIND(spread)
+  {
+    int b_inc = p->stencil.r;
+    int e_inc = p->stencil.r;
+    int yb_r = p->stencil.r + diam_width/2 - p->stencil.r;
+    int ye_r = yb_r + p->stencil.r;  // difference comp. to std
+    int tid = 0;
+#if defined(_OPENMP)
+    tid = omp_get_thread_num();
+#endif
+
+#pragma omp for schedule(dynamic) private(i,yb,ye)
+    for(i=0; i<y_len_l; i++){
+      yb = yb_r + i*diam_width;
+      ye = ye_r + i*diam_width;
+      intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, p->t_dim+1, tid);
+    }
   }
 }
 void dynamic_intra_diamond_epilogue(Parameters *p){
