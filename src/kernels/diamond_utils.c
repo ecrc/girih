@@ -203,9 +203,9 @@ uint64_t get_mwf_size(Parameters p, int t_dim){
   }
 
   Ww = Dw + bs_z - 2*R;
-  Bs = WS*Nx*( Nd*(Dw*Dw/2.0 + Dw*(bs_z-R)) + 1.0*Nsol*R*(Dw+Ww) );
+  Bs = WS*Nx*( Nd*(Dw*Dw/2 + Dw*(bs_z-R)) + Nsol*R*(Dw+Ww) );
 
-  //printf("npx:%d  nx:%d  lnx:%lu  updates:%lu  elements:%lu  total:%lu\n", p.t.shape[0],  p.ldomain_shape[0], lnx, wf_updates, wf_elements, total_points);
+//  printf("WS:%lu nx:%d  Nd:%lu Dw:%lu Ww:%lu bs_z:%lu  R:%lu  Nsol:%lu  Bs:%lu\n", WS, Nx, Nd, Dw, Ww, bs_z, R, Nsol, Bs);
   return Bs;
 }
 
