@@ -35,7 +35,8 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
       // kb = kt; 
       // ke = kt+nwf;
 
-        if(yb<ye){
+        // Update E-field when more than silce available and not first iteration of the prologue
+        if( (yb<ye) && (tb==0 | t!=tb)){
           for(k=kt; k<kt+nwf; k++){
             if( ((k-NHALO)/th_nwf)%tgs_mc == tid ){
               kb=k;

@@ -484,7 +484,8 @@ void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, 
 
     // compute E-field
 //printf("Main E -- t:%d yb:%d ye:%d\n", t, yb, ye);
-    if(yb<ye) p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
+    if( (yb<ye) && (tb==0 | t!=tb)) // Update E-field when more than silce available and not first iteration of the prologue
+      p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r,
                                          ye, ze, p->coef, p->U1, p->U2, p->U3, E_FIELD, p->stencil_ctx);
     if(t <= p->t_dim) ye += e_inc; // lower half of the diamond
     else              yb += b_inc; // upper half of the diamond
@@ -756,11 +757,33 @@ void dynamic_intra_diamond_prologue_std(Parameters *p){
   }
 }
 void dynamic_intra_diamond_prologue_solar(Parameters *p){
+  // The only difference compared to std approach is ye-1 and te+1
+  // compute all the trapezoids
   int i, yb, ye;
-  for(i=0; i<y_len_l; i++){
-    yb = p->stencil.r + i*diam_width;
-    ye = yb + diam_width;
-    intra_diamond_trapzd_comp(p, yb, ye);
+  int ntg = get_ntg(*p);
+#pragma omp parallel num_threads(ntg) PROC_BIND(spread)
+  {
+    int b_inc = p->stencil.r;
+    int e_inc = p->stencil.r;
+    int tid = 0;
+#if defined(_OPENMP)
+    tid = omp_get_thread_num();
+#endif
+
+#pragma omp for schedule(dynamic) private(i,yb,ye)
+     for(i=0; i<y_len_l; i++){
+        yb = p->stencil.r + i*diam_width;
+        ye = yb + diam_width-1;
+        intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, p->t_dim, p->t_dim*2+2, tid);
+      }
+  }
+  // Send the trapezoid results to the left
+  if(p->t.shape[1] > 1){
+    intra_diamond_send_left (p, send_buf_l);
+    intra_diamond_recv_right(p, recv_buf_r);
+
+    intra_diamond_wait_send_left (p);
+    intra_diamond_wait_recv_right(p, recv_buf_r);
   }
 }
 void dynamic_intra_diamond_prologue(Parameters *p){
