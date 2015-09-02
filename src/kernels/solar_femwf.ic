@@ -41,7 +41,7 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
               kb=k;
               ke=kb+1;
               // compute E-field (except at first and last time steps of right-half diamond)
-              solar_e_field_kernel_naive(shape, xb, yb, kb, xe, ye, ke, coef, u, stencil_ctx);
+              solar_e_field_kernel_par_comp(shape, xb, yb, kb, xe, ye, ke, coef, u, stencil_ctx);
               // Update block size in Y
             }
           }
@@ -58,7 +58,7 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb
               kb=k;
               ke=kb+1;
               // compute H-field
-              solar_h_field_kernel_naive(shape, xb, yb, kb, xe, ye, ke, coef, u, stencil_ctx);
+              solar_h_field_kernel_par_comp(shape, xb, yb, kb, xe, ye, ke, coef, u, stencil_ctx);
               // Update block size in Y
             }
           }
