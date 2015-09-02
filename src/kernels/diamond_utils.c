@@ -787,6 +787,7 @@ void auto_tune_params(Parameters *p){
     MPI_Bcast(&(p->stencil_ctx.th_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.th_y), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.th_z), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(p->stencil_ctx.th_c), 1, MPI_INT, 0, MPI_COMM_WORLD);
   }
   p->wf_blk_size = get_mwf_size(*p, p->t_dim);
   if(p->t_dim==-1)
