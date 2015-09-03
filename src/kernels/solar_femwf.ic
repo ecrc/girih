@@ -34,32 +34,14 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r0, const int z
 
 
     int th_x = stencil_ctx.th_x;
-    int th_y = stencil_ctx.th_y;
     int th_z = stencil_ctx.th_z;
 
     // tid = tid_z*(th_x*th_y) + tid_y*th_x + tid_x
     int tid_x = tid%th_x;
-    int tid_y = tid/th_x;
-    int tid_z = tid/(th_x*th_y);
+    int tid_z = tid/(th_x);
 
     int yb_r = yb_r0;
     int ye_r = ye_r0;
-
-    if(stencil_ctx.th_y>1 ){  // most likely, this par. wont work because of load balance issues
-      if(b_inc !=0 && e_inc!=0 && 0){ // split only at full diamonds 
-        if (tid_y%2 == 0){ // left thread
-          ye_r = (yb_r + ye_r)/2;
-          e_inc = 0;
-        } else{
-          yb_r = (yb_r + ye_r)/2;
-          b_inc = 0;
-        }
-      }else{// use the y-threads along z-axis make sure to use sufficient number of frontlines
-        th_z *= th_y;
-        tid_z = tid/th_x;
-        if (nwf < th_z) nwf = th_z;
-      }
-    }
 
     int nbx = (xe-xb)/th_x;
     q = (int)((xe-xb)/th_x);
