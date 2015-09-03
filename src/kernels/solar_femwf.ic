@@ -1,18 +1,11 @@
-void femwd_solar( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
+void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
-  int tgs_mc;// = stencil_ctx.thread_group_size/stencil_ctx.th_c;
-
-#pragma omp parallel default(none) shared(tgs_mc, stencil_ctx, shape, roc2, coef, mtid, xb, xe, zb, ze, yb_r0, ye_r0, tb, te, t_dim, b_inc, e_inc, NHALO, u) num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
+#pragma omp parallel default(none) shared(stencil_ctx, shape, roc2, coef, mtid, xb, xe, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO, u) num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
     int i, j, k, t, yb, ye, zi, kt,kb, ke, nwf, th_nwf, tid, gtid, q, r, tgs, err, ib, ie;
     double t_start;
-
-
-
-
-
 
     tgs = stencil_ctx.thread_group_size;
     nwf = stencil_ctx.num_wf;
@@ -30,19 +23,17 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r0, const int z
     }
 
 
-
-
-
+    int th_c = stencil_ctx.th_c;
     int th_x = stencil_ctx.th_x;
     int th_z = stencil_ctx.th_z;
 
-    // tid = tid_z*(th_x*th_y) + tid_y*th_x + tid_x
-    int tid_x = tid%th_x;
-    int tid_z = tid/(th_x);
+    // tid = tid_z*(th_c*th_x) + tid_x*th_c + tid_c
+    int tid_c = tid%th_c;
+    int tid_x = (tid/th_c)%th_x;
+    int tid_z = tid/(th_x*th_c);
 
-    int yb_r = yb_r0;
-    int ye_r = ye_r0;
 
+    // Compute the work range of the thread along the x-axis
     int nbx = (xe-xb)/th_x;
     q = (int)((xe-xb)/th_x);
     r = (xe-xb)%th_x;
@@ -53,6 +44,50 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r0, const int z
       ib = xb + r * (q+1) + (tid_x - r) * q;
       ie = ib + q;
     }
+
+
+    // Set the components to update based on threads/cell
+    int exy=0, exz=0, eyx=0, eyz=0, ezx=0, ezy=0;
+    int hxy=0, hxz=0, hyx=0, hyz=0, hzx=0, hzy=0;
+    switch(th_c){
+      case 1:
+        exy=1; exz=1; eyx=1; eyz=1; ezx=1; ezy=1;
+        hxy=1; hxz=1; hyx=1; hyz=1; hzx=1; hzy=1;
+        break;
+
+      case 2:
+        if(tid_c==0){
+          exy=1; ezx=1; ezy=1;
+          hxz=1; hyx=1; hyz=1;
+        } else if(tid_c==1){
+          exz=1; eyx=1; eyz=1;
+          hxy=1; hzx=1; hzy=1;
+        }
+        break;
+
+      case 3:
+        if(tid_c==0){
+          exy=1; ezy=1;
+          hyx=1; hzx=1;
+        } else if(tid_c==1){
+          exz=1; eyz=1;
+          hxy=1; hzy=1;
+        } else if(tid_c==2){
+          eyx=1; ezx=1;
+          hxz=1; hyz=1;
+        }
+        break;
+
+      case 6:
+       if     (tid_c==0){ exy=1; hyx=1;}
+       else if(tid_c==1){ ezy=1; hzx=1;}
+       else if(tid_c==2){ exz=1; hxy=1;}
+       else if(tid_c==3){ eyz=1; hzy=1;}
+       else if(tid_c==4){ eyx=1; hxz=1;}
+       else if(tid_c==5){ ezx=1; hyz=1;}
+       break;
+    }
+ 
 
     th_nwf = nwf/th_z;
 
@@ -83,12 +118,12 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r0, const int z
               k=ke;
 
               // compute E-field (except at first and last time steps of right-half diamond)
-              solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXZ);
-              solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYZ);
-              solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYX);
-              solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZX);
-              solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXY);
-              solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZY);
+              if(exz) solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXZ);
+              if(eyz) solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYZ);
+              if(eyx) solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYX);
+              if(ezx) solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZX);
+              if(exy) solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXY);
+              if(ezy) solar_e_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZY);
               // Update block size in Y
             }
           }
@@ -110,12 +145,12 @@ void femwd_solar( const int shape[3], const int xb, const int yb_r0, const int z
               k=ke;
 
               // compute H-field
-              solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYX);
-              solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZX);
-              solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXY);
-              solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZY);
-              solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXZ);
-              solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYZ);
+              if(hyx) solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYX);
+              if(hzx) solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZX);
+              if(hxy) solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXY);
+              if(hzy) solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CZY);
+              if(hxz) solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CXZ);
+              if(hyz) solar_h_field_kernel_par_comp(shape, ib, yb, kb, ie, ye, ke, coef, u, stencil_ctx, CYZ);
               // Update block size in Y
             }
           }

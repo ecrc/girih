@@ -1033,6 +1033,7 @@ void print_param(Parameters p) {
     printf("Threads along z-axis: %d\n", p.stencil_ctx.th_z);
     printf("Threads along y-axis: %d\n", p.stencil_ctx.th_y);
     printf("Threads along x-axis: %d\n", p.stencil_ctx.th_x);
+    printf("Threads per cell    : %d\n", p.stencil_ctx.th_c);
     printf("Threads block: %d\n", p.th_block);
     printf("Threads stride: %d\n", p.th_stride);
     break;
