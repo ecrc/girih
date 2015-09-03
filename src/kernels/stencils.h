@@ -35,4 +35,15 @@ static inline uint64_t rdtsc(){
     return ((uint64_t)hi << 32) | lo;
 }
 
+
+enum Solar_Component{
+  CXY,
+  CXZ,
+  CYX,
+  CYZ,
+  CZX,
+  CZY,
+  CALL
+};
+
 #endif /* STENCILS_H_ */
