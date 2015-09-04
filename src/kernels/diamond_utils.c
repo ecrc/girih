@@ -5,7 +5,7 @@
 
 
 typedef struct Tune_Params{
-  int thread_group_size, th_z, th_y, th_x, t_dim, num_wf;
+  int thread_group_size, th_z, th_y, th_x, th_c, t_dim, num_wf;
   double perf;
 }Tune_Params;
 
@@ -544,8 +544,8 @@ int* get_num_factors(int val, int *n_factors){
   return fact_l;
 }
 void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, int *num_tune_cases, int **ret_tgs_l, int *num_tgs){
-  int i, x, y, z, max_tgs, tgsi, n_tgs, n_thz, n_thy, n_thx, n_tgs_factors, idx, n_tune_cases;
-  int *tgs_l, *thz_l, *thy_l, *thx_l, *tgs_factors_l;
+  int i, c, x, y, z, max_tgs, tgsi, n_tgs, n_thz, n_thy, n_thx, n_thc, n_tgs_factors, idx, n_tune_cases;
+  int *tgs_l, *thz_l, *thy_l, *thx_l, *thc_l, *tgs_factors_l;
   Tune_Params *tune_cases_l;
 
   max_tgs = p->num_threads;
@@ -594,8 +594,19 @@ void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, in
     thx_l[0] = p->stencil_ctx.th_x;
     n_thx = 1;
   }
+  if(p->stencil_ctx.th_c == -1){
+    thc_l = tgs_factors_l;
+    n_thc = n_tgs_factors;
+  } else{
+    if(p->stencil_ctx.th_c!=1 & p->stencil_ctx.th_c!=2 & p->stencil_ctx.th_c!=3 & p->stencil_ctx.th_c!=6) 
+      RAISE_ERROR("[AUTO TUNE] Valid threads number in the components is 1, 2, 3 or 6")
+    thc_l = (int*) malloc(sizeof(int));
+    thc_l[0] = p->stencil_ctx.th_c;
+    n_thc = 1;
+  }
 
 //  printf("tgs lst:");  for(i=0; i<n_tgs;i++) printf(" %d", tgs_l[i]); printf("\n");
+//  printf("thc lst:");  for(i=0; i<n_thc;i++) printf(" %d", thx_l[i]); printf("\n");
 //  printf("thx lst:");  for(i=0; i<n_thx;i++) printf(" %d", thx_l[i]); printf("\n");
 //  printf("thy lst:");  for(i=0; i<n_thy;i++) printf(" %d", thy_l[i]); printf("\n");
 //  printf("thz lst:");  for(i=0; i<n_thz;i++) printf(" %d", thz_l[i]); printf("\n");
@@ -606,8 +617,11 @@ void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, in
     for(z=0; z<n_thz; z++){
       for(y=0; y<n_thy; y++){
         for(x=0; x<n_thx; x++){
-          if(thx_l[x]<=MAX_X_THREADS  && thy_l[y]<=2)
-            if(thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]) n_tune_cases++;
+          for(c=0; c<n_thc; c++){
+            if(thx_l[x]<=MAX_X_THREADS  && thy_l[y]<=2 &&
+               (thc_l[c]==1 || thc_l[c]==2 || thc_l[c]==3 || thc_l[c]==6))
+              if(thc_l[c]*thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]) n_tune_cases++;
+          }
         }
       }
     }
@@ -619,14 +633,17 @@ void get_tgs_tune_params_lists(Parameters *p, Tune_Params **ret_tune_cases_l, in
     for(z=0; z<n_thz; z++){
       for(y=0; y<n_thy; y++){
         for(x=0; x<n_thx; x++){
-          if(thx_l[x]<=MAX_X_THREADS  && thy_l[y]<=2){
-            if(thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]){
-              tune_cases_l[idx].thread_group_size = tgs_l[tgsi];
-              tune_cases_l[idx].th_z = thz_l[z];
-              tune_cases_l[idx].th_y = thy_l[y];
-              tune_cases_l[idx].th_x = thx_l[x];
-              idx++;
-            }
+          for(c=0; c<n_thc; c++){
+            if(thx_l[x]<=MAX_X_THREADS  && thy_l[y]<=2 &&
+               (thc_l[c]==1 || thc_l[c]==2 || thc_l[c]==3 || thc_l[c]==6))
+              if(thc_l[c]*thx_l[x]*thy_l[y]*thz_l[z] == tgs_l[tgsi]){
+                tune_cases_l[idx].thread_group_size = tgs_l[tgsi];
+                tune_cases_l[idx].th_z = thz_l[z];
+                tune_cases_l[idx].th_y = thy_l[y];
+                tune_cases_l[idx].th_x = thx_l[x];
+                tune_cases_l[idx].th_c = thc_l[c];
+                idx++;
+              }
           }
         }
       }
@@ -718,6 +735,7 @@ void auto_tune_params(Parameters *p){
     if( (p->t_dim == -1) || (p->stencil_ctx.num_wf==-1) ){
       copy_params_struct(*p, &tp);
       // set for the first test case to initialize tuning
+      tp.stencil_ctx.th_c = 1;
       tp.stencil_ctx.th_x = 1;
       tp.stencil_ctx.th_y = 1;
       tp.stencil_ctx.th_z = max_tgs;
@@ -728,9 +746,9 @@ void auto_tune_params(Parameters *p){
 
       printf("[AUTO TUNE] Allocated based on diam width: %d\n", (max_t_dim+1)*2*p->stencil.r);
 
-      printf("[AUTO TUNE] Tuning case(s) [%d] (thread group size, th_z, th_y, th_x): ", n_tune_cases);
+      printf("[AUTO TUNE] Tuning case(s) [%d] (thread group size, th_z, th_y, th_x, th_c): ", n_tune_cases);
       for(i=0; i<n_tune_cases; i++)
-        printf("(%d, %d, %d, %d) ", tune_cases_l[i].thread_group_size, tune_cases_l[i].th_z, tune_cases_l[i].th_y, tune_cases_l[i].th_x);
+        printf("(%d, %d, %d, %d, %d) ", tune_cases_l[i].thread_group_size, tune_cases_l[i].th_z, tune_cases_l[i].th_y, tune_cases_l[i].th_x, tune_cases_l[i].th_c);
       printf("\n");
 
 
@@ -742,11 +760,12 @@ void auto_tune_params(Parameters *p){
 #endif
         // set the current test cases
         tp.stencil_ctx.thread_group_size = tune_cases_l[tune_case].thread_group_size;
+        tp.stencil_ctx.th_c = tune_cases_l[tune_case].th_c;
         tp.stencil_ctx.th_x = tune_cases_l[tune_case].th_x;
         tp.stencil_ctx.th_y = tune_cases_l[tune_case].th_y;
         tp.stencil_ctx.th_z = tune_cases_l[tune_case].th_z;
 
-        printf("\n[AUTO TUNE] START tune case #%02d: Thread group size:%02d  thx:%02d  thy:%02d  thz:%02d", tune_case, tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z);
+        printf("\n[AUTO TUNE] START tune case #%02d: Thread group size:%02d  thc:%02d  thx:%02d  thy:%02d  thz:%02d", tune_case, tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_c, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z);
 
         // auto-tune for diamond width and number of frontlines
         tp.t_dim = default_t_dim;
@@ -762,7 +781,7 @@ void auto_tune_params(Parameters *p){
         }
 
 
-        printf("[AUTO TUNE] COMPLETE tune case #%02d: Thread group size:%02d  thx:%02d  thy:%02d  thz:%02d  t_dim:%02d  mwf:%02d  perf:%7.2f MLUP/s\n", tune_case, tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z, tune_cases_l[tune_case].t_dim, tune_cases_l[tune_case].num_wf, tune_cases_l[tune_case].perf/1e6);
+        printf("[AUTO TUNE] COMPLETE tune case #%02d: Thread group size:%02d  thc:%02d  thx:%02d  thy:%02d  thz:%02d  t_dim:%02d  bs_z:%02d  perf:%7.2f MLUP/s\n", tune_case, tune_cases_l[tune_case].thread_group_size, tune_cases_l[tune_case].th_c, tune_cases_l[tune_case].th_x, tune_cases_l[tune_case].th_y, tune_cases_l[tune_case].th_z, tune_cases_l[tune_case].t_dim, tune_cases_l[tune_case].num_wf, tune_cases_l[tune_case].perf/1e6);
 
       }
 
@@ -770,6 +789,7 @@ void auto_tune_params(Parameters *p){
     } // if t_dim or num_wf are not set
 
     p->stencil_ctx.thread_group_size = tune_cases_l[best_case].thread_group_size;
+    p->stencil_ctx.th_c = tune_cases_l[best_case].th_c;
     p->stencil_ctx.th_x = tune_cases_l[best_case].th_x;
     p->stencil_ctx.th_y = tune_cases_l[best_case].th_y;
     p->stencil_ctx.th_z = tune_cases_l[best_case].th_z;
@@ -784,10 +804,10 @@ void auto_tune_params(Parameters *p){
     MPI_Bcast(&(p->t_dim), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.num_wf), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.thread_group_size), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(p->stencil_ctx.th_c), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.th_x), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.th_y), 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(p->stencil_ctx.th_z), 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&(p->stencil_ctx.th_c), 1, MPI_INT, 0, MPI_COMM_WORLD);
   }
   p->wf_blk_size = get_mwf_size(*p, p->t_dim);
   if(p->t_dim==-1)
@@ -808,12 +828,23 @@ void intra_diamond_info_init(Parameters *p){
 
   // if thread group size is set to 1 by the user, set the other group dimensions
   if(p->stencil_ctx.thread_group_size ==1){
+    p->stencil_ctx.th_c = 1;
     p->stencil_ctx.th_x = 1;
     p->stencil_ctx.th_y = 1;
     p->stencil_ctx.th_z = 1;
-    p->stencil_ctx.th_c = 1;
   }
 
+  if(p->stencil.type==REGULAR){
+    if(p->stencil_ctx.th_c==-1)
+      p->stencil_ctx.th_c = 1;
+    if(p->stencil_ctx.th_c!=1)
+      RAISE_ERROR("Regular stencils have to have single thread for the component")
+  }else if (p->stencil.type==SOLAR){
+    if(p->stencil_ctx.th_y==-1)
+      p->stencil_ctx.th_y = 1;
+    if(p->stencil_ctx.th_y!=1)
+      RAISE_ERROR("Regular stencils have to have single thread along the y-axis")
+  }
   if(p->in_auto_tuning==0){
     p->in_auto_tuning = 1;
     tune_time = MPI_Wtime();

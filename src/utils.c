@@ -62,7 +62,7 @@ void param_default(Parameters *p) {
   p->stencil_ctx.th_x = -1;
   p->stencil_ctx.th_y = -1;
   p->stencil_ctx.th_z = -1;
-  p->stencil_ctx.th_c = 1;
+  p->stencil_ctx.th_c = -1;
   p->stencil_ctx.thread_group_size = -1;
 
   //internal affinity variables
