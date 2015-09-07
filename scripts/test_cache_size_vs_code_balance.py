@@ -39,6 +39,14 @@ def igs_test(target_dir, exp_name, th, group='', dry_run=0):
           ,(1, 2, 5, 680, 1, [1, 3, 9, 19])
           ]
 
+# Solar kernel
+  exp_l = exp_l + \
+          [(1, 2, 6, 480, 1, [1, 3, 5, 7])
+          ,(1, 2, 6, 480, 2, [1, 3, 5, 7])
+          ,(1, 2, 6, 480, 3, [1, 3, 5, 7])
+          ,(1, 2, 6, 480, 6, [1, 3, 5, 7])
+          ,(1, 2, 6, 480, 9, [1, 3, 5, 7])]
+
   mwdt=1
   tgs, thx, thy, thz = (1,1,1,1)
   count=0
@@ -47,7 +55,7 @@ def igs_test(target_dir, exp_name, th, group='', dry_run=0):
       outfile=('kernel%d_isdp%d_ts%d_tb%d_N%d_%s_%s.txt' % (kernel, is_dp, ts, tb, N, group, exp_name[-13:]))
       nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
 #      print outfile, ts, kernel, tb, N  
-      run_test(dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=mwdt, tb=tb, nwf=bs_z)
+      run_test(ntests=1,dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=mwdt, tb=tb, nwf=bs_z)
       count = count+1
 
   return count
