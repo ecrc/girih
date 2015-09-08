@@ -241,7 +241,7 @@ def get_summary(f):
                    'Wavefront startup/end [s]:', 'Wavefront startup/end [%]:',
                    'Wavefront communication [s]:', 'Wavefront communication [%]:',
                    'Wavefront others [s]:', 'Wavefront others [%]:',
-                   'Group spin-wait [s]:', 'Group spinn-wait [%]:',
+                   'Group spin-wait [s]:', 'Group spin-wait [%]:',
                    'Resolved diamonds:'
                    ]
         for m in measures:
@@ -371,6 +371,13 @@ def get_summary(f):
                 if mlist[field] !='':
                     mlist['LIKWID performance counter'] = ctr
 
+    # Use single field to represent the performance
+    if 'Total RANK0 MStencil/s MAX' in mlist.keys():
+      if(mlist['Total RANK0 MStencil/s MAX']!=''):
+        mlist['MStencil/s MAX'] = mlist['MWD main-loop RANK0 MStencil/s MAX']
+    if 'RANK0 MStencil/s  MAX' in mlist.keys():
+      if(mlist['RANK0 MStencil/s  MAX']!=''):
+        mlist['MStencil/s MAX'] = mlist['RANK0 MStencil/s  MAX']
 
 
     if mlist.has_key('Time stepper name'):
