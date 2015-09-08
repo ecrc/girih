@@ -850,7 +850,7 @@ void intra_diamond_info_init(Parameters *p){
     tune_time = MPI_Wtime();
     auto_tune_params(p);
     tune_time = MPI_Wtime()-tune_time;
-    if( tune_time > 1.0)  printf("{AUTO TUNE]  Tuning time: %5.1f seconds\n", tune_time);
+    if( tune_time > 1.0  & p->mpi_rank==0)  printf("[AUTO TUNE]  Tuning time: %5.1f seconds\n", tune_time);
     p->in_auto_tuning = 0;
 
   }
