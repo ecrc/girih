@@ -9,7 +9,7 @@ def load_csv(data_file):
 
 def main():
   import sys
-  from ics_utils import get_stencil_num
+  from utils import get_stencil_num
 
   raw_data = load_csv(sys.argv[1])
 
@@ -23,21 +23,27 @@ def main():
     n_l.add(k['Global NX'])
   n_l = list(n_l)
 
+  bsz_l = set()
+  for k in raw_data:
+    bsz_l.add(k['Multi-wavefront updates'])
+  bsz_l = sorted(list(bsz_l))
 
+
+ 
   for k in k_l:
-    for N in n_l:
-      gen_res(raw_data, int(k), int(N))
+    for bsz in bsz_l:
+      for N in n_l:
+        gen_res(raw_data, int(k), int(bsz), int(N))
 
 #    gen_res(raw_data)
 
-
-def gen_res(raw_data, stencil_kernel, N):
+def gen_res(raw_data, stencil_kernel, bsz,  N):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import pylab
   from csv import DictWriter
   from operator import itemgetter
-  from ics_utils import models, get_bs, get_stencil_num, get_nd
+  from utils import get_stencil_num
 
   #fig_width = 8.588*0.393701 # inches
   fig_width = 5.5*0.393701 # inches
@@ -48,7 +54,7 @@ def gen_res(raw_data, stencil_kernel, N):
          'axes.labelsize': 5,
          'axes.linewidth': 0.5,
          'lines.linewidth': 1,
-         'text.fontsize': 5,
+         'font.size': 5,
          'legend.fontsize': 5,
          'xtick.labelsize': 5,
          'ytick.labelsize': 5,
@@ -87,30 +93,30 @@ def gen_res(raw_data, stencil_kernel, N):
 
   #for i in data: print i
 
-  data2 = []
   for tup in data:
     tup['Actual Bytes/LUP'] = actual_BpU(tup)
     tup['Model'] = models(tup)
     # model error
     tup['Err %'] = 100 * (tup['Model'] - tup['Actual Bytes/LUP'])/tup['Actual Bytes/LUP']
     tup['D_width'] = tup['Intra-diamond width']
+    tup['bsz'] = tup['Multi-wavefront updates']
     tup['Performance'] = tup['MStencil/s  MAX']
-    tup['Cache block'] = get_bs(Dw=tup['D_width'], Nd=get_nd(tup['Kernel']), Nf=tup['Multi-wavefront updates'], Nx=tup['Local NX'], WS=tup['word size'], R=tup['Stencil Kernel semi-bandwidth'])
-    print "cache block C:", tup['Total cache block size (kiB)']/1024.0, " Python:", tup['Cache block']
-    data2.append(tup)
+#    tup['Cache block'] = get_bs(Dw=tup['D_width'], Nd=get_nd(tup['Kernel']), Nf=tup['Multi-wavefront updates'], Nx=tup['Local NX'], WS=tup['word size'], R=tup['Stencil Kernel semi-bandwidth'])
+    tup['Cache block'] =  tup['Total cache block size (kiB)']/1024.0
+#    print "cache block C:", tup['Total cache block size (kiB)']/1024.0, " Python:", tup['Cache block']
 #    try: print "%6.3f  %6.3f  %6.3f" % (tup['Cache block'], tup['Total cache block size (kiB)']/1024.0,tup['Cache block']- tup['Total cache block size (kiB)']/1024.0)
 #    except: pass
 
-  #for i in data2: print i
-  data2 = sorted(data2, key=itemgetter('Kernel', 'Local NX', 'D_width'))
+  data = sorted(data, key=itemgetter('Kernel', 'Local NX', 'D_width'))
+#  for i in data: print i['Kernel'], i['Local NX'], i['D_width']
 
-
+  fig, ax = plt.subplots()
   cs=[]
   cb=[]
   cb_meas=[]
   Dw=[]
-  for k in data2:
-    if k['Kernel']==stencil_kernel and k['Local NX']==N:
+  for k in data:
+    if k['Kernel']==stencil_kernel and k['Local NX']==N and k['bsz']==bsz:
       cs.append(k['Cache block'])
       cb.append(k['Model'])
       cb_meas.append(k['Actual Bytes/LUP'])
@@ -118,15 +124,13 @@ def gen_res(raw_data, stencil_kernel, N):
 
   #for i in range(len(cs)):
   #  print Dw[i], cs[i], cb_meas[i], cb[i]
-
   if Dw==[]: return
-
-  fig, ax = plt.subplots()
   ax.plot(cs, cb     , marker='+', linestyle='-', color='k', label="Model")
   ax.plot(cs, cb_meas, marker='x', linestyle='--', color='b', label="Measured")
 
+
   # show the usable cache size limits
-  ax.plot([12.5, 12.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
+  ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
 
   ax.set_ylabel('Code balance (Bytes/LUP)')
   ax.set_xlabel('Cache block size (MiB) PER THREAD')
@@ -148,7 +152,7 @@ def gen_res(raw_data, stencil_kernel, N):
     #if ((d+4)%8 == 0):
 #    ax.annotate(d, (cs[i], cb[i]))  
 
-  title = '_code_balance_vs_cache_size_N'+str(N)
+  title = '_code_balance_vs_cache_size_N%d_bsz%d'%(N, bsz)
   if stencil_kernel == 0:
       title = '25_pt_const' + title
   elif stencil_kernel == 1:
@@ -157,8 +161,11 @@ def gen_res(raw_data, stencil_kernel, N):
       title = '25_pt_var' + title
   elif stencil_kernel == 5:
       title = '7_pt_var' + title
+  elif stencil_kernel == 6:
+      title = 'solar' + title
 
-  ax.legend(loc='best')
+
+#  ax.legend(loc='best')
   ax.grid()
   pylab.savefig(title+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
@@ -181,6 +188,50 @@ def actual_BpU(tup):
 
   #print BpU, total_mem, stencil_size, nt, oh, tup['Number of tests']
   return BpU
+
+#def get_bs(Dw, Nd, Nf, Nx, WS):
+#  Ww = Dw + Nf - 1
+#  Bs = WS*Nx*( Nd*(Dw**2/2.0 + Dw*Nf) + 2.0*(Dw+Ww) )
+#  if Dw==0: Bs=0
+#  return Bs/(1024.0*1024.0)
+
+
+def get_nd(k):
+  if k== 0:
+    nd = 2 + 1
+  if k== 1:
+    nd = 2
+  if k== 4:
+    nd = 2 + 13
+  if k== 5:
+    nd = 2 + 7
+  if k== 6:
+    nd = 40
+  return nd
+
+
+def models(tup):
+  if   tup['Precision'] == 'DP': WS = 8
+  elif tup['Precision'] == 'SP': WS = 4
+
+  # number of streamed copies of the domain (buffers)
+  nb = get_nd(tup['Kernel'])
+
+  # Spatial blocking
+  if tup['Time stepper orig name'] == 'Spatial Blocking':
+    return (1 + nb) * WS
+ 
+
+  R = tup['Stencil Kernel semi-bandwidth']
+  Dw = tup['Intra-diamond width']
+
+  if 'Solar' in tup['Stencil Kernel coefficients']:
+    bpu = 32 * (6*(2*Dw-1) + nb*Dw+2*6) / (Dw**2)
+  else:
+    bpu = 2*WS * R * (2*Dw-2*R + nb*Dw+2*R) / (Dw**2)
+
+  return bpu
+
 
 
 if __name__ == "__main__":

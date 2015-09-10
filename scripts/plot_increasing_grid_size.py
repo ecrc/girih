@@ -166,7 +166,7 @@ def main():
 
     # Initialize plot entry if does not exist for current data entry
 #    for m,n in entry.iteritems(): print m,n
-    measure_list = ['n', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'wavefront width', 'pluto bs_x']
+    measure_list = ['n', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thc', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'wavefront width', 'pluto bs_x']
     plot_key = (entry['Precision'], k['stencil_name'], k['LIKWID performance counter'])
     line_key = (k['mwdt'], k['method'], k['tgsl'])
     if plot_key not in plots.keys():
@@ -210,6 +210,7 @@ def main():
       plots[plot_key][line_key]['diam width'].append(int(k['Intra-diamond width']))
       plots[plot_key][line_key]['wavefront width'].append(int(k['Multi-wavefront updates']))
       plots[plot_key][line_key]['tgs'].append(int(k['Thread group size']))
+      plots[plot_key][line_key]['thc'].append(int(k['Threads per cell    ']))
       plots[plot_key][line_key]['thx'].append(int(k['Threads along x-axis']))
       plots[plot_key][line_key]['thy'].append(int(k['Threads along y-axis']))
       plots[plot_key][line_key]['thz'].append(int(k['Threads along z-axis']))
@@ -422,11 +423,14 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
     for l in p:
       method=l[1]
       if(method == 'MWD'):
-        tgs_labels =(
+        tgs_labels =[
                ('tgs', 'b', '^', 'MWD Group'),
                ('thx', 'r', '+', 'Along x'),
-               ('thy', 'g', 'o', 'Along y'),
-               ('thz', 'm', '*', 'Along z') )
+               ('thz', 'm', '*', 'Along z') ]
+        if(stencil == 'solar'):
+          tgs_labels = tgs_labels + [('thc', 'g', 'o', 'In comp.')]
+        else:
+          tgs_labels = tgs_labels + [('thy', 'g', 'o', 'Along y')]
         for measure, col, marker, label in tgs_labels:
           x = p[l]['n']
           y = p[l][measure]
