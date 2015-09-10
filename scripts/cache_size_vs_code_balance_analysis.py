@@ -46,8 +46,8 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
   from utils import get_stencil_num
 
   #fig_width = 8.588*0.393701 # inches
-  fig_width = 5.5*0.393701 # inches
-  fig_height = 0.68*fig_width #* 210.0/280.0#433.62/578.16
+  fig_width = 4.0*0.393701 # inches
+  fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
 
   fig_size =  [fig_width,fig_height]
   params = {
@@ -165,7 +165,7 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
       title = 'solar' + title
 
 
-#  ax.legend(loc='best')
+  ax.legend(loc='best')
   ax.grid()
   pylab.savefig(title+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
