@@ -133,7 +133,7 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
   ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
 
   ax.set_ylabel('Code balance (Bytes/LUP)')
-  ax.set_xlabel('Cache block size (MiB) PER THREAD')
+  ax.set_xlabel('Cache block size (MiB) PER THREAD GROUP')
   ax.set_ylim([0, max(cb_meas+cb)+1])
   ax.set_xlim([0, max(cs)+0.5])
   ax2 = ax.twiny()
