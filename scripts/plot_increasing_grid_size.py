@@ -323,7 +323,7 @@ def plot_perf_fig(p, stencil, machine_name, is_tgs_only):
   plt.ylabel('GLUP/s')
   plt.grid()
   plt.xlabel('Size in each dimension')
-  plt.legend(loc='best')
+#  plt.legend(loc='best')
   plt.gca().set_ylim(bottom=0)
   pylab.savefig(machine_name + '_perf_' + f_name + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
@@ -359,7 +359,8 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
     plt.ylabel(y_label)
     plt.grid()
     plt.xlabel('Size in each dimension')
-    plt.legend(loc='best')
+    if(file_prefix=='mem_bw_' or file_prefix=='tlb_'):
+      plt.legend(loc='best')
     plt.gca().set_ylim(bottom=0)
     if (plt_key in ['TLB', 'ENERGY']):
       plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -411,7 +412,7 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
       plt.ylabel(y_label)
       plt.grid()
       plt.xlabel('Size in each dimension')
-      plt.legend(loc='best')
+#      plt.legend(loc='best')
       plt.gca().set_ylim(bottom=0)
       pylab.savefig(machine_name + '_' + f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
       plt.clf()
