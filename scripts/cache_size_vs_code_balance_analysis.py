@@ -1,39 +1,25 @@
 #!/usr/bin/env python
 
-def load_csv(data_file):
-  from csv import DictReader
-  with open(data_file, 'rb') as output_file:
-    data = DictReader(output_file)
-    data = [k for k in data]
-  return data
-
 def main():
   import sys
-  from utils import get_stencil_num
+  from utils import load_csv, get_stencil_num
 
   raw_data = load_csv(sys.argv[1])
 
   k_l = set()
   for k in raw_data:
-    k_l.add(get_stencil_num(k))
+    k_l.add((get_stencil_num(k), k['Global NX']))
   k_l = list(k_l)
-
-  n_l = set()
-  for k in raw_data:
-    n_l.add(k['Global NX'])
-  n_l = list(n_l)
 
   bsz_l = set()
   for k in raw_data:
+    if k['Multi-wavefront updates']=='0': continue
     bsz_l.add(k['Multi-wavefront updates'])
   bsz_l = sorted(list(bsz_l))
 
-
- 
-  for k in k_l:
+  for k, N in k_l:
     for bsz in bsz_l:
-      for N in n_l:
-        gen_res(raw_data, int(k), int(bsz), int(N))
+      gen_res(raw_data, int(k), int(bsz), int(N))
 
 #    gen_res(raw_data)
 
@@ -108,7 +94,7 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 #    except: pass
 
   data = sorted(data, key=itemgetter('Kernel', 'Local NX', 'D_width'))
-#  for i in data: print i['Kernel'], i['Local NX'], i['D_width']
+  #for i in data: print i['Kernel'], i['Local NX'], i['D_width'], i['bsz']
 
   fig, ax = plt.subplots()
   cs=[]
@@ -116,7 +102,7 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
   cb_meas=[]
   Dw=[]
   for k in data:
-    if k['Kernel']==stencil_kernel and k['Local NX']==N and k['bsz']==bsz:
+    if k['Kernel']==stencil_kernel and k['Local NX']==N and (k['bsz']==bsz or k['Time stepper orig name'] == 'Spatial Blocking'):
       cs.append(k['Cache block'])
       cb.append(k['Model'])
       cb_meas.append(k['Actual Bytes/LUP'])
@@ -130,10 +116,10 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 
 
   # show the usable cache size limits
-  ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
+#  ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
 
   ax.set_ylabel('Code balance (Bytes/LUP)')
-  ax.set_xlabel('Cache block size (MiB) PER THREAD GROUP')
+  ax.set_xlabel('Cache block size (MiB) PER THREAD')
   ax.set_ylim([0, max(cb_meas+cb)+1])
   ax.set_xlim([0, max(cs)+0.5])
   ax2 = ax.twiny()
@@ -219,16 +205,19 @@ def models(tup):
 
   # Spatial blocking
   if tup['Time stepper orig name'] == 'Spatial Blocking':
-    return (1 + nb) * WS
+    if 'Solar' in tup['Stencil Kernel coefficients']:
+      return (12 + nb) * WS
+    else:
+      return (1 + nb) * WS
  
 
   R = tup['Stencil Kernel semi-bandwidth']
   Dw = tup['Intra-diamond width']
 
   if 'Solar' in tup['Stencil Kernel coefficients']:
-    bpu = 32 * (6*(2*Dw-1) + nb*Dw+2*6) / (Dw**2)
+    bpu = 32. * (6*(2*Dw-1) + nb*Dw+2*6) / (float(Dw)**2)
   else:
-    bpu = 2*WS * R * (2*Dw-2*R + nb*Dw+2*R) / (Dw**2)
+    bpu = 2.*WS * R * (2*Dw-2*R + nb*Dw+2*R) / (float(Dw)**2)
 
   return bpu
 
