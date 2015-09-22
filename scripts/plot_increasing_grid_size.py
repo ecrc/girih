@@ -360,7 +360,14 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
     plt.grid()
     plt.xlabel('Size in each dimension')
     if(file_prefix=='mem_bw_' or file_prefix=='tlb_'):
-      plt.legend(loc='best')
+      # Sort legends and use them
+      ax = plt.gca()
+      handles, labels = ax.get_legend_handles_labels()
+      lab_int = [int(s.split('W')[0]) for s in labels]
+      hl = sorted(zip(handles, labels, lab_int), key=itemgetter(2))
+      handles2, labels2, dummy = zip(*hl)
+      ax.legend(handles2, labels2, loc='best')
+
     plt.gca().set_ylim(bottom=0)
     if (plt_key in ['TLB', 'ENERGY']):
       plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
