@@ -33,7 +33,7 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 
   #fig_width = 8.588*0.393701 # inches
   fig_width = 4.0*0.393701 # inches
-  fig_height = 1.0*fig_width #* 210.0/280.0#433.62/578.16
+  fig_height = 0.60*fig_width #* 210.0/280.0#433.62/578.16
 
   fig_size =  [fig_width,fig_height]
   params = {
@@ -129,9 +129,14 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 
   if stencil_kernel==1:
     Dw = map(str,Dw)
+    Dw[0]=''
     Dw[1]=''
     Dw[3]=''
     Dw[5]=''
+  if stencil_kernel==5:
+    Dw = map(str,Dw)
+    Dw[1]=''
+ 
   ax2.set_xticklabels(Dw)
 
 #  for i, d in enumerate(Dw):
