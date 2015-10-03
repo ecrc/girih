@@ -52,7 +52,7 @@ def igs_test(target_dir, exp_name, th, group='', dry_run=0):
   count=0
   for is_dp, ts, kernel, N, bs_z, tb_l in exp_l:
     for tb in tb_l:
-      outfile=('kernel%d_isdp%d_ts%d_tb%d_N%d_%s_%s.txt' % (kernel, is_dp, ts, tb, N, group, exp_name[-13:]))
+      outfile=('kernel%d_isdp%d_ts%d_bsz$d_tb%d_N%d_%s_%s.txt' % (kernel, is_dp, ts, bs_z, tb, N, group, exp_name[-13:]))
       nt = max(int(k_time_scale[kernel]/(N**3/1e6)), 30)
 #      print outfile, ts, kernel, tb, N  
       run_test(ntests=1,dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=mwdt, tb=tb, nwf=bs_z)
