@@ -77,33 +77,33 @@ def parse_results(is_tgs_only=0):
   from csv import DictReader
 
   # parse existing results to aviod redundant autotuning time
-  data = []
   data_file = os.path.join('results', 'summary.csv')
-  mwdt_l = set()
   try:
     with open(data_file, 'rb') as output_file:
-      raw_data = DictReader(output_file)
-      for k in raw_data:
-        k['stencil'] = get_stencil_num(k)
-        k['method'] = 2 if 'Diamond' in k['Time stepper orig name'] else 0
-        if k['method'] == 2:
-
-          if k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront with fixed execution':
-            k['mwdt'] = 3
-          elif k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront':
-            k['mwdt'] = 2
-          elif k['Wavefront parallel strategy'] == 'Wavefront':
-            k['mwdt'] = 0
-          elif k['Wavefront parallel strategy'] == 'Fixed execution wavefronts':
-            k['mwdt'] = 1
-          if int(k['Thread group size']) == 1:
-            k['mwdt'] = -1
-        data.append(k)
-        mwdt_l.add(k['mwdt'])
+      data = list(DictReader(output_file))
   except:
-     pass
-  params = dict()
+    data = []
 
+  # add fields to the entries
+  mwdt_l = set()
+  for k in data:
+    k['stencil'] = get_stencil_num(k)
+    k['method'] = 2 if 'Diamond' in k['Time stepper orig name'] else 0
+    if k['method'] == 2:
+
+      if k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront with fixed execution':
+        k['mwdt'] = 3
+      elif k['Wavefront parallel strategy'] == 'Relaxed synchronization wavefront':
+        k['mwdt'] = 2
+      elif k['Wavefront parallel strategy'] == 'Wavefront':
+        k['mwdt'] = 0
+      elif k['Wavefront parallel strategy'] == 'Fixed execution wavefronts':
+        k['mwdt'] = 1
+      if int(k['Thread group size']) == 1:
+        k['mwdt'] = -1
+      mwdt_l.add(k['mwdt'])
+
+  params = dict()
   if(is_tgs_only==0):
     for k in data:
       try:
