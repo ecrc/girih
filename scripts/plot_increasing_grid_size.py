@@ -363,7 +363,21 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
       # Sort legends and use them
       ax = plt.gca()
       handles, labels = ax.get_legend_handles_labels()
-      lab_int = [int(s.split('W')[0]) for s in labels]
+      lab_int = []
+      for s in labels:
+        lab_key = 100
+        if(s=='Spt.blk.'):
+          lab_key = 101
+        elif(s=='MWD'):
+          lab_key = -1
+        elif(s=='PLUTO'):
+          lab_key = 102
+        elif(s=='Pochoir'):
+          lab_key = 103
+        else:
+          lab_key = int(s.split('W')[0])
+        lab_int.append(lab_key)
+
       hl = sorted(zip(handles, labels, lab_int), key=itemgetter(2))
       handles2, labels2, dummy = zip(*hl)
       ax.legend(handles2, labels2, loc='best')
