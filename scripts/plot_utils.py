@@ -18,7 +18,7 @@ hw_ctr_labels = {
                               ('DRAM pJ/LUP', 'energy_dram_', 'dram energy'),
                               ('Total pJ/LUP', 'energy_total_', 'total energy')] }
 
-req_fields = [('MStencil/s  MAX', float), ('Precision', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int)]
+req_fields = [('MStencil/s  MAX', float), ('Precision', int), ('Global NX', int), ('Number of time steps', int), ('Number of tests', int), ('Thread group size', int), ('OpenMP Threads', int)]
 
 hw_ctr_fields = {
                     '':[],
@@ -30,7 +30,7 @@ hw_ctr_fields = {
                     'ENERGY':[('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]}
 
 
-measure_list = ['n', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thc', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'wavefront width', 'pluto bs_x']
+measure_list = ['n', 'threads', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thc', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'wavefront width', 'pluto bs_x']
 
 def init_figs():
   import pylab
@@ -64,7 +64,7 @@ def parse_entry_info(k, is_tgs_only):
 #        machine_name = 'ivb10'
 #      elif(int(k['OpenMP Threads']) == 18):
 #        machine_name = 'hw18'
-#
+
 
   # Use single field to represent the performance
   if 'Total RANK0 MStencil/s MAX' in k.keys():
@@ -103,6 +103,10 @@ def parse_entry_info(k, is_tgs_only):
   else:
     print("ERROR: Unknow time stepper")
     raise
+
+  # TEMPORARY: Older versions of Pochoir did not have OpenMP threads count
+  if (k['method'] == 'Pochoir' and k['OpenMP Threads']==''):
+    k['OpenMP Threads'] = 0
 
   # add mwd type
   k['mwdt']='none'
@@ -157,12 +161,13 @@ def init_plot_entry(plots, k):
     plots[plot_key][line_key] = {meas:[] for meas in measure_list}
 
 
-def append_meas_data(perf_fig, plots, k):
+def append_meas_data(plots, k):
   # append the measurement data
   plot_key = (k['Precision'], k['stencil_name'], k['LIKWID performance counter'])
   line_key = (k['mwdt'], k['method'], k['tgsl'])
 
   plots[plot_key][line_key]['n'].append(k['Global NX'])
+  plots[plot_key][line_key]['threads'].append(k['OpenMP Threads'])
   plots[plot_key][line_key]['perf'].append(k['MStencil/s  MAX']/1e3)
   N = k['Global NX']**3 * k['Number of time steps'] * k['Number of tests']/1e9
   # Memory
@@ -209,6 +214,9 @@ def append_meas_data(perf_fig, plots, k):
     plots[plot_key][line_key]['wavefront width'].append(int(k['PLUTO tile size of loop 3']))
     plots[plot_key][line_key]['pluto bs_x'].append(int(k['PLUTO tile size of loop 4']))
 
+
+
+def append_perf_data(perf_fig, k, x_label):
   # append the performance data
   plot_key = (k['Precision'], k['stencil_name'])
   line_key = (k['mwdt'], k['method'], k['tgsl'])
@@ -220,40 +228,12 @@ def append_meas_data(perf_fig, plots, k):
     perf_line[line_key] = dict()
 
   perf_point = perf_line[line_key]
-  nx = k['Global NX'] 
-  if nx not in perf_point.keys(): # points
-    perf_point[nx] = [k['MStencil/s  MAX']/1e3]
+  x = k[x_label]
+  if x not in perf_point.keys(): # points
+    perf_point[x] = [k['MStencil/s  MAX']/1e3]
   else:
-    perf_point[nx].append(k['MStencil/s  MAX']/1e3)
+    perf_point[x].append(k['MStencil/s  MAX']/1e3)
 
-
-
-
-def gen_plot_data(data_file, is_tgs_only):
-  from scripts.utils import load_csv
-
-  raw_data = load_csv(data_file)
-
-  duplicates = set()
-  plots = dict()
-  perf_fig = dict()
-  for k in raw_data:
-
-    parse_entry_info(k, is_tgs_only)
-
-    # Handle repeated data
-    key = (k['Precision'], k['stencil_name'], k['LIKWID performance counter'], k['mwdt'], k['method'], k['tgsl'], k['Global NX'])
-    if key not in duplicates:
-      duplicates.add(key)
-    else:
-      print("Repeated result at: %s"%(k['file_name']))
-      continue
-
-    init_plot_entry(plots, k)
-    append_meas_data(perf_fig, plots,k)
-
-  del raw_data
-  return plots, perf_fig
 
 
 def sort_perf_fig(perf_fig):
@@ -297,6 +277,37 @@ def sort_meas_fig(plots):
 #    for i,j in n.iteritems():
 #      print i,j
 
+
+def gen_plot_data(data_file, is_tgs_only, x_label):
+  from scripts.utils import load_csv
+
+  raw_data = load_csv(data_file)
+
+  duplicates = set()
+  plots = dict()
+  perf_fig = dict()
+  for k in raw_data:
+
+    parse_entry_info(k, is_tgs_only)
+
+    # Handle repeated data
+    key = (k['Precision'], k['stencil_name'], k['LIKWID performance counter'], k['mwdt'], k['method'], k['tgsl'], k['Global NX'], k['OpenMP Threads'])
+    if key not in duplicates:
+      duplicates.add(key)
+    else:
+      print("Repeated result at: %s"%(k['file_name']))
+      continue
+
+    init_plot_entry(plots, k)
+    append_meas_data(plots, k)
+    append_perf_data(perf_fig, k, x_label)
+
+  del raw_data
+
+  sort_perf_fig(perf_fig) 
+  sort_meas_fig(plots)
+
+  return plots, perf_fig
 
 
 

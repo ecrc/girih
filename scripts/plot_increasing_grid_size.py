@@ -10,11 +10,7 @@ def main():
   machine_name = ''
   if len(sys.argv)>3: machine_name = sys.argv[3]
 
-  plots, perf_fig = pu.gen_plot_data(sys.argv[1], is_tgs_only)
-
-  pu.sort_perf_fig(perf_fig) 
-
-  pu.sort_meas_fig(plots)
+  plots, perf_fig = pu.gen_plot_data(sys.argv[1], is_tgs_only, x_label='Global NX')
 
   # Plot performance
   for p in perf_fig:
