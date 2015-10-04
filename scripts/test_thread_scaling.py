@@ -51,12 +51,14 @@ def thread_scaling_test(target_dir, exp_name, group='', params={}, dry_run=0, is
         for th in list(range(1, 1+th_max)):
           if (tgs>1  and th%tgs!=0):
             continue
-          machine_conf['pinning_args'] = "-m -g %s -C S0:0-%d -s 0x03 --"%(group, (th-1))
+          machine_conf['pinning_args'] = "-m -g %s -C S1:0-%d -s 0x03 --"%(group, (th-1))
           outfile=('kernel%d_isdp%d_ts%d_mwdt%d_tgs%d_N%d_th%d_%s_%s.txt' % (kernel, is_dp, ts, mwdt, tgs_r, N, th, group, exp_name[-13:]))
           nt = max(int( float(th)/float(th_max)* k_time_scale[kernel]/(N**3/1e6)), 30)
 
+          c_mwdt = mwdt if mwdt!=-1 else 1
+
           print outfile, th, tb, nwf, tgs, thx, thy, thz
-          run_test(dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=mwdt, tb=tb, nwf=nwf)
+          run_test(dry_run=dry_run, is_dp=is_dp, th=th, tgs=tgs, thx=thx, thy=thy, thz=thz, kernel=kernel, ts=ts, nx=N, ny=N, nz=N, nt=nt, outfile=outfile, target_dir=target_dir, cs=cs, mwdt=c_mwdt, tb=tb, nwf=nwf)
           count = count+1
   return count
 
