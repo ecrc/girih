@@ -3,28 +3,48 @@ def main():
   import sys
   from scripts.plot_utils import measure_list
   import scripts.plot_utils as pu
+  import argparse
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--data-file', type=str, default='summary.csv', help='Input data file name')
+  parser.add_argument('--tgs', default=False, action='store_true', help='indicate TGS experiment')
+  parser.add_argument('--thread-scaling', default=False, action='store_true', help='indicate thread scaling experiment')
+  parser.add_argument('--machine-name', type=str, default='', help='Machine name to prefix results files')
+  args = parser.parse_args()
+  data_file = args.data_file
+  is_tgs_only = int(args.tgs)
+  is_thread_scaling = int(args.thread_scaling)
+  machine_name = args.machine_name
 
   pu.init_figs()
 
-  is_tgs_only = 0 if len(sys.argv)<3 else int(sys.argv[2])
-  machine_name = ''
-  if len(sys.argv)>3: machine_name = sys.argv[3]
+  if (is_thread_scaling==0):
+    data_x_label = 'Global NX'
+    x_value = 'n'
+    x_label = 'Size in each dimension'
+    exp_name = 'inc_grid_size'
+  else:
+    data_x_label = 'OpenMP Threads' # 'Global NX'
+    x_value = 'threads' # 'n'
+    x_label = 'Threads number' # 'Size in each dimension'
+    exp_name = 'thread_scaling' # 'inc_grid_size'
 
-  plots, perf_fig = pu.gen_plot_data(sys.argv[1], is_tgs_only, x_label='Global NX')
+
+  plots, perf_fig = pu.gen_plot_data(data_file, is_tgs_only, x_label=data_x_label)
 
   # Plot performance
   for p in perf_fig:
     print p[1], ' Perf'
-    plot_perf_fig(perf_fig[p], stencil=p[1], machine_name=machine_name, is_tgs_only=is_tgs_only)
+    plot_perf_fig(perf_fig[p], stencil=p[1], machine_name=machine_name, is_tgs_only=is_tgs_only, x_value=x_value, x_label=x_label, exp_name=exp_name)
  
 
   # Plot other measurements
   for p in plots:
     print p[1], p[2]
-    plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2], machine_name=machine_name, is_tgs_only=is_tgs_only)
+    plot_meas_fig(plots[p], stencil=p[1], plt_key=p[2], machine_name=machine_name, is_tgs_only=is_tgs_only, x_value=x_value, x_label=x_label, exp_name=exp_name)
 
 
-def plot_perf_fig(p, stencil, machine_name, is_tgs_only):
+def plot_perf_fig(p, stencil, machine_name, is_tgs_only, x_value, x_label, exp_name):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
@@ -33,7 +53,7 @@ def plot_perf_fig(p, stencil, machine_name, is_tgs_only):
   from scripts.utils import get_stencil_num
   from scripts.plot_utils import method_style, hw_ctr_labels, marker_s, line_w, line_s
 
-  f_name = stencil+'_inc_grid_size'
+  f_name = stencil+'_'+exp_name
   if(is_tgs_only==1):
     f_name = f_name+'_tgs'
 
@@ -55,14 +75,14 @@ def plot_perf_fig(p, stencil, machine_name, is_tgs_only):
 
   plt.ylabel('GLUP/s')
   plt.grid()
-  plt.xlabel('Size in each dimension')
+  plt.xlabel(x_label)
 #  plt.legend(loc='best')
   plt.gca().set_ylim(bottom=0)
   pylab.savefig(machine_name + '_perf_' + f_name + '.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
 
 
-def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
+def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only, x_value, x_label, exp_name):
   from operator import itemgetter
   import matplotlib.pyplot as plt
   import matplotlib
@@ -71,7 +91,7 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
   from scripts.utils import get_stencil_num
   from scripts.plot_utils import method_style, hw_ctr_labels, marker_s, line_w, line_s
 
-  f_name = stencil+'_inc_grid_size'
+  f_name = stencil+'_'+exp_name
   if(is_tgs_only==1):
     f_name = f_name+'_tgs'
 
@@ -86,13 +106,13 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
       if((label=='MWD') and (is_tgs_only==1)):
         label= str(tgsl) + 'WD'
       col, marker = method_style[label]
-      x = p[l]['n']
+      x = p[l][x_value]
       y = p[l][measure]
       plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
     plt.ylabel(y_label)
     plt.grid()
-    plt.xlabel('Size in each dimension')
+    plt.xlabel(x_label)
     if(file_prefix=='mem_bw_' or file_prefix=='tlb_'):
       # Sort legends and use them
       ax = plt.gca()
@@ -131,13 +151,13 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
       method=l[1]
       if(method == 'PLUTO'):
         measure, col, marker, label = ('pluto bs_x', 'm', '*', 'X')
-        x = p[l]['n']
+        x = p[l][x_value]
         y = p[l][measure]
         plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
     plt.ylabel('PLUTO tile size')
     plt.grid()
-    plt.xlabel('Size in each dimension')
+    plt.xlabel(x_label)
     plt.legend(loc='upper left')
     plt.gca().set_ylim(bottom=0)
     pylab.savefig(machine_name + '_pluto_tile_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
@@ -160,13 +180,13 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
           if(is_tgs_only==1):
             method= str(tgsl) + 'WD'
           col, marker = method_style[method]
-          x = p[l]['n']
+          x = p[l][x_value]
           y = p[l][measure]
           plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
 
       plt.ylabel(y_label)
       plt.grid()
-      plt.xlabel('Size in each dimension')
+      plt.xlabel(x_label)
 #      plt.legend(loc='best')
       plt.gca().set_ylim(bottom=0)
       pylab.savefig(machine_name + '_' + f_prefix + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
@@ -188,13 +208,13 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only):
         else:
           tgs_labels = tgs_labels + [('thy', 'g', 'o', 'Along y')]
         for measure, col, marker, label in tgs_labels:
-          x = p[l]['n']
+          x = p[l][x_value]
           y = p[l][measure]
           plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
 
     plt.ylabel('Intra-tile threads')
     plt.grid()
-    plt.xlabel('Size in each dimension')
+    plt.xlabel(x_label)
     plt.legend(loc='upper left')
     plt.gca().set_ylim(bottom=0)
     pylab.savefig(machine_name + '_thread_group_size_' + f_name+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
