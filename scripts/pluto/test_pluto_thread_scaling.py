@@ -106,7 +106,7 @@ def main():
 
 
   count = 0
-  for group in ['MEM']:
+  for group in ['MEM', 'L2']:
 #  for group in ['MEM', 'L2', 'L3', 'DATA', 'TLB_DATA', 'ENERGY']:
     if(machine_info['hostname']=='Haswell_18core'):
       machine_conf['pinning_args'] = " -m -g " + group + " -C S1:0-"
