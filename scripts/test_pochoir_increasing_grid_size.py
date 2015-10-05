@@ -87,7 +87,7 @@ def main():
   from csv import DictReader
   import time,datetime
 
-  dry_run = 0
+  dry_run = 1 if len(sys.argv)<2 else int(sys.argv[1])
 
   time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H_%M')
   exp_name = "pochoir_increasing_grid_size_at_%s_%s" % (machine_info['hostname'], time_stamp)  
