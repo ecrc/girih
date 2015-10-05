@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 def set_likwid(th, group):
   from scripts.conf.conf import machine_conf, machine_info
-  if(machine_info['hostname']=='Haswell_18core'):
-    machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(th, 2*th-1) + '-- numactl --physcpubind=%d-%d'%(th,2*th-1)
-  elif(machine_info['hostname']=='IVB_10core'):
-    if group=='TLB_DATA': group='TLB' 
-    machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(0, th-1) + '-- numactl --physcpubind=%d-%d'%(0,th-1)
+#  if(machine_info['hostname']=='Haswell_18core'):
+#    machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(th, 2*th-1) + '-- numactl --physcpubind=%d-%d'%(th,2*th-1)
+#  elif(machine_info['hostname']=='IVB_10core'):
+#    if group=='TLB_DATA': group='TLB' 
+  machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(0, th-1) + '-- numactl --physcpubind=%d-%d'%(0,th-1)
 
 
 def run_pochoir_test(dry_run, th, kernel, nx, ny, nz, nt, target_dir, outfile, pinning_cmd, pinning_args):
@@ -15,7 +15,8 @@ def run_pochoir_test(dry_run, th, kernel, nx, ny, nz, nt, target_dir, outfile, p
   from scripts.utils import ensure_dir    
 
   job_template=Template(
-"""echo 'OpenMP Threads: $th' | tee $outpath; $pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
+"""$pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
+#"""echo 'OpenMP Threads: $th' | tee $outpath; $pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
 
   # set the output path
   target_dir = os.path.join(os.path.abspath("."),target_dir)
@@ -90,7 +91,7 @@ def thread_scaling_test(dry_run, target_dir, exp_name, group='', params=[]):
 def main():
   from scripts.utils import create_project_tarball, get_stencil_num
   from scripts.conf.conf import machine_conf, machine_info
-  import os
+  import os, sys
   from csv import DictReader
   import time,datetime
 
