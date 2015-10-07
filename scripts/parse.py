@@ -263,10 +263,10 @@ def get_summary(f):
             val = line.split(' ')[2].strip()
             mlist.append(('LIKWID performance counter',val))
 
-        if '|    Memory BW [MBytes/s] STAT' in line or '|    Memory bandwidth [MBytes/s] STAT' in line:
+        if '|    Memory BW [MBytes/s]' in line or '|    Memory bandwidth [MBytes/s]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Sustained Memory BW',val))
-        if 'Memory data volume [GBytes] STAT' in line:
+        if 'Memory data volume [GBytes]' in line:
             val = line.split('|')[2].strip()
             mlist.append(('Total Memory Transfer',val))
 
