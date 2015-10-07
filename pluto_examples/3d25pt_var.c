@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
       gettimeofday(&end, 0);
       ts_return = timeval_subtract(&result, &end, &start);
       tdiff = (double) (result.tv_sec + result.tv_usec * 1.0e-6);
-      min_tdiff = min(min_tdiff, tdiff);
+      min_tdiff = MIN(min_tdiff, tdiff);
       printf("Rank 0 TEST# %d time: %f\n", test, tdiff);
 
   }
@@ -187,6 +187,17 @@ int main(int argc, char *argv[])
   }
   LIKWID_MARKER_CLOSE;
 #endif
+
+  double total = 0.0;
+  for (i = 0; i < Nz; ++i) {
+    for (j = 0; j < Ny; ++j) {
+      for (k = 0; k < Nx; ++k) {
+        total += A[Nt%2][i][j][k];
+      }
+    }
+  }
+  printf("Sum(final): %e\n", total);
+
 
   // Free allocated arrays
   for(i=0; i<Nz; i++){

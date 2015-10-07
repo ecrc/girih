@@ -179,6 +179,17 @@ int main(int argc, char *argv[])
   LIKWID_MARKER_CLOSE;
 #endif
 
+  double total = 0.0;
+  for (i = 0; i < Nz; ++i) {
+    for (j = 0; j < Ny; ++j) {
+      for (k = 0; k < Nx; ++k) {
+        total += A[Nt%2][i][j][k];
+      }
+    }
+  }
+  printf("Sum(final): %e\n", total);
+
+
   // Free allocated arrays
  for(i=0; i<Nz; i++){
     for(j=0;j<Ny;j++){
