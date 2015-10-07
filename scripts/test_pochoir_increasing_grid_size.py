@@ -6,7 +6,8 @@ def run_pochoir_test(dry_run, th, kernel, nx, ny, nz, nt, target_dir, outfile, p
   from scripts.utils import ensure_dir    
 
   job_template=Template(
-"""echo 'OpenMP Threads: $th' | tee $outpath; $pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
+"""$pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
+#"""echo 'OpenMP Threads: $th' | tee $outpath; $pinning_cmd $pinning_args $exec_path $nx $ny $nz $nt | tee $outpath""")
 
   # set the output path
   target_dir = os.path.join(os.path.abspath("."),target_dir)
@@ -83,7 +84,7 @@ def igs_test(dry_run, target_dir, exp_name, th, group='', params=[]):
 def main():
   from scripts.utils import create_project_tarball, get_stencil_num
   from scripts.conf.conf import machine_conf, machine_info
-  import os
+  import os, sys
   from csv import DictReader
   import time,datetime
 
@@ -119,12 +120,10 @@ def main():
   th = machine_info['n_cores']
 
   count = 0
-  for group in ['MEM', 'TLB_DATA', 'L2', 'L3', 'DATA', 'ENERGY']:
-    if(machine_info['hostname']=='Haswell_18core'):
-      machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(th, 2*th-1) + '-- numactl --physcpubind=%d-%d'%(th,2*th-1)
-    elif(machine_info['hostname']=='IVB_10core'):
+  for group in ['MEM', 'TLB_DATA', 'L2', 'L3', 'DATA']:#, 'ENERGY']:
+    if(machine_info['hostname']=='IVB_10core'):
       if group=='TLB_DATA': group='TLB' 
-      machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(0, th-1) + '-- numactl --physcpubind=%d-%d'%(0,th-1)
+    machine_conf['pinning_args'] = " -m -g " + group + " -c " + "%d-%d "%(0, th-1) + '-- numactl --physcpubind=%d-%d'%(0,th-1)
 #    for k in params: print k
     count = count + igs_test(dry_run, target_dir, exp_name, th=th, params=params, group=group) 
 
