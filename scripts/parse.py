@@ -259,6 +259,12 @@ def get_summary(f):
 
         # LIKWID performance results
 
+        # L2 cache group volume
+        if '|     L2 data volume [GBytes]    |' in line:
+            vals = [i.strip() for i in line.split('|')[2:-1] if len(i.strip()) !=0]
+            for i in range(len(vals)):
+                  mlist.append(('L2 data volume core %d'%i ,vals[i]))
+
         if 'Measuring group' in line:
             val = line.split(' ')[2].strip()
             mlist.append(('LIKWID performance counter',val))
