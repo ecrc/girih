@@ -100,15 +100,24 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only, x_value, x_lab
   for y_label, file_prefix, measure in hw_ctr_labels[plt_key]:
     plt.figure(plt_idx)
     plt_idx = plt_idx + 1
+    p_shift = 0.75/len(p) # shift scattered plots to avoid overlap
+    shift = 0.
     for l in p:
       label = l[1]
       tgsl = l[2]
       if((label=='MWD') and (is_tgs_only==1)):
         label= str(tgsl) + 'WD'
       col, marker = method_style[label]
-      x = p[l][x_value]
       y = p[l][measure]
-      plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+      x = p[l][x_value]
+      if(type(y[0]) is not list): # Single valued y
+        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+      else:
+        for idx, xi in enumerate(x):
+          yi = y[idx]
+          xi = [xi+shift]*len(yi)
+          plt.plot(xi, yi, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+      shift = shift + p_shift
 
     plt.ylabel(y_label)
     plt.grid()

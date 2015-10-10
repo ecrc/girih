@@ -11,7 +11,7 @@ hw_ctr_labels = {
                     '':(),
                     'TLB':[('L1 DTLB miss rate sum', 'tlb_', 'tlb')],
                     'DATA':[('Load to Store ratio avg', 'cpu_', 'data')],
-                    'L2':[('L2 Bytes/LUP', 'L2_', 'l2 vol')],
+                    'L2':[('L2 Bytes/LUP', 'L2_', 'l2 vol'), ('L2 Bytes/LUP*threads', 'L2all_', 'l2 vol list')],
                     'L3':[('L3 Bytes/LUP', 'L3_', 'l3 vol')],
                     'MEM':[('MEM GB/s', 'mem_bw_', 'mem bw'), ('MEM Bytes/LUP', 'mem_vol_', 'mem vol')],
                     'ENERGY':[('CPU pJ/LUP', 'energy_cpu_', 'cpu energy'),
@@ -30,7 +30,7 @@ hw_ctr_fields = {
                     'ENERGY':[('Energy', float), ('Energy DRAM', float), ('Power',float), ('Power DRAM', float)]}
 
 
-measure_list = ['n', 'threads', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thc', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'wavefront width', 'pluto bs_x']
+measure_list = ['n', 'threads', 'perf', 'cpu energy', 'dram energy', 'total energy', 'tlb', 'mem bw', 'l2 bw', 'l3 bw', 'mem vol', 'l2 vol list', 'l2 vol', 'l3 vol', 'data', 'tgs', 'thc', 'thx', 'thy', 'thz', 'blk size', 'diam width', 'wavefront width', 'pluto bs_x']
 
 def init_figs():
   import pylab
@@ -143,6 +143,11 @@ def parse_entry_info(k, is_tgs_only):
       print k
       return
 
+  # Parse the L2 data per thread
+  if(k['LIKWID performance counter']=='L2'):
+    k['L2 vol list'] = []
+    for i in range(k['OpenMP Threads']):
+       k['L2 vol list'].append(float(k['L2 data volume core %d'%i]))
 
   k['tgsl'] = k['Thread group size']
   if(is_tgs_only==0): # regular mode for all MWD
@@ -191,6 +196,7 @@ def append_meas_data(plots, k):
   # L2
   elif k['LIKWID performance counter'] == 'L2':
     plots[plot_key][line_key]['l2 vol'].append(k['L2 data volume sum']/N)
+    plots[plot_key][line_key]['l2 vol list'].append([i/N*k['OpenMP Threads'] for i in k['L2 vol list']])
   #L3
   elif k['LIKWID performance counter'] == 'L3':
     plots[plot_key][line_key]['l3 vol'].append(k['L3 data volume sum']/N)
