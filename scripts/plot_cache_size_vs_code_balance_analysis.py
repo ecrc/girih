@@ -116,7 +116,7 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 
 
   # show the usable cache size limits
-#  ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
+  ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
 
   ax.set_ylabel('Code balance (Bytes/LUP)')
   ax.set_xlabel('Cache block size (MiB) PER THREAD')
@@ -156,7 +156,8 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
       title = 'solar' + title
 
 
-  ax.legend(loc='best')
+  if(bsz==1):
+    ax.legend(loc='best')
   ax.grid()
   pylab.savefig(title+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
