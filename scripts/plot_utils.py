@@ -147,7 +147,9 @@ def parse_entry_info(k, is_tgs_only):
   if(k['LIKWID performance counter']=='L2'):
     k['L2 vol list'] = []
     for i in range(k['OpenMP Threads']):
-       k['L2 vol list'].append(float(k['L2 data volume core %d'%i]))
+       field = 'L2 data volume core %d'%i
+       if field in k.keys():
+         k['L2 vol list'].append(float(k['L2 data volume core %d'%i]))
 
   k['tgsl'] = k['Thread group size']
   if(is_tgs_only==0): # regular mode for all MWD
