@@ -51,7 +51,7 @@ def plot_perf_fig(p, stencil, machine_name, is_tgs_only, x_value, x_label, exp_n
   import pylab, itertools
   from pylab import arange,pi,sin,cos,sqrt
   from scripts.utils import get_stencil_num
-  from scripts.plot_utils import method_style, hw_ctr_labels, marker_s, line_w, line_s
+  from scripts.plot_utils import method_style, hw_ctr_labels, marker_s, marker_ls, line_w, line_s
 
   f_name = stencil+'_'+exp_name
   if(is_tgs_only==1):
@@ -71,7 +71,8 @@ def plot_perf_fig(p, stencil, machine_name, is_tgs_only, x_value, x_label, exp_n
       for x1, y1 in (itertools.product([xp], y_l)):
         x.append(x1)
         y.append(y1)
-    plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+    marker_sr = marker_s if len(set(x))>1 else marker_ls # enlarge for single point
+    plt.plot(x, y, color=col, marker=marker, markersize=marker_sr, linestyle=line_s, linewidth=line_w, label=label)
 
   plt.ylabel('GLUP/s')
   plt.grid()
@@ -89,7 +90,7 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only, x_value, x_lab
   import pylab
   from pylab import arange,pi,sin,cos,sqrt
   from scripts.utils import get_stencil_num
-  from scripts.plot_utils import method_style, hw_ctr_labels, marker_s, line_w, line_s
+  from scripts.plot_utils import method_style, hw_ctr_labels, marker_s, marker_ls, line_w, line_s
 
   f_name = stencil+'_'+exp_name
   if(is_tgs_only==1):
@@ -110,13 +111,14 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only, x_value, x_lab
       col, marker = method_style[label]
       y = p[l][measure]
       x = p[l][x_value]
+      marker_sr = marker_s if len(set(x))>1 else marker_ls # enlarge for single point
       if(type(y[0]) is not list): # Single valued y
-        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+        plt.plot(x, y, color=col, marker=marker, markersize=marker_sr, linestyle=line_s, linewidth=line_w, label=label)
       else:
         for idx, xi in enumerate(x):
           yi = y[idx]
           xi = [xi+shift]*len(yi)
-          plt.plot(xi, yi, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+          plt.plot(xi, yi, color=col, marker=marker, markersize=marker_sr, linestyle=line_s, linewidth=line_w, label=label)
       shift = shift + p_shift
 
     plt.ylabel(y_label)
@@ -162,7 +164,8 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only, x_value, x_lab
         measure, col, marker, label = ('pluto bs_x', 'm', '*', 'X')
         x = p[l][x_value]
         y = p[l][measure]
-        plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+        marker_sr = marker_s if len(set(x))>1 else marker_ls # enlarge for single point
+        plt.plot(x, y, color=col, marker=marker, markersize=marker_sr, linestyle=line_s, linewidth=line_w, label=label)
 
     plt.ylabel('PLUTO tile size')
     plt.grid()
@@ -191,7 +194,8 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only, x_value, x_lab
           col, marker = method_style[method]
           x = p[l][x_value]
           y = p[l][measure]
-          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=method)
+          marker_sr = marker_s if len(set(x))>1 else marker_ls # enlarge for single point
+          plt.plot(x, y, color=col, marker=marker, markersize=marker_sr, linestyle=line_s, linewidth=line_w, label=method)
 
       plt.ylabel(y_label)
       plt.grid()
@@ -219,7 +223,8 @@ def plot_meas_fig(p, stencil, plt_key, machine_name, is_tgs_only, x_value, x_lab
         for measure, col, marker, label in tgs_labels:
           x = p[l][x_value]
           y = p[l][measure]
-          plt.plot(x, y, color=col, marker=marker, markersize=marker_s, linestyle=line_s, linewidth=line_w, label=label)
+          marker_sr = marker_s if len(set(x))>1 else marker_ls # enlarge for single point
+          plt.plot(x, y, color=col, marker=marker, markersize=marker_sr, linestyle=line_s, linewidth=line_w, label=label)
 
     plt.ylabel('Intra-tile threads')
     plt.grid()

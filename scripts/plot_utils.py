@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 marker_s = 7
+marker_ls = 14
 line_w = 1
 line_s = '-' 
-method_style = {'MWD':('k','x'), '1WD':('r','+'),
-                'Spt.blk.':('g','o'), 'PLUTO':('m','*'), 'Pochoir':('b','^'),
-                     '2WD':('g','o'),   '3WD':('m','*'),     '6WD':('b','^'), '9WD':('c','v'), '18WD':('y','>'), '5WD':('m','*'), '10WD':('b','^')}
+method_style = {'MWD':('k','*'), '1WD':('r','+'),
+                'Spt.blk.':('g','o'), 'PLUTO':('m','x'), 'Pochoir':('b','^'),
+                     '2WD':('g','o'),   '3WD':('m','x'),     '6WD':('b','^'), '9WD':('c','v'), '18WD':('y','>'), '5WD':('m','x'), '10WD':('b','^')}
 
 
 hw_ctr_labels = {
