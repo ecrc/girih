@@ -778,21 +778,22 @@ void std_box_kernel_2space_1time( const int shape[3],
     for(j=1; j<nny-1; j++) {
       for(i=1; i<nnx-1; i++) {
         U(i,j,k) = coef[0]*V(i,j,k)
-                  +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ) // Star
-                           +V(i  ,j+1,k  )+V(i  ,j-1,k  )
-                           +V(i  ,j  ,k+1)+V(i  ,j  ,k-1))
+                  +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  )) // Star
+                  +coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  ))
+                  +coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1))
 
-                  +coef[2]*(V(i+1,j  ,k-1)+V(i-1,j  ,k-1) // Edges
-                           +V(i  ,j+1,k-1)+V(i  ,j-1,k-1)
-                           +V(i+1,j+1,k  )+V(i-1,j-1,k  )
-                           +V(i+1,j-1,k  )+V(i-1,j+1,k  )
-                           +V(i+1,j  ,k+1)+V(i-1,j  ,k+1)
-                           +V(i  ,j+1,k+1)+V(i  ,j-1,k+1))
 
-                  +coef[3]*(V(i+1,j+1,k+1)+V(i-1,j-1,k-1) // Corners
-                           +V(i+1,j-1,k+1)+V(i-1,j+1,k-1)
-                           +V(i-1,j-1,k+1)+V(i+1,j+1,k-1)
-                           +V(i-1,j+1,k+1)+V(i+1,j-1,k-1)); 
+                  +coef[2]*(V(i+1,j  ,k-1)+V(i-1,j  ,k-1)) // Edges
+                  +coef[2]*(V(i  ,j+1,k-1)+V(i  ,j-1,k-1))
+                  +coef[2]*(V(i+1,j+1,k  )+V(i-1,j-1,k  ))
+                  +coef[2]*(V(i+1,j-1,k  )+V(i-1,j+1,k  ))
+                  +coef[2]*(V(i+1,j  ,k+1)+V(i-1,j  ,k+1))
+                  +coef[2]*(V(i  ,j+1,k+1)+V(i  ,j-1,k+1))
+
+                  +coef[3]*(V(i+1,j+1,k+1)+V(i-1,j-1,k-1)) // Corners
+                  +coef[3]*(V(i+1,j-1,k+1)+V(i-1,j+1,k-1))
+                  +coef[3]*(V(i-1,j-1,k+1)+V(i+1,j+1,k-1))
+                  +coef[3]*(V(i-1,j+1,k+1)+V(i+1,j-1,k-1)); 
       }
     }
   }

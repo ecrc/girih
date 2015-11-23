@@ -207,20 +207,20 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
-ux[i] = coef[0]*vx[i]\
-+coef[1]*(vx[+1+i]+vx[-1+i]\
-         +vx[+i+nnx]+vx[+i-nnx]\
-         +vx[-nnxy+i]+vx[+nnxy+i])\
-+coef[2]*(vx[-nnxy+i+1]  +vx[-nnxy+i-1]\
-         +vx[-nnxy+i+nnx]+vx[-nnxy+i-nnx]\
-         +vx[i+nnx+1]+vx[i-nnx-1]\
-         +vx[i-nnx+1]+vx[i+nnx-1]\
-         +vx[+nnxy+i+1]  +vx[+nnxy+i-1]\
-         +vx[+nnxy+i+nnx]+vx[+nnxy+i-nnx])\
-+coef[3]*(vx[+nnxy+nnx+1+i]+vx[-nnxy-nnx-1+i]\
-         +vx[+nnxy-nnx+1+i]+vx[-nnxy+nnx-1+i]\
-         +vx[+nnxy-nnx-1+i]+vx[-nnxy+nnx+1+i]\
-         +vx[+nnxy+nnx-1+i]+vx[-nnxy-nnx+1+i]);\
+ux[i] = coef[0]*vx[i] \
++coef[1]*(vx[i+1]+vx[i-1]) \
++coef[1]*(vx[i+nnx]+vx[i-nnx]) \
++coef[1]*(vx[-nnxy+i]+vx[+nnxy+i]) \
++coef[2]*(vx[-nnxy+i+1]  +vx[-nnxy+i-1])\
++coef[2]*(vx[-nnxy+i+nnx]+vx[-nnxy+i-nnx])\
++coef[2]*(vx[i+nnx+1]+vx[i-nnx-1])\
++coef[2]*(vx[i-nnx+1]+vx[i+nnx-1])\
++coef[2]*(vx[+nnxy+i+1]  +vx[+nnxy+i-1])\
++coef[2]*(vx[+nnxy+i+nnx]+vx[+nnxy+i-nnx])\
++coef[3]*(vx[+nnxy+nnx+1+i]+vx[-nnxy-nnx-1+i])\
++coef[3]*(vx[+nnxy-nnx+1+i]+vx[-nnxy+nnx-1+i])\
++coef[3]*(vx[+nnxy-nnx-1+i]+vx[-nnxy+nnx+1+i])\
++coef[3]*(vx[+nnxy+nnx-1+i]+vx[-nnxy-nnx+1+i]);\
 }
 
 #ifdef FUNC_NAME
