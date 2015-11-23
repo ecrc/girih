@@ -80,7 +80,10 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     // select the stencil type
     switch(p.stencil.r){
     case 1:
-      std_kernel = &std_kernel_2space_1time;
+      if(p.stencil.shape == STAR) 
+        std_kernel = &std_kernel_2space_1time;
+      else if(p.stencil.shape == BOX)
+        std_kernel = &std_box_kernel_2space_1time;
       break;
     case 4:
       std_kernel = &std_kernel_8space_2time;
@@ -761,7 +764,40 @@ void solar_kernel( const int shape[3],
   solar_h_field_ref(shape, coef, u);
   solar_e_field_ref(shape, coef, u);
 }
+// This is the standard ISO 27-points box stencil kernel with constant coefficient
+void std_box_kernel_2space_1time( const int shape[3],
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2) {
 
+  int i,j,k;
+  int nnz =shape[2];
+  int nny =shape[1];
+  int nnx =shape[0];
+
+  for(k=1; k<nnz-1; k++) {
+    for(j=1; j<nny-1; j++) {
+      for(i=1; i<nnx-1; i++) {
+        U(i,j,k) = coef[0]*V(i,j,k)
+                  +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ) // Star
+                           +V(i  ,j+1,k  )+V(i  ,j-1,k  )
+                           +V(i  ,j  ,k+1)+V(i  ,j  ,k-1))
+
+                  +coef[2]*(V(i+1,j  ,k-1)+V(i-1,j  ,k-1) // Edges
+                           +V(i  ,j+1,k-1)+V(i  ,j-1,k-1)
+                           +V(i+1,j+1,k  )+V(i-1,j-1,k  )
+                           +V(i+1,j-1,k  )+V(i-1,j+1,k  )
+                           +V(i+1,j  ,k+1)+V(i-1,j  ,k+1)
+                           +V(i  ,j+1,k+1)+V(i  ,j-1,k+1))
+
+                  +coef[3]*(V(i+1,j+1,k+1)+V(i-1,j-1,k-1) // Corners
+                           +V(i+1,j-1,k+1)+V(i-1,j+1,k-1)
+                           +V(i-1,j-1,k+1)+V(i+1,j+1,k-1)
+                           +V(i-1,j+1,k+1)+V(i+1,j-1,k-1)); 
+      }
+    }
+  }
+
+}
 
 
 

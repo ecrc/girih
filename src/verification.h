@@ -37,6 +37,9 @@ void std_kernel_2space_1time_var_nosym( const int shape[3],
 void solar_kernel( const int shape[3],
     const real_t * restrict coef, real_t * restrict u,
     const real_t * restrict v, const real_t * restrict roc2);
+void std_box_kernel_2space_1time( const int shape[3],
+    const real_t * restrict coef, real_t * restrict u,
+    const real_t * restrict v, const real_t * restrict roc2);
 
 extern void copy_params_struct(Parameters a, Parameters * b);
 extern void print_param(Parameters p);

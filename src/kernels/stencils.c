@@ -200,6 +200,38 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #include "stencils_list.h"
 
 
+/*
+ * ISO Box stencil 2nd-order-in-space-1st-order-in-time with constant coefficient
+ */
+#ifdef FUNC_BODY
+#undef FUNC_BODY
+#endif
+#define FUNC_BODY() { \
+ux[i] = coef[0]*vx[i]\
++coef[1]*(vx[+1+i]+vx[-1+i]\
+         +vx[+i+nnx]+vx[+i-nnx]\
+         +vx[-nnxy+i]+vx[+nnxy+i])\
++coef[2]*(vx[-nnxy+i+1]  +vx[-nnxy+i-1]\
+         +vx[-nnxy+i+nnx]+vx[-nnxy+i-nnx]\
+         +vx[i+nnx+1]+vx[i-nnx-1]\
+         +vx[i-nnx+1]+vx[i+nnx-1]\
+         +vx[+nnxy+i+1]  +vx[+nnxy+i-1]\
+         +vx[+nnxy+i+nnx]+vx[+nnxy+i-nnx])\
++coef[3]*(vx[+nnxy+nnx+1+i]+vx[-nnxy-nnx-1+i]\
+         +vx[+nnxy-nnx+1+i]+vx[-nnxy+nnx-1+i]\
+         +vx[+nnxy-nnx-1+i]+vx[-nnxy+nnx+1+i]\
+         +vx[+nnxy+nnx-1+i]+vx[-nnxy-nnx+1+i]);\
+}
+
+#ifdef FUNC_NAME
+#undef FUNC_NAME
+#endif
+#define FUNC_NAME box_ref_2space_1time
+
+#include "stencils_list.h"
+
+
+
 
 #include "solar_kernels.h"
 
@@ -216,6 +248,7 @@ struct StencilInfo stencil_info_list[] = {
     {"star", 4, 1, 15, STAR, VARIABLE_COEFFICIENT_AXSYM, REGULAR},
     {"star", 1, 1, 9 , STAR, VARIABLE_COEFFICIENT_NOSYM, REGULAR},
     {"star", 1, 1, 40, STAR, SOLAR_COEFFICIENT, SOLAR},
+    {"box",  1, 1, 2,  BOX,  CONSTANT_COEFFICIENT, REGULAR},
     {0, 0, 0, 0, 0, 0, 0},
 };
 
@@ -226,7 +259,8 @@ spt_blk_func_t spt_blk_func_list[] = {
     iso_ref_2space_1time_var_axsym,
     iso_ref_8space_1time_var_axsym,
     iso_ref_2space_1time_var_nosym,
-    solar,};
+    solar,
+    box_ref_2space_1time,};
 
 spt_blk_func_t stat_sched_func_list[] = {
     stat_sched_iso_ref,
@@ -235,7 +269,8 @@ spt_blk_func_t stat_sched_func_list[] = {
     stat_sched_iso_ref_2space_1time_var_axsym,
     stat_sched_iso_ref_8space_1time_var_axsym,
     stat_sched_iso_ref_2space_1time_var_nosym,
-    stat_sched_solar,};
+    stat_sched_solar,
+    stat_sched_box_ref_2space_1time,};
 
 mwd_func_t swd_func_list[] = {
     swd_iso_ref,
@@ -244,7 +279,8 @@ mwd_func_t swd_func_list[] = {
     swd_iso_ref_2space_1time_var_axsym,
     swd_iso_ref_8space_1time_var_axsym,
     swd_iso_ref_2space_1time_var_nosym,
-    swd_solar,};
+    swd_solar,
+    swd_box_ref_2space_1time,};
 
 
 mwd_func_t mwd_func_list[] = {  /* 0 */
@@ -254,7 +290,8 @@ mwd_func_t mwd_func_list[] = {  /* 0 */
     mwd_iso_ref_2space_1time_var_axsym,
     mwd_iso_ref_8space_1time_var_axsym,
     mwd_iso_ref_2space_1time_var_nosym,
-    not_supported_mwd,};
+    not_supported_mwd,
+    mwd_box_ref_2space_1time,};
 
 mwd_func_t femwd_func_list[] = { /* 1 */
     femwd_iso_ref,
@@ -263,7 +300,8 @@ mwd_func_t femwd_func_list[] = { /* 1 */
     femwd_iso_ref_2space_1time_var_axsym,
     femwd_iso_ref_8space_1time_var_axsym,
     femwd_iso_ref_2space_1time_var_nosym,
-    femwd_solar,};
+    femwd_solar,
+    femwd_box_ref_2space_1time,};
 
 mwd_func_t rsmwd_func_list[] = { /* 2 */
     rsmwd_iso_ref,
@@ -272,7 +310,8 @@ mwd_func_t rsmwd_func_list[] = { /* 2 */
     rsmwd_iso_ref_2space_1time_var_axsym,
     rsmwd_iso_ref_8space_1time_var_axsym,
     rsmwd_iso_ref_2space_1time_var_nosym,
-    not_supported_mwd,};
+    not_supported_mwd,
+    rsmwd_box_ref_2space_1time,};
 
 mwd_func_t rsfemwd_func_list[] = { /* 3 */
     rsfemwd_iso_ref,
@@ -281,7 +320,8 @@ mwd_func_t rsfemwd_func_list[] = { /* 3 */
     rsfemwd_iso_ref_2space_1time_var_axsym,
     rsfemwd_iso_ref_8space_1time_var_axsym,
     rsfemwd_iso_ref_2space_1time_var_nosym,
-    not_supported_mwd,};
+    not_supported_mwd,
+    rsfemwd_box_ref_2space_1time,};
 
 
 
