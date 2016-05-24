@@ -1,5 +1,8 @@
 Girih 
 ============
+
+This is a pre-alpha release. Please contact me for any issue and question at tareq.m.malas (at) gmail.com
+
 (Inspired from http://en.wikipedia.org/wiki/Girih)
 
 #### Introduction
