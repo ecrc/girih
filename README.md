@@ -1,7 +1,7 @@
 Girih 
 ============
 
-This is a pre-alpha release. Please contact me for any issue and question at tareq.m.malas (at) gmail.com
+This is a pre-alpha release. Contact me if you have issues or questions at tareq.m.malas at gmail.com
 
 (Inspired from http://en.wikipedia.org/wiki/Girih)
 
