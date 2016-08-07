@@ -2,7 +2,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
-#pragma omp parallel default(none) shared(shape, stencil_ctx, roc2, coef, mtid, xb, xe, zb, ze, yb_r0, ye_r0, tb, te, t_dim, NHALO) \
+#pragma omp parallel shared(shape, stencil_ctx, roc2, coef, mtid, tb, te, t_dim, NHALO) \
         firstprivate(u, v, b_inc, e_inc) \
         num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
