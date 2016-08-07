@@ -37,13 +37,13 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 
   fig_size =  [fig_width,fig_height]
   params = {
-         'axes.labelsize': 5,
+         'axes.labelsize': 6,
          'axes.linewidth': 0.5,
          'lines.linewidth': 1,
          'font.size': 5,
-         'legend.fontsize': 5,
-         'xtick.labelsize': 5,
-         'ytick.labelsize': 5,
+         'legend.fontsize': 6,
+         'xtick.labelsize': 6,
+         'ytick.labelsize': 6,
          'lines.markersize': 5,
          'text.usetex': True,
          'figure.figsize': fig_size}
@@ -116,10 +116,11 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 
 
   # show the usable cache size limits
-  ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
+#  ax.plot([22.5, 22.5], [0, 0.7*cb[0]], linestyle='-', color='r', label="Usable cache size")
 
-  ax.set_ylabel('Code balance (Bytes/LUP)')
-  ax.set_xlabel('Cache block size (MiB) PER THREAD')
+  if(stencil_kernel == 1):
+    ax.set_ylabel('Code balance (Bytes/LUP)')
+  ax.set_xlabel('Block size (MiB) PER THREAD')
   ax.set_ylim([0, max(cb_meas+cb)+1])
   ax.set_xlim([0, max(cs)+0.5])
   ax2 = ax.twiny()
@@ -132,6 +133,7 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
     Dw[0]=''
     Dw[1]=''
     Dw[3]=''
+    Dw[4]=''
     Dw[5]=''
   if stencil_kernel==5:
     Dw = map(str,Dw)
@@ -157,7 +159,8 @@ def gen_res(raw_data, stencil_kernel, bsz,  N):
 
 
   if(bsz==1):
-    ax.legend(loc='best')
+    if(stencil_kernel == 1):
+      ax.legend(loc='best')
   ax.grid()
   pylab.savefig(title+'.pdf', format='pdf', bbox_inches="tight", pad_inches=0)
   plt.clf()
