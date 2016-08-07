@@ -14,6 +14,7 @@ int get_ntg(Parameters p){
 }
 
 
+#ifdef __linux__
 void cpu_bind_init(Parameters *p){
   if(p->stencil_ctx.use_manual_cpu_bind==0)
     return;
@@ -137,7 +138,12 @@ void cpu_bind_finalize(Parameters *p){
   }
   free(p->stencil_ctx.bind_masks);
 }
-
+#else // not linux
+int sched_setaffinity(int pid, int cpusetsize, cpu_set_t *mask){}
+void cpu_bind_init(Parameters *p){}
+void cpu_bind_reinit(Parameters *p){}
+void cpu_bind_finalize(Parameters *p){}
+#endif
 
 /* OLD implementation
 uint64_t get_mwf_size(Parameters p, int t_dim){

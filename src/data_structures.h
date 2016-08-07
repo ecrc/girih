@@ -19,7 +19,15 @@
 // For thread binding
 #define _GNU_SOURCE
 #define __USE_GNU
-#include <sched.h>
+
+#ifdef __linux__
+  #include <sched.h>
+#else
+  typedef struct cpu_set {int dummy;} cpu_set_t;
+  int sched_setaffinity(int pid, int cpusetsize, cpu_set_t *mask);
+#endif
+
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/syscall.h>
