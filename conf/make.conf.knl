@@ -1,0 +1,4 @@
+
+CFLAGS = -g -O3 -fno-alias -qopenmp -xMIC-AVX512
+CC=mpiicc
+FC=mpiifort

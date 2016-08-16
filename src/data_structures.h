@@ -10,6 +10,22 @@
 #define LIKWID_MARKER_STOP(reg)
 #define LIKWID_MARKER_CLOSE
 #endif
+// Generic marker start/stop
+#define MARKER_START(reg) LIKWID_MARKER_START(reg)
+#define MARKER_STOP(reg) LIKWID_MARKER_STOP(reg)
+
+
+
+
+#ifdef USE_VTUNE
+#include "ittnotify.h"
+
+#undef MARKER_START
+#undef MARKER_STOP
+
+#define MARKER_START(reg)  __itt_resume()
+#define MARKER_STOP(reg)   __itt_pause()
+#endif
 
 
 #ifndef _MPI_INCLUDE

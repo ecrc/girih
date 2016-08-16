@@ -363,7 +363,7 @@ void init(Parameters *p) {
       p->stencil_ctx.bs_y = (p->cache_size*1024)/((p->num_threads+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(real_t));
     } else {// tailored for the Xeon Phi
       if(p->stencil_ctx.thread_group_size ==-1) p->stencil_ctx.thread_group_size = 1;
-      p->stencil_ctx.bs_y = (p->cache_size*1024)/( (p->stencil_ctx.thread_group_size+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(real_t));
+      p->stencil_ctx.bs_y = (p->cache_size*1024)/( (p->num_threads/p->stencil_ctx.thread_group_size)* (p->stencil_ctx.thread_group_size+2*p->stencil.r)*p->ldomain_shape[0]*sizeof(real_t));
     }
     // set minimum block size if cache is not sufficient
     if(p->stencil_ctx.bs_y == 0) p->stencil_ctx.bs_y=p->stencil.r;
@@ -787,7 +787,7 @@ void domain_data_fill(Parameters *p){
 }
 
 
-void performance_results(Parameters *p, double t, double t_max, double t_min, double t_ts_main_max, double t_ts_main_min){
+void performance_results(Parameters *p, double t, double t_max, double t_min, double t_med, double t_ts_main_max, double t_ts_main_min){
   double max_comm, max_comp, max_wait, max_others, max_total;
   double min_comm, min_comp, min_wait, min_others, min_total;
   double mean_comm, mean_comp, mean_wait, mean_others, mean_total;
@@ -851,9 +851,10 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
     printf("time/test(s): %e\n", t);
 
     if(p->target_ts != 2){
-      printf("\nRANK0 MStencil/s  MIN: %f  \n", p->ln_stencils/(1e6*t_max));
-      printf("RANK0 MStencil/s  AVG: %f  \n", p->ln_stencils/(1e6*(t/p->nt) ));
-      printf("RANK0 MStencil/s  MAX: %f  \n", p->ln_stencils/(1e6*t_min));
+      printf("\nRANK0 GStencil/s MEDIAN: %f  \n", p->ln_stencils/(1e9*t_med)*p->nt);
+      printf("RANK0 GStencil/s    MIN: %f  \n", p->ln_stencils/(1e9*t_max));
+      printf("RANK0 GStencil/s    AVG: %f  \n", p->ln_stencils/(1e9*(t/p->nt) ));
+      printf("RANK0 GStencil/s    MAX: %f  \n", p->ln_stencils/(1e9*t_min));
 
       printf("\n******************************************************\n");
       printf("RANK0 Total: %f (s) -%06.2f%%\n", p->prof.total,p->prof.total/p->prof.total*100);
@@ -1333,7 +1334,7 @@ void parse_args (int argc, char** argv, Parameters * p)
   }
 
   p->orig_thread_group_size =  p->stencil_ctx.thread_group_size;
-  p->use_omp_stat_sched = 0;
+//  p->use_omp_stat_sched = 0;
 }
 
 void print_3Darray(char *filename, real_t * restrict array, int nx, int ny, int nz, int halo) {

@@ -16,10 +16,17 @@ USE_SPLIT_STRIDE=0
 INST=0
 VERBOSE=0
 DEBUG=0
+VTUNE=0
 
 ifeq ($(VERBOSE), 1)
 	CFLAGS+= -openmp_report -vec-report3
 	FFLAGS+= -openmp_report -vec-report3
+endif
+
+ifeq ($(VTUNE), 1)
+  CFLAGS+= -DUSE_VUTNE
+  FFLAGS+= -DUSE_VTUNE
+  LIBS+= $(VTUNE_AMPLIFIER_XE_2016_DIR)/lib64/libittnotify.a
 endif
 
 ifeq ($(DEBUG), 1)

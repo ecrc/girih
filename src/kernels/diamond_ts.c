@@ -677,7 +677,7 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 //      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
 //      {
 //         LIKWID_MARKER_THREADINIT;
-//         LIKWID_MARKER_START("calc");
+//         MARKER_START("calc");
 //      }
 //    }
 
@@ -721,7 +721,7 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 //    if(p->in_auto_tuning == 0) {
 //      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
 //      {
-//         LIKWID_MARKER_STOP("calc");
+//         MARKER_STOP("calc");
 //      }
 //    }
 
@@ -907,7 +907,7 @@ void dynamic_intra_diamond_ts(Parameters *p) {
       #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
       {
          LIKWID_MARKER_THREADINIT;
-         LIKWID_MARKER_START("calc");
+         MARKER_START("calc");
       }
     }
   }
@@ -934,7 +934,7 @@ void dynamic_intra_diamond_ts(Parameters *p) {
     {
       #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
       {
-         LIKWID_MARKER_STOP("calc");
+         MARKER_STOP("calc");
       }
     }
   }

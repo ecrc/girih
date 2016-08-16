@@ -1,12 +1,21 @@
 #include "performance.h"
 
+// from GNU.org
+int compare_doubles (const void *a, const void *b)
+{
+  const double *da = (const double *) a;
+  const double *db = (const double *) b;
+  return (*da > *db) - (*da < *db);
+}
+
 void performance_test(Parameters * p){
   int i;
   int tests_remain;
   double t_start, t_end, t=0.0;
-  double t_min = 1000000.0, t_max= -1.0, tpercycle, tpertest;
+  double t_min = 1000000.0, t_max= -1.0, t_med, tpercycle, tpertest;
   double  t_ts_main_max= -1.0, t_ts_main_min = 1000000.0;
   double t2;
+  double *ttests = (double*) malloc(p->n_tests*sizeof(double));
 
   // Create the required MPI data structures
   mpi_halo_init(p);
@@ -37,7 +46,7 @@ void performance_test(Parameters * p){
   if(p->target_ts != 2) {
     #pragma omp parallel
     {
-      LIKWID_MARKER_START("calc");
+      MARKER_START("calc");
     }
   }
   while(tests_remain--) {
@@ -51,6 +60,7 @@ void performance_test(Parameters * p){
     t_end = MPI_Wtime();
     tpertest = t_end - t_start;
     tpercycle = (t_end - t_start) / p->nt;
+    ttests[tests_remain] = tpertest;
 
     p->prof.total = t_end - t_start;
     p->prof.wait += (t_end - t2);
@@ -76,12 +86,16 @@ void performance_test(Parameters * p){
   if(p->target_ts != 2) {
     #pragma omp parallel
     {
-      LIKWID_MARKER_STOP("calc");
+      MARKER_STOP("calc");
     }
   }
- 
+
+  // compute the tests median
+  qsort(ttests, p->n_tests, sizeof(double), compare_doubles);  
+  t_med = ttests[p->n_tests/2];
+
   // collect and print the performance results
-  performance_results(p, t, t_max, t_min, t_ts_main_max, t_ts_main_min);
+  performance_results(p, t, t_max, t_min, t_med, t_ts_main_max, t_ts_main_min);
 
   // clean up
   if (p->mpi_rank == 0) {
@@ -90,5 +104,6 @@ void performance_test(Parameters * p){
   }
   mpi_halo_finalize(p);
   arrays_free(p);
+  free(ttests);
 
 }
