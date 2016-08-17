@@ -3,6 +3,14 @@
 #include <stdlib.h>
 #include <math.h>
 
+void dynamic_intra_diamond_ts(Parameters *p);
+void init(Parameters *p);
+void arrays_allocate(Parameters *p);
+void init_coeff(Parameters *p);
+void domain_data_fill(Parameters *p);
+void arrays_free(Parameters *p);
+void mpi_halo_finalize(Parameters *p);
+void copy_params_struct(Parameters a, Parameters * b);
 
 typedef struct Tune_Params{
   int thread_group_size, th_z, th_y, th_x, th_c, t_dim, num_wf;
@@ -139,7 +147,7 @@ void cpu_bind_finalize(Parameters *p){
   free(p->stencil_ctx.bind_masks);
 }
 #else // not linux
-int sched_setaffinity(int pid, int cpusetsize, cpu_set_t *mask){}
+int sched_setaffinity(int pid, int cpusetsize, cpu_set_t *mask){return 0;}
 void cpu_bind_init(Parameters *p){}
 void cpu_bind_reinit(Parameters *p){}
 void cpu_bind_finalize(Parameters *p){}
@@ -235,7 +243,7 @@ double run_tuning_test(Parameters *tp){
     obt_perf =  lups/t;
 
     perf_ratio = 100*fabs(obt_perf-prev_perf)/obt_perf;
-    printf("[AUTO TUNE]     [%03d: %06.2f]  time:%e  MLUPS:%06lu  cache block size:%lukiB  reps:%d  perf err: %4.1f%%\n", tp->stencil_ctx.num_wf, obt_perf/(1e6), t, lups/1000000ULL, get_mwf_size(*tp, tp->t_dim)*get_ntg(*tp)/1024, reps, perf_ratio);
+    printf("[AUTO TUNE]     [%03d: %06.2f]  time:%e  MLUPS:%06llu  cache block size:%llukiB  reps:%d  perf err: %4.1f%%\n", tp->stencil_ctx.num_wf, obt_perf/(1e6), t, lups/1000000ULL, get_mwf_size(*tp, tp->t_dim)*get_ntg(*tp)/1024, reps, perf_ratio);
 
   } while( (reps<20) && (t < 8.0)  && (threash_nwf < perf_ratio) );
 

@@ -395,7 +395,7 @@ void init(Parameters *p) {
       if(j == p->mpi_rank){
 
         printf("[%02d]:top(%02d,%02d,%02d)\n", p->mpi_rank, p->t.rank_coords[0], p->t.rank_coords[1], p->t.rank_coords[2]); fflush(stdout);
-        printf("ln_domain:%06lu  lnstencil:%06lu\n", p->ln_domain, p->ln_stencils); fflush(stdout);
+        printf("ln_domain:%06llu  lnstencil:%06llu\n", p->ln_domain, p->ln_stencils); fflush(stdout);
         printf("  Local stencil Shape:(%03d,%03d,%03d)\n", p->lstencil_shape[0], p->lstencil_shape[1], p->lstencil_shape[2]); fflush(stdout);
         printf("  Local domain Shape: (%03d,%03d,%03d)\n", p->ldomain_shape[0], p->ldomain_shape[1], p->ldomain_shape[2]); fflush(stdout);
         printf("  Local begin:        (%03d,%03d,%03d)\n", p->gb[0], p->gb[1], p->gb[2]); fflush(stdout);
@@ -804,7 +804,7 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
     nans += (p->U1[k] * 0) != 0;
     // check for zeroes
 #if DP
-      if(fabsf(p->U1[k]) < 1e-6) n_zeroes++;
+      if(fabs(p->U1[k]) < 1e-6) n_zeroes++;
 #else
       if(fabs(p->U1[k]) < 1e-6) n_zeroes++;
 #endif
@@ -812,12 +812,12 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
   zeroes_p = 100*n_zeroes/p->ln_domain;
   if(zeroes_p > 90){
     printf("\n******************************************************\n");
-    printf("##WARNING[rank:%d]: %lu%% of the sub domain contains zeroes. This might result in inaccurate performance results\n", p->mpi_rank, zeroes_p);
+    printf("##WARNING[rank:%d]: %llu%% of the sub domain contains zeroes. This might result in inaccurate performance results\n", p->mpi_rank, zeroes_p);
     printf("******************************************************\n\n");
   }
   if(nans > 0){
     printf("\n******************************************************\n");
-    printf("##WARNING[rank:%d]: %lu nan and/or -inf/inf values in the final sub domain solution. This might result in inaccurate performance results\n", p->mpi_rank, nans);
+    printf("##WARNING[rank:%d]: %llu nan and/or -inf/inf values in the final sub domain solution. This might result in inaccurate performance results\n", p->mpi_rank, nans);
     printf("******************************************************\n\n");
   }
 
@@ -846,7 +846,7 @@ void performance_results(Parameters *p, double t, double t_max, double t_min, do
   ////////////////////////////////////////////////////////////////
   // print the performance results
   if (p->mpi_rank == 0) {
-    printf("Total memory allocation per MPI rank: %lu MiB\n", sizeof(real_t)*p->ln_domain*3/1024/1024);
+    printf("Total memory allocation per MPI rank: %llu MiB\n", sizeof(real_t)*p->ln_domain*3/1024/1024);
     printf("Total time(s): %e\n", t*p->n_tests);
     printf("time/test(s): %e\n", t);
 
@@ -999,8 +999,8 @@ void print_param(Parameters p) {
   printf("Stencil Kernel semi-bandwidth: %d\n", p.stencil.r);
   printf("Stencil Kernel coefficients: %s\n", coeff_type);
   printf("Precision: %s\n", precision);
-  printf("Global domain    size:%lu    nx:%d    ny:%d    nz:%d\n", p.n_stencils, p.stencil_shape[0],p.stencil_shape[1],p.stencil_shape[2]);
-  printf("Rank 0 domain    size:%lu    nx:%d    ny:%d    nz:%d\n", p.ln_stencils, p.lstencil_shape[0],p.lstencil_shape[1],p.lstencil_shape[2]);
+  printf("Global domain    size:%llu    nx:%d    ny:%d    nz:%d\n", p.n_stencils, p.stencil_shape[0],p.stencil_shape[1],p.stencil_shape[2]);
+  printf("Rank 0 domain    size:%llu    nx:%d    ny:%d    nz:%d\n", p.ln_stencils, p.lstencil_shape[0],p.lstencil_shape[1],p.lstencil_shape[2]);
   printf("Number of time steps: %d\n", p.nt);
   printf("Alignment size: %d Bytes\n", p.alignment);
   printf("Number of tests: %d\n", p.n_tests);
@@ -1024,10 +1024,10 @@ void print_param(Parameters p) {
       printf("Wavefront parallel strategy: %s\n", MWD_name[p.mwd_type]);
     printf("Intra-diamond width:   %d\n", (p.t_dim+1)*2*p.stencil.r);
     printf("Wavefront width:  %d\n", diam_height);
-    printf("Cache block size/wf (kiB): %lu\n", p.wf_blk_size/1024);
-    printf("Total cache block size (kiB): %lu\n", (p.num_threads/p.stencil_ctx.thread_group_size) * p.wf_blk_size/1024);
-    printf("Next larger cache block size/wf (kiB): %lu (diam_width=%d)\n", p.wf_larger_blk_size/1024, (p.larger_t_dim+1)*2*p.stencil.r);
-    printf("Intra-diamond prologue/epilogue MStencils: %lu\n", p.idiamond_pro_epi_logue_updates/(1000*1000));
+    printf("Cache block size/wf (kiB): %llu\n", p.wf_blk_size/1024);
+    printf("Total cache block size (kiB): %llu\n", (p.num_threads/p.stencil_ctx.thread_group_size) * p.wf_blk_size/1024);
+    printf("Next larger cache block size/wf (kiB): %llu (diam_width=%d)\n", p.wf_larger_blk_size/1024, (p.larger_t_dim+1)*2*p.stencil.r);
+    printf("Intra-diamond prologue/epilogue MStencils: %llu\n", p.idiamond_pro_epi_logue_updates/(1000*1000));
     printf("Multi-wavefront updates: %d\n", p.stencil_ctx.num_wf);
     printf("User set thread group size: %d\n", p.orig_thread_group_size);
     printf("Thread group size: %d\n", p.stencil_ctx.thread_group_size);

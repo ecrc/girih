@@ -185,7 +185,7 @@ void TEMPLATE(rsmwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         stencil_ctx.t_wait[gtid] += MPI_Wtime() - t_start;
 
         //update current thread time step status_z
-        if(th_z>1 & is_master_z) status_z[tid_z_idx]++;
+        if((th_z>1) & (is_master_z)) status_z[tid_z_idx]++;
 
         // Update block size in Y
         if(t< t_dim){ // lower half of the diamond
