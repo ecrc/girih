@@ -1,0 +1,4 @@
+
+CFLAGS = -g -O3 -fno-alias -qopenmop -xCORE-AVX2
+CC=mpiicc
+FC=mpiifort
