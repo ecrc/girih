@@ -1,4 +1,4 @@
 
-CFLAGS = -g -O3 -xAVX -fno-alias -qopenmp #-mcmodel=large
+CFLAGS = -g -O3 -xAVX -fno-alias -qopenmp
 CC=cc
 FC=ftn
