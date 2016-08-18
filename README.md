@@ -28,15 +28,13 @@ supported groups at LIKWID.
 
 #### Installation & compilation
 Use conf/make.conf file to set the Makefile variables to the 
-desired compiler binaries and flags. The main arguments that can be passed to 
-the make command:
-  DP: Used to specify the precision of the build (DP=1 for double and DP=0 for 
-  	single precision).
-  DEBUG: Used for debugging and verification builds.
+desired compiler binaries and flags. The main make targets are:
+  dp: Used to set the problem data to doubple-precision.
+  debug: Used for debugging and verification builds.
 
 The make command creates build directory according to the selected precision for 
-the executable "mwd_kernels" and the object files. DP build creates "build_dp" 
-directory and SP build creates "build" directory.
+the executable "mwd_kernels" and the object files. dp make target creates "build_dp" 
+directory and the default build creates "build" directory.
 
 
 #### Usage
