@@ -1,0 +1,4 @@
+
+CFLAGS = -g -O3 -xAVX -fno-alias -openmp #-mcmodel=large
+CC=mpiicc
+FC=mpiifort
