@@ -95,6 +95,7 @@ void param_default(Parameters *p) {
   p->in_auto_tuning=0;
 
   // Initialize the default stencil coefficients values
+  // TODO
   real_t coef[] = {-0.28472, 0.16000, -0.02000, 0.00254,
       -0.00018, -0.18472, 0.19, -0.0500, 0.00554, -0.0009, 0.00354};
   int i;
@@ -585,6 +586,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
 #define pU2(i,j,k)          (p->U2[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 #define pU3(i,j,k)          (p->U3[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 void domain_data_fill_std(Parameters * p){
+  // TODO
   uint64_t i,j,k, gi, gj, gk;
   real_t r;
   int xb, xe, yb, ye, zb, ze;

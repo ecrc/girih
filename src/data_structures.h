@@ -216,6 +216,7 @@ struct StencilInfo {
 
 // context information
 typedef struct{
+// TODO add receiver
   int alignment, verbose, stencil_shape[3];
   uint64_t n_stencils, ln_domain, ln_stencils;
   int target_ts, target_kernel;

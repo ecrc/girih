@@ -15,6 +15,8 @@ void iso_ref_clu_8space_2time CLU_SIG{
   const real_t * restrict v_s    =    &v[(j + k*clu_ctx.nny)*clu_ctx.nnx];
   const real_t * restrict roc2_s = &roc2[(j + k*clu_ctx.nny)*clu_ctx.nnx];
 
+  // TODO Add the source contribution
+
 #pragma simd
   for(i=xb; i<xe; i++) {
 

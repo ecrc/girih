@@ -12,10 +12,12 @@ void verify(Parameters *p){
 
   // allocate and initialize the required arrays
   arrays_allocate(p);
+  // TODO: initialize source term following ricker.cpp from Exawave for all time steps.
   init_coeff(p);
   domain_data_fill(p);
 
   // compute data in parallel using the time stepper to be tested
+  // dynamic_intra_diamond_ts
   TSList[p->target_ts].func(p);
 
   // aggregate all subdomains into rank zero to compare with the serial results
@@ -200,7 +202,8 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
 
   switch(p.stencil.type){
     case REGULAR:
-      //-- Initialize u,v,roc2
+      // TODO
+      //-- Initialize u,v,roc2 and source term
       // fill the array points according to their location in space and pad the boundary with zeroes
       for(i=0; i<n_domain;i++){
         u[i] = 0.0;
@@ -261,8 +264,11 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   domain_shape[1] = nny;
   domain_shape[2] = nnz;
   for(it=0; it<p.nt; it+=2){
+    // TODO
+    // Add source term contribution from ricker.cpp
     std_kernel(domain_shape, coef, u, v, roc2);
     std_kernel(domain_shape, coef, v, u, roc2);
+    // Extract solutions from recveiver coordinates
   }
 //  print_3Darray("u"   , u, nnx, nny, nnz, 0);
 //  u[(p.stencil.r+1)*(nnx * nny + nny + 1)] += 100.1;
