@@ -4,6 +4,7 @@
 #include <math.h>
 #include "mpi.h"
 #include "verification.h"
+#include <assert.h> //@KADIR
 
 void verify(Parameters *p){
 
@@ -19,6 +20,7 @@ void verify(Parameters *p){
   // compute data in parallel using the time stepper to be tested
   // dynamic_intra_diamond_ts
   TSList[p->target_ts].func(p);
+  printf("%s %d: Calling %s\n", __FILE__, __LINE__, TSList[p->target_ts].name);
 
   // aggregate all subdomains into rank zero to compare with the serial results
   real_t * restrict aggr_domain = NULL;
@@ -68,6 +70,9 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     break;
   }
 
+  printf("%s %d: Coefficient type:%d CONSTANT_COEFFICIENT:%d\n", __FILE__, __LINE__, p.stencil.coeff, CONSTANT_COEFFICIENT); //@KADIR
+  assert(p.stencil.coeff == CONSTANT_COEFFICIENT); //@KADIR
+
 
   // allocate the the coefficients according to the stencil type
   // initialize the coefficients
@@ -79,6 +84,10 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     male = posix_memalign((void **)&(coef), p.alignment, sizeof(real_t)*coef_size); check_merr(male);
     for(i=0;i<p.stencil.r+1;i++) coef[i] = p.g_coef[i];
 
+    for(i=0; i<p.stencil.r+1; i++) {
+        coef[i] = coef[i]*10;
+    }
+
     // select the stencil type
     switch(p.stencil.r){
     case 1:
@@ -89,6 +98,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
       break;
     case 4:
       std_kernel = &std_kernel_8space_2time;
+      printf("%s %d: std_kernel is std_kernel_8space_2time\n", __FILE__, __LINE__); //@KADIR
       break;
     default:
       printf("ERROR: unknown type of stencil\n");
@@ -202,9 +212,10 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
 
   switch(p.stencil.type){
     case REGULAR:
-      // TODO
+      // @HATEM:TODO @KADIR:DONE
       //-- Initialize u,v,roc2 and source term
       // fill the array points according to their location in space and pad the boundary with zeroes
+#ifdef __KADIR__DISABLED__ //@KADIR: Disabled so that initial conditions are all zero
       for(i=0; i<n_domain;i++){
         u[i] = 0.0;
         v[i] = 0.0;
@@ -233,6 +244,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
           V(nnx-1, j, k) += BOUNDARY_SRC_VAL;
         }
       }
+#endif //@KADIR: Disabled so that initial conditions are all zero
       break;
   
     case SOLAR:
@@ -244,6 +256,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
           for(j=0; j<nny; j++){
             for(i=0; i<nnx; i++){
               idx = 2*((k*nny+j)*nnx + i +n_domain*f);
+              real_t r;
               r = 1.0/(3.0) * (1.0*i/p.stencil_shape[0] + 1.0*j/p.stencil_shape[1]  + 1.0*k/p.stencil_shape[2]);
               u[idx] = r*1.845703;
               u[idx+1] = r*1.845703/3.0;

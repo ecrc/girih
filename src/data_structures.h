@@ -56,7 +56,8 @@
 // constants
 #define MAX_CACHE_SIZE (70*1024)  // cache size in kB
 #define FLUSH_SIZE (50*1024*1024) // in bytes
-#define BOUNDARY_SRC_VAL (100.1)
+//#define BOUNDARY_SRC_VAL (100.1) //@KADIR: Commented out
+#define BOUNDARY_SRC_VAL (0.0)     //@KADIR: Boundary is 0 for now
 #define MAX_X_THREADS (3)
 #define MAX_THREAD_GROUP_SIZE (18)
 #define TUNING_DIRECTION (0) // test ascending thread group size
@@ -234,6 +235,9 @@ typedef struct{
 
   real_t * restrict U1, * restrict U2, * restrict U3, * restrict source;
   real_t * restrict coef;
+
+  int len_src_exc_coef;           //@KADIR: Number of elements in len_src_exc_coef=Number of time steps?
+  real_t * restrict src_exc_coef; //@KADIR: coef used in source excitation
 
   // parameters for internal thread affinity
   int th_block;

@@ -95,11 +95,29 @@ void param_default(Parameters *p) {
   p->in_auto_tuning=0;
 
   // Initialize the default stencil coefficients values
-  // TODO
+  // @HATEM:TODO @KADIR:DONE
+#ifdef __KADIR__DISABLED__  
   real_t coef[] = {-0.28472, 0.16000, -0.02000, 0.00254,
       -0.00018, -0.18472, 0.19, -0.0500, 0.00554, -0.0009, 0.00354};
+#endif
+    //@KADIR These coef values are taken from ~/exawave/ExaWave/engine/modelling/FDM/3D/FDM_3D_Scheme.cpp
+    real_t coef[] = {
+        -205./72., //-0.28472, 
+        8./5.,     // 0.16000, 
+        -1/5.,     //-0.02000, 
+        8./315,    // 0.00254,
+        -1/560.    //-0.00018, 
+                   //-0.18472, 
+                   // 0.19, 
+                   //-0.0500, 
+                   // 0.00554, 
+                   //-0.0009, 
+                   // 0.00354
+    };
   int i;
-  for(i=0; i<11; i++) p->g_coef[i] = (real_t) coef[i];
+  //for(i=0; i<11; i++) p->g_coef[i] = (real_t) coef[i];  //@KADIR: Commented out
+  for(i=0; i<5; i++) p->g_coef[i] = (real_t) coef[i]/10.; //@KADIR Hardcoded values from ExaWave are multiplied by 10, whereas Girih's values are not.
+  //@KADIR: verification.c line87, coef is multiplied by 10 but I was not able to locate *10 operation for the non-baseline code.
 
   // profiling information
   reset_timers(&(p->prof));
@@ -198,12 +216,16 @@ void arrays_allocate(Parameters *p) {
             male2, sizeof(real_t)*coef_size*1.0/(1024*1024*1024),
             sizeof(real_t)*(coef_size+ domain_size)*1.0/(1024*1024*1024));
   }
+
+  p->len_src_exc_coef = 500;
+  male2 = posix_memalign((void **)&(p->src_exc_coef), p->alignment, sizeof(real_t)*p->len_src_exc_coef); check_merr(male2);
 }
 
 void arrays_free(Parameters *p) {
 
   switch(p->stencil.type){
     case REGULAR:
+    free(p->src_exc_coef); //@KADIR
     free(p->coef);
     free(p->U1);
     free(p->U2);
@@ -476,6 +498,45 @@ void init_coeff(Parameters * p) {
     exit(1);
     break;
   }
+
+  //@KADIR: Values to be added to source point
+  //Copied from ExaWave/system/wavelet/ricker.cpp
+  //GPT_Float PI = boost::math::constants::pi<GPT_Float>();
+  double PI = M_PI;
+  double m_f0 = 8; //f0=8 from exawave.xml
+  //GPT_Float t0=1.5*sqrt(6.)/(PI*m_f0);
+  double t0=1.5*sqrt(6.)/(PI*m_f0);
+  double dt = 0.001;
+  double m_ot=-round(t0/dt);
+  //GPT_Float a  = PI*m_f0;
+  double a  = PI*m_f0;
+  //GPT_Float a2 = a  * a;
+  double a2 = a  * a;
+  //GPT_Float a4 = a2 * a2;
+  double a4 = a2 * a2;
+  //GPT_Float a6 = a4 * a2;
+  double a6 = a4 * a2;
+  int it;
+  for (it=0;it<p->len_src_exc_coef;it++)
+  {
+    double t=it*dt;
+    double deltaT=(t-t0);
+    double deltaT2=deltaT  * deltaT;
+    double deltaT3=deltaT2 * deltaT;
+    double deltaT4=deltaT3 * deltaT;
+    //else if (deriv == 1)
+    p->src_exc_coef[it] = (-6*a2*deltaT+4*a4*deltaT3)*exp(-a2*deltaT2);
+  }
+  double mval=abs(p->src_exc_coef[0]);
+  for (it=0; it<p->len_src_exc_coef;it++) {
+    if(mval < abs(p->src_exc_coef[it])){
+        mval = abs(p->src_exc_coef[it]);
+    }
+  }
+  if (mval<=0) mval=1;
+  for (it=0;it<p->len_src_exc_coef;it++) {
+    p->src_exc_coef[it]/=mval;
+  }
 }
 
 void copyv(int *a, int * b, int n) {
@@ -586,7 +647,7 @@ void copy_params_struct(Parameters a, Parameters * b) {
 #define pU2(i,j,k)          (p->U2[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 #define pU3(i,j,k)          (p->U3[((k)*(p->ldomain_shape[1])+(j))*(p->ldomain_shape[0])+(i)])
 void domain_data_fill_std(Parameters * p){
-  // TODO
+  // @HATEM:TODO  @KADIR:DONE
   uint64_t i,j,k, gi, gj, gk;
   real_t r;
   int xb, xe, yb, ye, zb, ze;
@@ -598,6 +659,7 @@ void domain_data_fill_std(Parameters * p){
     if(p->stencil.time_order == 2)
       p->U3[i] = 0.0;
   }
+#ifdef __KADIR__DISABLED__ //@KADIR: Disabled so that initial conditions are all zero
   xb = 0;
   yb = 0;
   zb = 0;
@@ -678,6 +740,7 @@ void domain_data_fill_std(Parameters * p){
       }
     }
   }
+#endif //@KADIR: Disabled so that initial conditions are all zero
 }
 void domain_data_fill_solar(Parameters *p){
 
