@@ -276,12 +276,17 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   domain_shape[0] = nnx;
   domain_shape[1] = nny;
   domain_shape[2] = nnz;
+#define _U(i,j,k)          (    u[((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i)]) //@KADIR
+#define _V(i,j,k)          (    v[((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i)]) //@KADIR
   for(it=0; it<p.nt; it+=2){
-    // TODO
+    // @HATEM:TODO @KADIR:TODO
     // Add source term contribution from ricker.cpp
+    if( (p.source_point_enabled==1)) _U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it];//@KADIR
     std_kernel(domain_shape, coef, u, v, roc2);
+    if( (p.source_point_enabled==1)) _V(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it+1];//@KADIR
     std_kernel(domain_shape, coef, v, u, roc2);
-    // Extract solutions from recveiver coordinates
+    // Extract solutions from receiver coordinates
+
   }
 //  print_3Darray("u"   , u, nnx, nny, nnz, 0);
 //  u[(p.stencil.r+1)*(nnx * nny + nny + 1)] += 100.1;
@@ -842,7 +847,7 @@ void compare_results_std(real_t *restrict u, real_t *restrict target_domain, int
   }
   if ( (diff_l1 > 0.0) || (diff_l1*0 != 0) || (diff_l1 != diff_l1) ){
     printf("Max snapshot abs. err.:%e  L1 norm:%e\n", max_error, diff_l1);
-    fprintf(stderr,"BROKEN KERNEL\n");
+    fprintf(stderr,"BROKEN KERNEL detected at %s\n", __func__);
 
     print_3Darray("error_snapshot", snapshot_error, nnx, nny, nnz, NHALO);
     print_3Darray("reference_snapshot", u , nnx, nny, nnz, NHALO);

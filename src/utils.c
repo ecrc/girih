@@ -94,6 +94,7 @@ void param_default(Parameters *p) {
 
   p->in_auto_tuning=0;
 
+  p->num_receivers = NUM_RECEIVERS;
   // Initialize the default stencil coefficients values
   // @HATEM:TODO @KADIR:DONE
 #ifdef __KADIR__DISABLED__  
@@ -253,6 +254,25 @@ void set_centered_source(Parameters *p) {
   p->source_pt[1] = (p->stencil_shape[1]+2*p->stencil.r)/2 -1;
   p->source_pt[2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
 }
+void set_custom_source(Parameters *p) {//@KADIR source coordinates are taken from exawave.xml
+  p->source_pt[0] = 5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+  p->source_pt[1] = 5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+  p->source_pt[2] = 2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+  printf("%s %d:Source point :%d,%d,%d r:%d\n",
+          __FILE__, __LINE__, 
+          p->stencil_shape[0], 
+          p->stencil_shape[1], 
+          p->stencil_shape[2], 
+          p->stencil.r);
+}
+void set_custom_receivers(Parameters *p) {//@KADIR receiver coordinates are taken from exawave.xml
+  int i;
+  for(i=0; i<p->num_receivers; i++) {
+    p->receiver_pt[i][0] = (p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][1] = (p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+  }
+}
 
 void set_kernels(Parameters *p){
 
@@ -337,7 +357,7 @@ void init(Parameters *p) {
 //    if(p->verbose==1) printf("###INFO: Halo concatenation disabled. It does not make sense in single process run\n");
   }
 
-  p->source_point_enabled = 0; //@KADIR enabled source point by default. Use --disable-source-point to disable it
+  //p->source_point_enabled = 0; //@KADIR removed this line and enabled source point by default. Use --disable-source-point to disable it
 
   // compute the global boundaries of each subdomain
   for(i=0; i<3; i++) {
@@ -1368,7 +1388,9 @@ void parse_args (int argc, char** argv, Parameters * p)
     print_help(p);
   }
 
-  set_centered_source(p);
+  //set_centered_source(p); @KADIR
+  set_custom_source(p);    //@KADIR
+  set_custom_receivers(p); //@KADIR
 
   // set assumed cache size to zero for diamond approach if not set by the user
   if(cache_size !=-1) p->cache_size = cache_size;

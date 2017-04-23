@@ -215,6 +215,7 @@ struct StencilInfo {
   enum Stencil_Type type;
 };
 
+#define NUM_RECEIVERS 9 //@KADIRTO remove macro and add parameter
 // context information
 typedef struct{
 // TODO add receiver
@@ -230,6 +231,10 @@ typedef struct{
   int use_omp_stat_sched;
   int lstencil_shape[3], ldomain_shape[3], gb[3], ge[3], lsource_pt[3], has_source; //MPI ranks' global indices, and local source locations
 
+  // @KADIRTO: Do not forget to update src/utils.c:copy_params_struct()
+  int num_receivers;
+  int receiver_pt[NUM_RECEIVERS][3];
+
 //  int stencil_radius, is_constant_coefficient;
 //  enum Stencil_Types stencil_type;
 
@@ -237,7 +242,8 @@ typedef struct{
   real_t * restrict coef;
 
   real_t * restrict src_exc_coef; //@KADIR: coef used in source excitation. length is number of time steps (nt)
-
+  // Use source instead of src_exc_conf after verification results
+  
   // parameters for internal thread affinity
   int th_block;
   int th_stride;
