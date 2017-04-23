@@ -40,7 +40,7 @@ void param_default(Parameters *p) {
   p->source=NULL;
   p->verbose = 1;
   p->debug = 0;
-  p->source_point_enabled = 0;
+  p->source_point_enabled = 1; //@KADIR enabled source point by default. Use --disable-source-point to disable it
   p->array_padding = 1;
   p->mwd_type = 0;
   p->use_omp_stat_sched = 0;
@@ -217,8 +217,7 @@ void arrays_allocate(Parameters *p) {
             sizeof(real_t)*(coef_size+ domain_size)*1.0/(1024*1024*1024));
   }
 
-  p->len_src_exc_coef = 500;
-  male2 = posix_memalign((void **)&(p->src_exc_coef), p->alignment, sizeof(real_t)*p->len_src_exc_coef); check_merr(male2);
+  male2 = posix_memalign((void **)&(p->src_exc_coef), p->alignment, sizeof(real_t)*p->nt); check_merr(male2);
 }
 
 void arrays_free(Parameters *p) {
@@ -338,7 +337,7 @@ void init(Parameters *p) {
 //    if(p->verbose==1) printf("###INFO: Halo concatenation disabled. It does not make sense in single process run\n");
   }
 
-  p->source_point_enabled = 0;
+  p->source_point_enabled = 0; //@KADIR enabled source point by default. Use --disable-source-point to disable it
 
   // compute the global boundaries of each subdomain
   for(i=0; i<3; i++) {
@@ -517,7 +516,7 @@ void init_coeff(Parameters * p) {
   //GPT_Float a6 = a4 * a2;
   double a6 = a4 * a2;
   int it;
-  for (it=0;it<p->len_src_exc_coef;it++)
+  for (it=0;it<p->nt;it++)
   {
     double t=it*dt;
     double deltaT=(t-t0);
@@ -528,13 +527,13 @@ void init_coeff(Parameters * p) {
     p->src_exc_coef[it] = (-6*a2*deltaT+4*a4*deltaT3)*exp(-a2*deltaT2);
   }
   double mval=abs(p->src_exc_coef[0]);
-  for (it=0; it<p->len_src_exc_coef;it++) {
+  for (it=0; it<p->nt;it++) {
     if(mval < abs(p->src_exc_coef[it])){
         mval = abs(p->src_exc_coef[it]);
     }
   }
   if (mval<=0) mval=1;
-  for (it=0;it<p->len_src_exc_coef;it++) {
+  for (it=0;it<p->nt;it++) {
     p->src_exc_coef[it]/=mval;
   }
 }
@@ -1211,8 +1210,8 @@ void print_help(Parameters *p){
         "  --alignment <integer>\n"
         "       Specify the memory alignment value (in bytes) of the\n"
         "       allocated domain arrays\n"
-//        "  --disable-source-point\n"
-//        "       disables the source point update in the solution domain\n"
+        "  --disable-source-point\n"
+        "       disables the source point update in the solution domain\n"
 
         "\nDisplay options:\n"
         "  --verbose <bool>\n"

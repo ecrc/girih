@@ -236,8 +236,7 @@ typedef struct{
   real_t * restrict U1, * restrict U2, * restrict U3, * restrict source;
   real_t * restrict coef;
 
-  int len_src_exc_coef;           //@KADIR: Number of elements in len_src_exc_coef=Number of time steps?
-  real_t * restrict src_exc_coef; //@KADIR: coef used in source excitation
+  real_t * restrict src_exc_coef; //@KADIR: coef used in source excitation. length is number of time steps (nt)
 
   // parameters for internal thread affinity
   int th_block;
