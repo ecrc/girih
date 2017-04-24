@@ -276,17 +276,52 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   domain_shape[0] = nnx;
   domain_shape[1] = nny;
   domain_shape[2] = nnz;
-#define _U(i,j,k)          (    u[((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i)]) //@KADIR
-#define _V(i,j,k)          (    v[((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i)]) //@KADIR
-  for(it=0; it<p.nt; it+=2){
-    // @HATEM:TODO @KADIR:TODO
-    // Add source term contribution from ricker.cpp
-    if( (p.source_point_enabled==1)) _U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it];//@KADIR
-    std_kernel(domain_shape, coef, u, v, roc2);
-    if( (p.source_point_enabled==1)) _V(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it+1];//@KADIR
-    std_kernel(domain_shape, coef, v, u, roc2);
-    // Extract solutions from receiver coordinates
+#define _TR_(i,j,k)  ((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i) //@KADIR
 
+  FILE* fp = NULL;
+  if( (p.source_point_enabled==1) ) {//@KADIR
+    fp = fopen("rcv.bin", "w");
+  }
+  for(it=0; it<p.nt; it+=2){
+    // @HATEM:TODO @KADIR:TODO TODO ASK: read/write u/v? What is the correct combination?
+    std_kernel(domain_shape, coef, u, v, roc2);
+    // Add source term contribution from ricker.cpp
+    if( (p.source_point_enabled==1) ) {
+        u[_TR_(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2])] += p.src_exc_coef[it];//@KADIR
+        printf("%s %d: timestep:%d+1 source :%d at %d,%d,%d has value %g, contribution:%g and %g. ds1:%d ds0:%d index:%d\n", 
+                __FILE__, __LINE__, it,  
+                _TR_(p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2]),
+                p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2],
+                u[ _TR_(p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2]) ],
+                p.src_exc_coef[it],
+                p.src_exc_coef[it+1], 
+                p.ldomain_shape[1], p.ldomain_shape[0], (p.lsource_pt[2]*p.ldomain_shape[1]+p.lsource_pt[1])*p.ldomain_shape[0]+p.lsource_pt[0]
+                );
+    }
+    std_kernel(domain_shape, coef, v, u, roc2);
+    if( (p.source_point_enabled==1) ) {//@KADIR
+      int i;
+      for(i=0; i<p.num_receivers; i++) {
+        fwrite( &v[_TR_(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2])], sizeof(real_t), 1, fp);
+      }
+    }
+    if( (p.source_point_enabled==1) ) v[_TR_(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2])] += p.src_exc_coef[it+1];//@KADIR
+    // Extract solutions from receiver coordinates
+    if( (p.source_point_enabled==1) ) {//@KADIR
+      int i;
+      for(i=0; i<p.num_receivers; i++) {
+        fwrite( &v[_TR_(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2])], sizeof(real_t), 1, fp);
+        printf("%s %d: timestep:%d receiver :%d/%d->%d at %d,%d,%d has value %g\n", 
+                __FILE__, __LINE__, it, i, p.num_receivers, 
+                _TR_(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2]),
+                p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2],
+                v[_TR_(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2])]
+                );
+      }
+    }
+  }
+  if( (p.source_point_enabled==1) ) {//@KADIR
+    fclose(fp);
   }
 //  print_3Darray("u"   , u, nnx, nny, nnz, 0);
 //  u[(p.stencil.r+1)*(nnx * nny + nny + 1)] += 100.1;
@@ -859,6 +894,9 @@ void compare_results_std(real_t *restrict u, real_t *restrict target_domain, int
 
     for (k=0; k<n_domain; k++) ref_l1 += fabs(u[k]);
     if(ref_l1 < 1e-6) printf("##WARNING: The L1 norm of the solution domain is too small (%e). This verification is not sufficient to discover errors\n", ref_l1);
+    print_3Darray("error_snapshot", snapshot_error, nnx, nny, nnz, NHALO); //@KADIR
+    print_3Darray("reference_snapshot", u , nnx, nny, nnz, NHALO);         //@KADIR
+    print_3Darray("target_snapshot"   , target_domain, nx, ny, nz, 0);     //@KADIR
 
   }
 

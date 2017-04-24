@@ -255,9 +255,9 @@ void set_centered_source(Parameters *p) {
   p->source_pt[2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
 }
 void set_custom_source(Parameters *p) {//@KADIR source coordinates are taken from exawave.xml
-  p->source_pt[0] = 5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-  p->source_pt[1] = 5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-  p->source_pt[2] = 2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+  p->source_pt[0] = 25;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+  p->source_pt[1] = 25;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+  p->source_pt[2] = 10;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
   printf("%s %d:Source point :%d,%d,%d r:%d\n",
           __FILE__, __LINE__, 
           p->stencil_shape[0], 
@@ -268,9 +268,9 @@ void set_custom_source(Parameters *p) {//@KADIR source coordinates are taken fro
 void set_custom_receivers(Parameters *p) {//@KADIR receiver coordinates are taken from exawave.xml
   int i;
   for(i=0; i<p->num_receivers; i++) {
-    p->receiver_pt[i][0] = (p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][1] = (p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][0] = 25;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][1] = (i+1)*5;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][2] = 40;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
   }
 }
 
@@ -521,38 +521,44 @@ void init_coeff(Parameters * p) {
   //@KADIR: Values to be added to source point
   //Copied from ExaWave/system/wavelet/ricker.cpp
   //GPT_Float PI = boost::math::constants::pi<GPT_Float>();
-  double PI = M_PI;
-  double m_f0 = 8; //f0=8 from exawave.xml
+  real_t PI = M_PI;
+  real_t m_f0 = 8; //f0=8 from exawave.xml
   //GPT_Float t0=1.5*sqrt(6.)/(PI*m_f0);
-  double t0=1.5*sqrt(6.)/(PI*m_f0);
-  double dt = 0.001;
-  double m_ot=-round(t0/dt);
+  real_t t0=1.5*sqrt(6.)/(PI*m_f0);
+  real_t dt = 0.001;
+  real_t m_ot=-round(t0/dt);
   //GPT_Float a  = PI*m_f0;
-  double a  = PI*m_f0;
+  real_t a  = PI*m_f0;
   //GPT_Float a2 = a  * a;
-  double a2 = a  * a;
+  real_t a2 = a  * a;
   //GPT_Float a4 = a2 * a2;
-  double a4 = a2 * a2;
+  real_t a4 = a2 * a2;
   //GPT_Float a6 = a4 * a2;
-  double a6 = a4 * a2;
+  real_t a6 = a4 * a2;
   int it;
+  FILE* fp = fopen("ricker.bin", "w");
+  printf("Ricker coeffs for %d time steps. sizeof(real_t):%lu sizeof(double):%lu\n", p->nt, sizeof(real_t), sizeof(double));
   for (it=0;it<p->nt;it++)
   {
-    double t=it*dt;
-    double deltaT=(t-t0);
-    double deltaT2=deltaT  * deltaT;
-    double deltaT3=deltaT2 * deltaT;
-    double deltaT4=deltaT3 * deltaT;
+    real_t t=it*dt;
+    real_t deltaT=(t-t0);
+    real_t deltaT2=deltaT  * deltaT;
+    real_t deltaT3=deltaT2 * deltaT;
+    real_t deltaT4=deltaT3 * deltaT;
     //else if (deriv == 1)
     p->src_exc_coef[it] = (-6*a2*deltaT+4*a4*deltaT3)*exp(-a2*deltaT2);
+    printf("%d %g\n", it, p->src_exc_coef[it]);
+    fwrite(&p->src_exc_coef[it], sizeof(real_t), 1, fp );
   }
-  double mval=abs(p->src_exc_coef[0]);
+  fclose(fp);
+  real_t mval=abs(p->src_exc_coef[0]);
   for (it=0; it<p->nt;it++) {
     if(mval < abs(p->src_exc_coef[it])){
         mval = abs(p->src_exc_coef[it]);
     }
   }
   if (mval<=0) mval=1;
+  printf("\nmval:%g\n", mval);
   for (it=0;it<p->nt;it++) {
     p->src_exc_coef[it]/=mval;
   }
