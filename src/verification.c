@@ -310,8 +310,10 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     if( (p.source_point_enabled==1) ) {//@KADIR
       int i;
       for(i=0; i<p.num_receivers; i++) {
-        fwrite( &v[_TR_(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2])], sizeof(real_t), 1, fp);
-        printf("%s %d: timestep:%d receiver :%d/%d->%d at %d,%d,%d has value %g\n", 
+        real_t val = v[_TR_(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2])];
+        fwrite( &val, sizeof(real_t), 1, fp);
+
+        if(0&&val > 1e-10)printf("%s %d: timestep:%d receiver :%d/%d->%d at %d,%d,%d has value %g\n", 
                 __FILE__, __LINE__, it, i, p.num_receivers, 
                 _TR_(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2]),
                 p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2],
@@ -364,6 +366,7 @@ void std_kernel_8space_2time( const int shape[3],
 
   real_t lap;
 
+  real_t customroc = 16; //@KADIR
   for(k=4; k<nnz-4; k++) {
     for(j=4; j<nny-4; j++) {
       for(i=4; i<nnx-4; i++) {
@@ -385,7 +388,9 @@ void std_kernel_8space_2time( const int shape[3],
 #if DP
         U(i,j,k) = 2. *V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap;
 #else
-        U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap;
+        //printf("%d %d %d: V:%g U:%g ROC2:%g lap:%g\n", k, j, i, V(i,j,k), U(i,j,k), ROC2(i,j,k), lap);//@KADIR
+        U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + customroc*lap;   //@KADIR
+        //U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap; //@KADIR
 #endif
       }
     }

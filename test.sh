@@ -1,6 +1,6 @@
 make -j  
-gs=501
-nt=2000
+gs=501; nt=2000
+#gs=96; nt=500
 source=--disable-source-point 
 source=
 ./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 0 --target-ts 0 --verify 1 $source 

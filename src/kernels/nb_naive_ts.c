@@ -165,12 +165,24 @@ void naive_nonblocking_ts(Parameters *p) {
     }
   }
 
+  p->has_source = 1; //@KADIR
   double t1,t2,t3,t4,t5;
   for(it=0; it<p->nt; it+=2){
     t1 = MPI_Wtime();
     p->stencil.spt_blk_func(p->ldomain_shape, p->stencil.r, p->stencil.r, p->stencil.r, p->lstencil_shape[0]+p->stencil.r, p->ldomain_shape[1]-p->stencil.r, p->ldomain_shape[2]-p->stencil.r, p->coef, p->U1, p->U2, p->U3, ALL_FIELDS, p->stencil_ctx);
-    if( (p->has_source==1) && (p->source_point_enabled==1)) U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->src_exc_coef[it]; //@KADIR Source exicitations are moved before stencil computations
-    printf("%s %d: Source updated: p->has_source:%d p->source_point_enabled:%d\n", __FILE__, __LINE__, p->has_source, p->source_point_enabled); //@KADIR
+    if( (p->has_source==1) && (p->source_point_enabled==1)) {
+      U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]) += p->src_exc_coef[it]; //@KADIR Source exicitations are moved before stencil computations
+      /*printf("%s %d: Source updated: p->has_source:%d p->source_point_enabled:%d\n", __FILE__, __LINE__, p->has_source, p->source_point_enabled); //@KADIR*/
+        printf("%s %d: timestep:%d+1 source at %d,%d,%d has value %g, contribution:%g and %g. ds1:%d ds0:%d index:%d\n", 
+                __FILE__, __LINE__, it,  
+                
+                p->lsource_pt[0], p->lsource_pt[1], p->lsource_pt[2],
+                U1(p->lsource_pt[0],p->lsource_pt[1],p->lsource_pt[2]),
+                p->src_exc_coef[it],
+                p->src_exc_coef[it+1], 
+                p->ldomain_shape[1], p->ldomain_shape[0], (p->lsource_pt[2]*p->ldomain_shape[1]+p->lsource_pt[1])*p->ldomain_shape[0]+p->lsource_pt[0]
+                );
+    }
     t2 = MPI_Wtime();
     exchange_halo_asynch(p, p->U1, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);
 

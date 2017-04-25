@@ -255,9 +255,13 @@ void set_centered_source(Parameters *p) {
   p->source_pt[2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
 }
 void set_custom_source(Parameters *p) {//@KADIR source coordinates are taken from exawave.xml
-  p->source_pt[0] = 250;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-  p->source_pt[1] = 250;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-  p->source_pt[2] = 100;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+  p->source_pt[0] = 20;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+  p->source_pt[1] = 20;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+  p->source_pt[2] = 20;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+
+  /*p->source_pt[0] = 250;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;*/
+  /*p->source_pt[1] = 250;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;*/
+  /*p->source_pt[2] = 100;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;*/
   printf("%s %d:Source point :%d,%d,%d r:%d\n",
           __FILE__, __LINE__, 
           p->stencil_shape[0], 
@@ -268,9 +272,13 @@ void set_custom_source(Parameters *p) {//@KADIR source coordinates are taken fro
 void set_custom_receivers(Parameters *p) {//@KADIR receiver coordinates are taken from exawave.xml
   int i;
   for(i=0; i<p->num_receivers; i++) {
-    p->receiver_pt[i][0] = 250;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][1] = (i+1)*50;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][2] = 400;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][0] = 30;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][1] = 30+(i+1)*5;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][2] = 30;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+
+    /*p->receiver_pt[i][0] = 250;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;*/
+    /*p->receiver_pt[i][1] = (i+1)*50;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;*/
+    /*p->receiver_pt[i][2] = 400;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;*/
   }
 }
 
