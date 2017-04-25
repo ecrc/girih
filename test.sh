@@ -1,5 +1,6 @@
 make -j  
 gs=501; nt=2000
+gs=501; nt=1000
 #gs=96; nt=500
 source=--disable-source-point 
 source=
