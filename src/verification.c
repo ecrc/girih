@@ -19,7 +19,7 @@ void verify(Parameters *p){
 
   // compute data in parallel using the time stepper to be tested
   // dynamic_intra_diamond_ts
-  TSList[p->target_ts].func(p);
+  //TSList[p->target_ts].func(p); @KADIRTO 
   printf("%s %d: Calling %s\n", __FILE__, __LINE__, TSList[p->target_ts].name);
 
   // aggregate all subdomains into rank zero to compare with the serial results
@@ -87,6 +87,8 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     for(i=0; i<p.stencil.r+1; i++) {
         coef[i] = coef[i]*10;
     }
+    printf("%s %d: THE COEFFICIENT %g %g %g %g %g\n", __FILE__, __LINE__, coef[0], coef[1], coef[2], coef[3], coef[4]);
+    //exit(0);
 
     // select the stencil type
     switch(p.stencil.r){
@@ -276,55 +278,70 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   domain_shape[0] = nnx;
   domain_shape[1] = nny;
   domain_shape[2] = nnz;
-#define _TR_(i,j,k)  ((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i) //@KADIR
+#define _TR_(i,j,k)  ((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i) //@KADIR THIS WRONG. Use nnx, nny nnz
 
-  FILE* fp = NULL;
-  if( (p.source_point_enabled==1) ) {//@KADIR
-    fp = fopen("rcv.bin", "w");
-  }
+    FILE* fp = NULL;
+    if( (p.source_point_enabled==1) ) {//@KADIR
+        fp = fopen("rcv.bin", "w");
+    }
   for(it=0; it<p.nt; it+=2){
     // @HATEM:TODO @KADIR:TODO TODO ASK: read/write u/v? What is the correct combination?
+    //first call
     std_kernel(domain_shape, coef, u, v, roc2);
+    
     // Add source term contribution from ricker.cpp
     if( (p.source_point_enabled==1) ) {
-        u[_TR_(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2])] += p.src_exc_coef[it];//@KADIR
-        printf("%s %d: timestep:%d+1 source :%d at %d,%d,%d has value %g, contribution:%g and %g. ds1:%d ds0:%d index:%d\n", 
-                __FILE__, __LINE__, it,  
-                _TR_(p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2]),
-                p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2],
-                u[ _TR_(p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2]) ],
-                p.src_exc_coef[it],
-                p.src_exc_coef[it+1], 
-                p.ldomain_shape[1], p.ldomain_shape[0], (p.lsource_pt[2]*p.ldomain_shape[1]+p.lsource_pt[1])*p.ldomain_shape[0]+p.lsource_pt[0]
-                );
+        //SOURCE
+        U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it];//@KADIR
+
+        /*printf("%s %d: timestep:%d+1 source :%d at %d,%d,%d has value %g, contribution:%g and %g. ds2:%d ds1:%d ds0:%d index:%d\n", */
+                /*__FILE__, __LINE__, it,  */
+                /*_TR_(p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2]),*/
+                /*p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2],*/
+                /*u[ _TR_(p.lsource_pt[0], p.lsource_pt[1], p.lsource_pt[2]) ],*/
+                /*p.src_exc_coef[it],*/
+                /*p.src_exc_coef[it+1], */
+                /*p.ldomain_shape[2],p.ldomain_shape[1], p.ldomain_shape[0], (p.lsource_pt[2]*p.ldomain_shape[1]+p.lsource_pt[1])*p.ldomain_shape[0]+p.lsource_pt[0]*/
+                /*);*/
     }
-    std_kernel(domain_shape, coef, v, u, roc2);
+
+    //Extraction
     if( (p.source_point_enabled==1) ) {//@KADIR
       int i;
       for(i=0; i<p.num_receivers; i++) {
-        fwrite( &v[_TR_(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2])], sizeof(real_t), 1, fp);
+        fwrite( &U(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]), sizeof(real_t), 1, fp);
       }
     }
-    if( (p.source_point_enabled==1) ) v[_TR_(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2])] += p.src_exc_coef[it+1];//@KADIR
+
+
+
+    //second call
+    std_kernel(domain_shape, coef, v, u, roc2);
+    
+    // Add source term
+    if( (p.source_point_enabled==1) ) {
+     //   v[_TR_(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2])] += p.src_exc_coef[it+1];//@KADIR
+       V(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it+1];//@KADIR
+    }
     // Extract solutions from receiver coordinates
     if( (p.source_point_enabled==1) ) {//@KADIR
       int i;
       for(i=0; i<p.num_receivers; i++) {
-        real_t val = v[_TR_(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2])];
+        real_t val = V(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]);
         fwrite( &val, sizeof(real_t), 1, fp);
 
-        if(0&&val > 1e-10)printf("%s %d: timestep:%d receiver :%d/%d->%d at %d,%d,%d has value %g\n", 
+        if(fabs(val) > 0.0)printf("%s %d: timestep:%d receiver :%d/%d at %d,%d,%d has value U:%g V:%g\n", 
                 __FILE__, __LINE__, it, i, p.num_receivers, 
-                _TR_(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2]),
                 p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2],
-                v[_TR_(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2])]
+                U(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2]),
+                V(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2])
                 );
       }
     }
   }
-  if( (p.source_point_enabled==1) ) {//@KADIR
-    fclose(fp);
-  }
+    if( (p.source_point_enabled==1) ) {//@KADIR
+      fclose(fp);
+    }
 //  print_3Darray("u"   , u, nnx, nny, nnz, 0);
 //  u[(p.stencil.r+1)*(nnx * nny + nny + 1)] += 100.1;
 
@@ -365,13 +382,16 @@ void std_kernel_8space_2time( const int shape[3],
   int nnx =shape[0];
 
   real_t lap;
+  /*if ( U(250,250,100) == 0.0 ) {*/
+      /*U(250,250,100) = 1.; */
+  /*}*/
 
-  real_t customroc = 16; //@KADIR
+  real_t customroc = 16; //4000^2 0.001^2   @KADIR
   for(k=4; k<nnz-4; k++) {
     for(j=4; j<nny-4; j++) {
       for(i=4; i<nnx-4; i++) {
 
-        lap=coef[0]*V(i,j,k)
+        lap=3.*coef[0]*V(i,j,k)
            +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ))
            +coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  ))
            +coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1))
@@ -386,15 +406,28 @@ void std_kernel_8space_2time( const int shape[3],
            +coef[4]*(V(i  ,j  ,k+4)+V(i  ,j  ,k-4));
 
 #if DP
-        U(i,j,k) = 2. *V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap;
+        //U(i,j,k) = 2. *V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap; Disabled @KADIR
 #else
-        //printf("%d %d %d: V:%g U:%g ROC2:%g lap:%g\n", k, j, i, V(i,j,k), U(i,j,k), ROC2(i,j,k), lap);//@KADIR
-        U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + customroc*lap;   //@KADIR
+        /*printf("%d %d %d: V:%g U:%g ROC2:%g lap:%g ROC2:%g\n", */
+                /*k, j, i, V(i,j,k), U(i,j,k), ROC2(i,j,k), lap, */
+               /*ROC2(i,j,k) );//@KADIR*/
+        U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + customroc*lap/400.;   //@KADIR
         //U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap; //@KADIR
 #endif
       }
     }
   }
+  printf("V:%g U:%g ROC2:%g lap:%g V:%g U:%g coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
+          V(250,250,100), 
+          U(250,250,100), 
+          customroc,
+          lap,
+          coef[0],
+          coef[1],
+          coef[2],
+          coef[3],
+          coef[4]
+          );
 }
 
 // This is the standard ISO 7-points stencil kernel with constant coefficient
