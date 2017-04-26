@@ -277,8 +277,8 @@ void set_custom_receivers(Parameters *p) {//@KADIR receiver coordinates are take
     /*p->receiver_pt[i][2] = 30;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;*/
 
     p->receiver_pt[i][0] = 250;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][1] = 250+i*10;//(i+1)*50;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][2] = 100;//400;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][1] = (i+1)*50;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+    p->receiver_pt[i][2] = 400;//400;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
   }
 }
 

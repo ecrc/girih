@@ -387,10 +387,12 @@ void std_kernel_8space_2time( const int shape[3],
   /*}*/
 
   real_t customroc = 16; //4000^2 0.001^2   @KADIR
+#pragma omp parallel for collapse(3)
   for(k=4; k<nnz-4; k++) {
     for(j=4; j<nny-4; j++) {
       for(i=4; i<nnx-4; i++) {
 
+//#pragma simd
         lap=3.*coef[0]*V(i,j,k)
            +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ))
            +coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  ))
@@ -417,7 +419,7 @@ void std_kernel_8space_2time( const int shape[3],
       }
     }
   }
-  printf("V:%g U:%g ROC2:%g lap:%g V:%g U:%g coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
+  /*printf("V:%g U:%g ROC2:%g lap:%g  coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
           V(250,250,100), 
           U(250,250,100), 
           customroc,
@@ -428,6 +430,7 @@ void std_kernel_8space_2time( const int shape[3],
           coef[3],
           coef[4]
           );
+          */
 }
 
 // This is the standard ISO 7-points stencil kernel with constant coefficient
