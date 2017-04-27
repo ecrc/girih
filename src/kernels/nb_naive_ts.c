@@ -177,7 +177,7 @@ void naive_nonblocking_ts(Parameters *p) {
   if( (p->source_point_enabled==1) ) {//@KADIR
       fp = fopen("rcv-spatial.bin", "w");
   }
-  printf("spatial kernel: time step: ", it);
+  printf("spatial kernel: time step: ");
   double t1,t2,t3,t4,t5;
   for(it=0; it<p->nt; it+=2){
     printf("\nts:%d. ", it);
