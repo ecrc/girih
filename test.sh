@@ -1,5 +1,6 @@
 #make -j  
 gs=501; nt=2000
+gs=501; nt=200
 source=--disable-source-point 
 source=
 rm rcv.bin.bck

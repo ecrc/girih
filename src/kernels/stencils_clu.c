@@ -16,11 +16,12 @@ void iso_ref_clu_8space_2time CLU_SIG{
   const real_t * restrict roc2_s = &roc2[(j + k*clu_ctx.nny)*clu_ctx.nnx];
 
   // TODO Add the source contribution
+  real_t customroc = 16; //4000^2 0.001^2   @KADIR
 
 #pragma simd
   for(i=xb; i<xe; i++) {
 
-    lap=coef[0]*V(i,0,0)                    // MOVE THE MUL OUT
+    lap=3.*coef[0]*V(i,0,0)                    // MOVE THE MUL OUT
     +coef[1]*(V(i+1,0  ,0  )+V(i-1,0  ,0  ))
     +coef[1]*(V(i  , +1,0  )+V(i  , -1,0  ))
     +coef[1]*(V(i  ,0  , +1)+V(i  ,0  , -1))
@@ -34,7 +35,8 @@ void iso_ref_clu_8space_2time CLU_SIG{
     +coef[4]*(V(i  , +4,0  )+V(i  , -4,0  ))
     +coef[4]*(V(i  ,0  , +4)+V(i  ,0  , -4));
 
-    U(i) = two*V(i,0,0) - U(i) + ROC2(i)*lap;
+    //U(i) = two*V(i,0,0) - U(i) + ROC2(i)*lap; //@KADIR
+    U(i) = two*V(i,0,0) - U(i) + customroc*lap/400.; //@KADIR
   }
 }
 

@@ -19,7 +19,7 @@ void verify(Parameters *p){
 
   // compute data in parallel using the time stepper to be tested
   // dynamic_intra_diamond_ts
-  //TSList[p->target_ts].func(p); @KADIRTO 
+  TSList[p->target_ts].func(p); 
   printf("%s %d: Calling %s\n", __FILE__, __LINE__, TSList[p->target_ts].name);
 
   // aggregate all subdomains into rank zero to compare with the serial results
