@@ -283,7 +283,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   if( (p.source_point_enabled==1) ) {//@KADIR
       fp = fopen("rcv.bin", "w");
   }
-  printf("reference kernel: time step: ", it);
+  printf("reference kernel: time step: ");
   for(it=0; it<p.nt; it+=2){
     printf("\nts:%d. ", it);
     // @HATEM:TODO @KADIR:TODO TODO ASK: read/write u/v? What is the correct combination?
