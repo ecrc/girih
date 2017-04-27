@@ -9,6 +9,7 @@
 void iso_ref( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -67,6 +68,7 @@ void iso_ref( const int shape[3], const int xb, const int yb, const int zb, cons
 void iso_ref_2space_1time( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -108,6 +110,7 @@ void iso_ref_2space_1time( const int shape[3], const int xb, const int yb, const
 void iso_ref_2space_1time_var( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -150,6 +153,7 @@ void iso_ref_2space_1time_var( const int shape[3], const int xb, const int yb, c
 void iso_ref_2space_1time_var_axsym( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -191,6 +195,7 @@ void iso_ref_2space_1time_var_axsym( const int shape[3], const int xb, const int
 void iso_ref_8space_1time_var_axsym( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i,j,k, jb, je;
   int nny =shape[1];
@@ -240,6 +245,7 @@ void iso_ref_8space_1time_var_axsym( const int shape[3], const int xb, const int
 void iso_ref_2space_1time_var_nosym( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i,j,k, jb, je;
   int nny =shape[1];

@@ -555,7 +555,7 @@ void init_coeff(Parameters * p) {
     real_t deltaT4=deltaT3 * deltaT;
     //else if (deriv == 1)
     p->src_exc_coef[it] = (-6*a2*deltaT+4*a4*deltaT3)*exp(-a2*deltaT2);
-    printf("%d %g\n", it, p->src_exc_coef[it]);
+    //printf("%d %g\n", it, p->src_exc_coef[it]);
     fwrite(&p->src_exc_coef[it], sizeof(real_t), 1, fp );
   }
   fclose(fp);

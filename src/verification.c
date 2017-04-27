@@ -19,8 +19,8 @@ void verify(Parameters *p){
 
   // compute data in parallel using the time stepper to be tested
   // dynamic_intra_diamond_ts
-  TSList[p->target_ts].func(p); 
   printf("%s %d: Calling %s\n", __FILE__, __LINE__, TSList[p->target_ts].name);
+  TSList[p->target_ts].func(p); 
 
   // aggregate all subdomains into rank zero to compare with the serial results
   real_t * restrict aggr_domain = NULL;
@@ -278,13 +278,14 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   domain_shape[0] = nnx;
   domain_shape[1] = nny;
   domain_shape[2] = nnz;
-#define _TR_(i,j,k)  ((k)*(p.ldomain_shape[1])+(j))*(p.ldomain_shape[0])+(i) //@KADIR THIS WRONG. Use nnx, nny nnz
 
-    FILE* fp = NULL;
-    if( (p.source_point_enabled==1) ) {//@KADIR
-        fp = fopen("rcv.bin", "w");
-    }
+  FILE* fp = NULL;
+  if( (p.source_point_enabled==1) ) {//@KADIR
+      fp = fopen("rcv.bin", "w");
+  }
+  printf("reference kernel: time step: ", it);
   for(it=0; it<p.nt; it+=2){
+    printf("\nts:%d. ", it);
     // @HATEM:TODO @KADIR:TODO TODO ASK: read/write u/v? What is the correct combination?
     //first call
     std_kernel(domain_shape, coef, u, v, roc2);
@@ -314,7 +315,6 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     }
 
 
-
     //second call
     std_kernel(domain_shape, coef, v, u, roc2);
     
@@ -330,18 +330,20 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
         real_t val = V(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]);
         fwrite( &val, sizeof(real_t), 1, fp);
 
-        if(fabs(val) > 0.0)printf("%s %d: timestep:%d receiver :%d/%d at %d,%d,%d has value U:%g V:%g\n", 
+        if(0 && fabs(val) > 0.0) {
+            printf("%s %d: timestep:%d receiver :%d/%d at %d,%d,%d has value U:%g V:%g\n", 
                 __FILE__, __LINE__, it, i, p.num_receivers, 
                 p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2],
                 U(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2]),
                 V(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2])
                 );
+        }
       }
     }
   }
-    if( (p.source_point_enabled==1) ) {//@KADIR
-      fclose(fp);
-    }
+  if( (p.source_point_enabled==1) ) {//@KADIR
+    fclose(fp);
+  }
 //  print_3Darray("u"   , u, nnx, nny, nnz, 0);
 //  u[(p.stencil.r+1)*(nnx * nny + nny + 1)] += 100.1;
 

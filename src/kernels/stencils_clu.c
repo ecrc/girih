@@ -17,6 +17,8 @@ void iso_ref_clu_8space_2time CLU_SIG{
 
   // TODO Add the source contribution
   real_t customroc = 16; //4000^2 0.001^2   @KADIR
+  printf("diamond. ");
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
 #pragma simd
   for(i=xb; i<xe; i++) {
@@ -43,6 +45,7 @@ void iso_ref_clu_8space_2time CLU_SIG{
 
 // 1-stride of ISO stencil 2nd-order-in-space-1st-order-in-time with constant coefficient
 void iso_ref_clu_2space_1time CLU_SIG{
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i;
   real_t * restrict u_s       = &u[(j + k*clu_ctx.nny)*clu_ctx.nnx];
@@ -60,6 +63,7 @@ void iso_ref_clu_2space_1time CLU_SIG{
 
 // 1-stride of ISO stencil 2nd-order-in-space-1st-order-in-time with variable coefficient
 void iso_ref_clu_2space_1time_var CLU_SIG{
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;
@@ -79,6 +83,7 @@ void iso_ref_clu_2space_1time_var CLU_SIG{
 
 // 1-stride of ISO stencil 2nd-order-in-space-1st-order-in-time with variable coefficient
 void iso_ref_clu_2space_1time_var_axsym CLU_SIG{
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;
@@ -100,6 +105,7 @@ void iso_ref_clu_2space_1time_var_axsym CLU_SIG{
 
 
 void iso_ref_clu_8space_1time_var_axsym CLU_SIG{
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;
@@ -142,6 +148,7 @@ void iso_ref_clu_8space_1time_var_axsym CLU_SIG{
 
 // 1-stride of ISO stencil 2nd-order-in-space-1st-order-in-time with variable coefficient
 void iso_ref_clu_2space_1time_var_nosym CLU_SIG{
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   int i;
   int nxny = clu_ctx.nnx*clu_ctx.nny;

@@ -1,5 +1,5 @@
 void FUNC_NAME KERNEL_SIG{
-
+  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
   int i,j,k, jb, je;
   const int nny =shape[1];
   const int nnx =shape[0];
@@ -20,7 +20,7 @@ void FUNC_NAME KERNEL_SIG{
           vx = (real_t *restrict) &(v[1ULL*k*nnxy + j*nnx]);
 #pragma simd
           for(i=xb; i<xe; i++) {
-            FUNC_BODY()
+            FUNC_BODY_B()
           }
         }
       }
