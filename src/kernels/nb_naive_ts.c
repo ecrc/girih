@@ -137,6 +137,7 @@ static inline void exchange_halo_concat_asynch(Parameters *p, real_t * restrict 
 }
 static inline void exchange_halo_asynch(Parameters *p, real_t * restrict u, real_t * restrict x_send_buf, real_t * restrict x_recv_buf, real_t * restrict y_send_buf, real_t * restrict y_recv_buf) {
   if(p->halo_concat == 1){
+    printf("%s %s %d HALO CONCAT=1\n", __FILE__, __func__, __LINE__);
     exchange_halo_concat_asynch(p, u, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);
   } else {
     exchange_halo_srtided_asynch(p, u);
@@ -196,6 +197,17 @@ void naive_nonblocking_ts(Parameters *p) {
       for(i=0; i<p->num_receivers; i++) {
         fwrite( &U1(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]), sizeof(real_t), 1, fp);
       }
+      {
+      int i;
+      for(i=0; i<p->num_receivers; i++) {
+      printf("%s %d: ts:%d. %d(%d,%d,%d)  %g %g\n", __func__, __LINE__, it+1, i,
+              p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2],
+              U1(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]), 
+              U2(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]) 
+              //U3(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2])
+              );
+      }
+      }
     }
     t2 = MPI_Wtime();
     exchange_halo_asynch(p, p->U1, x_send_buf, x_recv_buf, y_send_buf, y_recv_buf);
@@ -208,7 +220,18 @@ void naive_nonblocking_ts(Parameters *p) {
     if( p->source_point_enabled ==1  ) {//@KADIR
       int i;
       for(i=0; i<p->num_receivers; i++) {
-        fwrite( &U1(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]), sizeof(real_t), 1, fp);
+        fwrite( &U2(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]), sizeof(real_t), 1, fp);
+      }
+      {
+      int i;
+      for(i=0; i<p->num_receivers; i++) {
+      printf("%s %d: ts:%d. %d(%d,%d,%d)  %g %g\n", __func__, __LINE__, it+1, i,
+              p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2],
+              U1(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]), 
+              U2(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]) 
+              //U3(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2])
+              );
+      }
       }
     }
     t4 = MPI_Wtime();
