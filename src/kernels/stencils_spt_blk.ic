@@ -27,4 +27,11 @@ void FUNC_NAME KERNEL_SIG{
 
     }
   }
+  printf("coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
+          coef[0],
+          coef[1],
+          coef[2],
+          coef[3],
+          coef[4]
+          );
 }

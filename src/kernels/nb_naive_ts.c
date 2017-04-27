@@ -167,6 +167,12 @@ void naive_nonblocking_ts(Parameters *p) {
   }
 
   p->has_source = 1; //@KADIR
+  {
+    int i;
+    for(i = 0; i < 5; i++){
+      p->coef[i] *= 10;
+    }
+  }
   FILE* fp = NULL;
   if( (p->source_point_enabled==1) ) {//@KADIR
       fp = fopen("rcv-spatial.bin", "w");
@@ -197,10 +203,10 @@ void naive_nonblocking_ts(Parameters *p) {
       for(i=0; i<p->num_receivers; i++) {
         fwrite( &U1(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]), sizeof(real_t), 1, fp);
       }
-      {
+      if(0){
       int i;
       for(i=0; i<p->num_receivers; i++) {
-      printf("%s %d: ts:%d. %d(%d,%d,%d)  %g %g\n", __func__, __LINE__, it+1, i,
+      printf("%s %d: ts:%d. %d(%d,%d,%d)  %g %g\n", __func__, __LINE__, it, i,
               p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2],
               U1(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]), 
               U2(p->receiver_pt[i][0], p->receiver_pt[i][1], p->receiver_pt[i][2]) 

@@ -330,7 +330,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
         real_t val = V(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]);
         fwrite( &val, sizeof(real_t), 1, fp);
 
-        if(0 && fabs(val) > 0.0) {
+        if(1 || fabs(val) > 0.0) {
             printf("%s %d: timestep:%d receiver :%d/%d at %d,%d,%d has value U:%g V:%g\n", 
                 __FILE__, __LINE__, it, i, p.num_receivers, 
                 p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2],
@@ -421,7 +421,7 @@ void std_kernel_8space_2time( const int shape[3],
       }
     }
   }
-  /*printf("V:%g U:%g ROC2:%g lap:%g  coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
+  printf("V:%g U:%g ROC2:%g lap:%g  coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
           V(250,250,100), 
           U(250,250,100), 
           customroc,
@@ -432,7 +432,6 @@ void std_kernel_8space_2time( const int shape[3],
           coef[3],
           coef[4]
           );
-          */
 }
 
 // This is the standard ISO 7-points stencil kernel with constant coefficient
