@@ -413,6 +413,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   double t1, t2, t3;
 
   // wavefront prologue
+  // HATEM TODO HERE
   t1 = MPI_Wtime();
   yb = yb_r;
   ye = ye_r;
@@ -436,6 +437,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
 
   t2 = MPI_Wtime();
   // main wavefront loop
+  // HATEM TODO HERE
   yb = yb_r;
   ye = ye_r;
   zb = (te-tb)*p->stencil.r;
@@ -445,6 +447,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   t3 = MPI_Wtime();
 
   // wavefront epilogue
+  // HATEM TODO HERE
   yb = yb_r;
   ye = ye_r;
   ze = p->ldomain_shape[2]-p->stencil.r;
@@ -913,16 +916,19 @@ void dynamic_intra_diamond_ts(Parameters *p) {
   }
 
   // Prologue
+  // HATEM TODO HERE
   t1 = MPI_Wtime();
   if(p->in_auto_tuning == 0)
     dynamic_intra_diamond_prologue(p);
   t2 = MPI_Wtime();
 
   // main loop
+  // HATEM TODO HERE
   dynamic_intra_diamond_main_loop(p);
   t3 = MPI_Wtime();
 
   // Epilogue
+  // HATEM TODO HERE
   if(p->in_auto_tuning == 0)
     dynamic_intra_diamond_epilogue(p);
   t4 = MPI_Wtime();
