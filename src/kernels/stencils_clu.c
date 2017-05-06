@@ -15,10 +15,9 @@ void iso_ref_clu_8space_2time CLU_SIG{
   const real_t * restrict v_s    =    &v[(j + k*clu_ctx.nny)*clu_ctx.nnx];
   const real_t * restrict roc2_s = &roc2[(j + k*clu_ctx.nny)*clu_ctx.nnx];
 
-  // TODO Add the source contribution
+  // TODO Add the source contribution. @KADIR HERE IS NOT EXECUTED FOR DIAMOND
   real_t customroc = 16; //4000^2 0.001^2   @KADIR
-  printf("diamond. ");
-  printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
+  printf("\n%s %s %d\tDiamondX\n", __FILE__, __func__, __LINE__);
 
 #pragma simd
   for(i=xb; i<xe; i++) {

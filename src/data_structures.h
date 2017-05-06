@@ -218,7 +218,7 @@ struct StencilInfo {
 #define NUM_RECEIVERS 9 //@KADIRTO remove macro and add parameter
 // context information
 typedef struct{
-// TODO add receiver
+// @HATEM:TODO add receiver @KADIR:DONE
   int alignment, verbose, stencil_shape[3];
   uint64_t n_stencils, ln_domain, ln_stencils;
   int target_ts, target_kernel;

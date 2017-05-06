@@ -1,6 +1,8 @@
 void TEMPLATE(swd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
+      //printf("%s %d\tSource for diamond\n", __FILE__, __LINE__);
+      //@KADIR TODO CALLED ONLY DURING AUTOTUNING
 
   int i, j, k, t, yb, ye, zi, kt, ib, ie, ib_r, ie_r, bs_x, nwf;
   const int nny =shape[1];

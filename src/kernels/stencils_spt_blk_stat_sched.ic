@@ -1,4 +1,6 @@
 void TEMPLATE(stat_sched,FUNC_NAME) KERNEL_SIG{
+      //@KADIR CALLED DURING AUTOTUNING AND ACTUAL COMPUTATION
+      //printf("%s %d %s\tSource for diamond\n", __FILE__, __LINE__, __func__);
 
   int i,j,k, jb, je;
   const int nny =shape[1];

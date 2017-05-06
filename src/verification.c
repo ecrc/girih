@@ -13,7 +13,7 @@ void verify(Parameters *p){
 
   // allocate and initialize the required arrays
   arrays_allocate(p);
-  // TODO: initialize source term following ricker.cpp from Exawave for all time steps.
+  // @HATEM:TODO: initialize source term following ricker.cpp from Exawave for all time steps. @KADIR:DONE
   init_coeff(p);
   domain_data_fill(p);
 

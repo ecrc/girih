@@ -4,6 +4,7 @@
 #include <math.h>
 #include "mpi.h"
 #include "data_structures.h"
+#include <execinfo.h> //@KADIR for finding out function name
 
 #define ST_BUSY (0)
 #define ST_NOT_BUSY (1)
@@ -412,13 +413,18 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   int time_len = te-tb;
   double t1, t2, t3;
 
+
+  //printf("%s %d\tXXdiamond\n", __FILE__, __LINE__);
   // wavefront prologue
-  // HATEM TODO HERE
+  // HATEM TODO HERE @KADIR: EXECUTED
+  printf("%s %s %d:p->stencil.stat_sched_func)\n", __FILE__, __func__, __LINE__);
+  backtrace_symbols_fd(&(p->stencil.stat_sched_func), 1, 1); //@KADIR
   t1 = MPI_Wtime();
   yb = yb_r;
   ye = ye_r;
   zb = p->stencil.r;
   for(t=tb; t< te-1; t++){
+    //@KADIR TODO ADD SOURCE AND RECEIVERS
     ze = p->stencil.r*(time_len-(t-tb));
     if(t%2 == 1){
       p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, ALL_FIELDS, p->stencil_ctx);
@@ -438,6 +444,8 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   t2 = MPI_Wtime();
   // main wavefront loop
   // HATEM TODO HERE
+  printf("%s %s %d:p->stencil.mwd_func)\n", __FILE__, __func__, __LINE__);
+  backtrace_symbols_fd(&(p->stencil.mwd_func), 1, 1); //@KADIR
   yb = yb_r;
   ye = ye_r;
   zb = (te-tb)*p->stencil.r;
@@ -448,10 +456,13 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
 
   // wavefront epilogue
   // HATEM TODO HERE
+  printf("%s %s %d:p->stencil.stat_sched_func)\n", __FILE__, __func__, __LINE__);
+  backtrace_symbols_fd(&(p->stencil.stat_sched_func), 1, 1); //@KADIR
   yb = yb_r;
   ye = ye_r;
   ze = p->ldomain_shape[2]-p->stencil.r;
   for(t=tb+1; t< te; t++){
+    //@KADIR TODO ADD SOURCE AND RECEIVERS
     if((t-1)< p->t_dim){ // lower half of the diamond
       yb -= b_inc;
       ye += e_inc;
@@ -915,8 +926,9 @@ void dynamic_intra_diamond_ts(Parameters *p) {
     }
   }
 
+  //printf("%s %d\tXdiamond\n", __FILE__, __LINE__);
   // Prologue
-  // HATEM TODO HERE
+  // HATEM TODO HERE @KADIR: EXECUTED
   t1 = MPI_Wtime();
   if(p->in_auto_tuning == 0)
     dynamic_intra_diamond_prologue(p);

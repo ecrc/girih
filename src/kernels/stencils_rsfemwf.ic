@@ -1,6 +1,7 @@
 void TEMPLATE(rsfemwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
+      printf("%s %d\tSource for diamond\n", __FILE__, __LINE__);
 
   int tgs = stencil_ctx.thread_group_size;
   int i;

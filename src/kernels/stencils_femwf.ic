@@ -1,6 +1,8 @@
 void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
+      //@KADIR TODO ADD SOURCE AND RECEIVERS
+      //printf("%s %d %s\tSource for diamond\n", __FILE__, __LINE__, __func__);
 
 #pragma omp parallel shared(shape, stencil_ctx, roc2, coef, mtid, tb, te, t_dim, NHALO) \
         firstprivate(u, v, b_inc, e_inc) \
@@ -91,6 +93,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         } else{
           u = u_r; v = v_r;
         }
+        //printf("%s %s %d: tid:%d t:%d tb:%d te:%d\n", __FILE__, __func__, __LINE__, tid, t, tb, te); //@KADIR
         for(k=kt; k<kt+nwf; k++){
           if( ((k-NHALO)/th_nwf)%th_z == tid_z ) {
             for(j=yb; j<ye; j++) {

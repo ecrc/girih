@@ -6,7 +6,7 @@
 #ifdef FUNC_BODY
 #undef FUNC_BODY
 #endif
-#define FUNC_BODY() { \
+#define FUNC_BODY_DONOTUSE() { \
 ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + ROC2(i,j,k)*(coef[0]*vx[i] \
 +coef[1]*(vx[i+1]+vx[i-1]) \
 +coef[1]*(vx[i+nnx]+vx[i-nnx]) \
@@ -21,7 +21,10 @@ ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + ROC2(i,j,k)*(coef[0]*vx[i] \
 +coef[4]*(vx[i+4*nnx]+vx[i-4*nnx]) \
 +coef[4]*(vx[+4*nnxy+i]+vx[-4*nnxy+i]) ); \
 }
-#define FUNC_BODY_B() { \
+//@KADIR This one is called for Diamond
+      //printf("%s %d\tXXX-1-diamond\n", __FILE__, __LINE__);\
+
+#define FUNC_BODY() { \
 ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + 16.*(3.*coef[0]*vx[i] \
 +coef[1]*(vx[i+1]+vx[i-1]) \
 +coef[1]*(vx[i+nnx]+vx[i-nnx]) \
@@ -68,6 +71,7 @@ U(i,j,k) = ((real_t) (2.0))*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*(coef[0]*V(i,j,k) 
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
+      printf("%s %d\tXXX-2-diamond\n", __FILE__, __LINE__);\
 ux[i] = coef[0]*vx[i] \
 +coef[1]*(vx[i+1]+vx[i-1]) \
 +coef[1]*(vx[i+nnx]+vx[i-nnx]) \
@@ -89,6 +93,7 @@ ux[i] = coef[0]*vx[i] \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
+      printf("%s %d\tXXX-3-diamond\n", __FILE__, __LINE__);\
 ux[i] = COEF(0,i,j,k)*vx[i] \
 +COEF(1,i,j,k)*(vx[i+1]+vx[i-1]) \
 +COEF(1,i,j,k)*(vx[i+nnx]+vx[i-nnx]) \
@@ -116,6 +121,7 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
+      printf("%s %d\tXXX-4-diamond\n", __FILE__, __LINE__);\
 ux[i] = COEF(0,i,j,k)*vx[i] \
 +COEF(1,i,j,k)*(vx[i+1]+vx[i-1]) \
 +COEF(2,i,j,k)*(vx[i+nnx]+vx[i-nnx]) \
@@ -143,6 +149,7 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
+      printf("%s %d\tXXX-5-diamond\n", __FILE__, __LINE__);\
 ux[i] = COEF(0 ,i,j,k)*vx[i] \
 +COEF(1 ,i,j,k)*(vx[i+1]+vx[i-1]) \
 +COEF(2 ,i,j,k)*(vx[i+nnx]+vx[i-nnx]) \
@@ -188,6 +195,7 @@ U(i,j,k) = COEF(0 ,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
+      printf("%s %d\tXXX-6-diamond\n", __FILE__, __LINE__);\
 ux[i] = COEF(0,i,j,k)*vx[i] \
 +COEF(1,i,j,k)*vx[i-1] \
 +COEF(2,i,j,k)*vx[i+1] \
@@ -222,6 +230,7 @@ U(i,j,k) = COEF(0,i,j,k)*V(i,j,k) \
 #undef FUNC_BODY
 #endif
 #define FUNC_BODY() { \
+      printf("%s %d\tXXX-7-diamond\n", __FILE__, __LINE__);\
 ux[i] = coef[0]*vx[i] \
 +coef[1]*(vx[i+1]+vx[i-1]) \
 +coef[1]*(vx[i+nnx]+vx[i-nnx]) \

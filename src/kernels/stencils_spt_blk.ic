@@ -6,6 +6,7 @@ void FUNC_NAME KERNEL_SIG{
   const unsigned long nnxy = 1UL * nnx * nny;
   uint64_t ln_domain = ((uint64_t) 1)* shape[0]*shape[1]*shape[2];
   real_t *restrict ux, *restrict vx;
+      printf("%s %d\tXXXdiamond\n", __FILE__, __LINE__);
 
   for(jb=yb; jb<ye; jb+=stencil_ctx.bs_y) // blocking in Y
   {
@@ -20,7 +21,7 @@ void FUNC_NAME KERNEL_SIG{
           vx = (real_t *restrict) &(v[1ULL*k*nnxy + j*nnx]);
 #pragma simd
           for(i=xb; i<xe; i++) {
-            FUNC_BODY_B()
+            FUNC_BODY()
           }
         }
       }

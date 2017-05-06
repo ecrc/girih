@@ -1,7 +1,7 @@
 include conf/make.conf
 
 KERNEL=mwd_kernel
-VCFLAGS += -O3 -qopenmp
+VCFLAGS += -O3 #-qopenmp
 BUILD_DIR=build
 
 KERNELS_SRC = $(wildcard src/kernels/*.c)
