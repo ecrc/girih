@@ -31,7 +31,7 @@ module swap PrgEnv-cray PrgEnv-intel
 #OMP_NUM_THREADS=32 srun --ntasks=2 --cpus-per-task=16 --hint=nomultithread --ntasks-per-node=2 ./build/mwd_kernel --npx 1 --npy 2 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 4
 export OMP_NUM_THREADS=32
 
-gs=501; nt=2000
+gs=501; nt=2101
 srun ./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 0 --target-ts 0 --verify 1 $source 
 exit 0
 srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
