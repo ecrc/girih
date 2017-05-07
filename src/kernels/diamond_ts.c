@@ -4,7 +4,6 @@
 #include <math.h>
 #include "mpi.h"
 #include "data_structures.h"
-#include <execinfo.h> //@KADIR for finding out function name
 
 #define ST_BUSY (0)
 #define ST_NOT_BUSY (1)
@@ -439,20 +438,30 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   //printf("%s %d\tXXdiamond\n", __FILE__, __LINE__);
   // wavefront prologue
   // HATEM TODO HERE @KADIR: EXECUTED
-  printf("%s %s %d:p->stencil.stat_sched_func)\n", __FILE__, __func__, __LINE__);
-  backtrace_symbols_fd(&(p->stencil.stat_sched_func), 1, 1); //@KADIR
+  //printf("%s %s %d:p->stencil.stat_sched_func)\n", __FILE__, __func__, __LINE__);
   t1 = MPI_Wtime();
   yb = yb_r;
   ye = ye_r;
   zb = p->stencil.r;
   for(t=tb; t< te-1; t++){
     //@KADIR TODO ADD SOURCE AND RECEIVERS
+
     ze = p->stencil.r*(time_len-(t-tb));
     if(t%2 == 1){
       p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, ALL_FIELDS, p->stencil_ctx);
+      //SOURCE
+      if( (p->source_point_enabled==1) ) {
+        p->U1[((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]))] += p->src_exc_coef[t];//@KADIR
+      }
     }else{
       p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, ALL_FIELDS, p->stencil_ctx);
+      //SOURCE
+      if( (p->source_point_enabled==1) ) {
+        p->U2[((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]))] += p->src_exc_coef[t];//@KADIR
+      }
     }
+    unsigned long int idxU = ((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]));
+    printf("DIA\tts:%d idxU:%lu valU:%g src_exc_coef:%g\n", t, idxU, p->U1[idxU], p->src_exc_coef[t]);
 
     if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
       yb -= b_inc;
@@ -466,8 +475,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   t2 = MPI_Wtime();
   // main wavefront loop
   // HATEM TODO HERE
-  printf("%s %s %d:p->stencil.mwd_func)\n", __FILE__, __func__, __LINE__);
-  backtrace_symbols_fd(&(p->stencil.mwd_func), 1, 1); //@KADIR
+  //printf("%s %s %d:p->stencil.mwd_func)\n", __FILE__, __func__, __LINE__);
   yb = yb_r;
   ye = ye_r;
   zb = (te-tb)*p->stencil.r;
@@ -478,8 +486,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
 
   // wavefront epilogue
   // HATEM TODO HERE
-  printf("%s %s %d:p->stencil.stat_sched_func)\n", __FILE__, __func__, __LINE__);
-  backtrace_symbols_fd(&(p->stencil.stat_sched_func), 1, 1); //@KADIR
+  //printf("%s %s %d:p->stencil.stat_sched_func)\n", __FILE__, __func__, __LINE__);
   yb = yb_r;
   ye = ye_r;
   ze = p->ldomain_shape[2]-p->stencil.r;
@@ -495,8 +502,16 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     zb = p->ldomain_shape[2]-p->stencil.r - (t-tb)*p->stencil.r;
     if(t%2 == 1){
       p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, ALL_FIELDS, p->stencil_ctx);
+      //SOURCE
+      if( (p->source_point_enabled==1) ) {
+        p->U1[((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]))] += p->src_exc_coef[t];//@KADIR
+      }
     }else{
       p->stencil.stat_sched_func(p->ldomain_shape, p->stencil.r, yb, zb, p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U2, p->U1, p->U3, ALL_FIELDS, p->stencil_ctx);
+      //SOURCE
+      if( (p->source_point_enabled==1) ) {
+        p->U2[((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]))] += p->src_exc_coef[t];//@KADIR
+      }
     }
   }
 

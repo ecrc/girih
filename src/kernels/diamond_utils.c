@@ -244,6 +244,8 @@ double run_tuning_test(Parameters *tp){
 
     perf_ratio = 100*fabs(obt_perf-prev_perf)/obt_perf;
     printf("[AUTO TUNE]     [%03d: %06.2f]  time:%e  MLUPS:%06llu  cache block size:%llukiB  reps:%d  perf err: %4.1f%%\n", tp->stencil_ctx.num_wf, obt_perf/(1e6), t, lups/1000000ULL, get_mwf_size(*tp, tp->t_dim)*get_ntg(*tp)/1024, reps, perf_ratio);
+    printf("%s %d\t @KADIR ENABLE FURTHER AUTOTUNING\n", __FILE__, __LINE__);
+      break; //@KADIR
 
   } while( (reps<20) && (t < 8.0)  && (threash_nwf < perf_ratio) );
 
@@ -459,6 +461,8 @@ double auto_tune_diam_nwf(Parameters *tp){
         }
         break;
       }
+    printf("%s %d\t @KADIR ENABLE FURTHER AUTOTUNING\n", __FILE__, __LINE__);
+      break; //@KADIR
 
     } // wavefront tests loop
 //    if(tp->stencil_ctx.num_wf < thz){
@@ -480,6 +484,8 @@ double auto_tune_diam_nwf(Parameters *tp){
       prev_max_nwf = tp->stencil_ctx.num_wf;
       best_perf = latest_perf;
     }
+    printf("%s %d\t @KADIR ENABLE FURTHER AUTOTUNING\n", __FILE__, __LINE__);
+      break; //@KADIR
   }
   if (best_perf == -1) {
     printf("[AUTO TUNE] Error: no feasible test case was found\n");

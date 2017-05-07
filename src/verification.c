@@ -288,13 +288,14 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   for(it=0; it<p.nt; it+=2){
     printf("\nts:%d. ", it);
     // @HATEM:TODO @KADIR
-    //first call
+    //first call  std_kernel_8space_2time
     std_kernel(domain_shape, coef, u, v, roc2);
     
     // Add source term contribution from ricker.cpp
     if( (p.source_point_enabled==1) ) {
         //SOURCE
         U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it];//@KADIR
+        printf("REF\tts:%d idxU:-- valU:%g src_exc_coef:%g\n", it, idx, U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]), p.src_exc_coef[it]);
 
         /*printf("%s %d: timestep:%d+1 source :%d at %d,%d,%d has value %g, contribution:%g and %g. ds2:%d ds1:%d ds0:%d index:%d\n", */
                 /*__FILE__, __LINE__, it,  */
@@ -316,7 +317,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     }
 
 
-    //second call
+    //second call  std_kernel_8space_2time
     std_kernel(domain_shape, coef, v, u, roc2);
     
     // Add source term
@@ -331,7 +332,8 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
         real_t val = V(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]);
         fwrite( &val, sizeof(real_t), 1, fp);
 
-        if(1 || fabs(val) > 0.0) {
+        if(1 || fabs(val) > 0.0) 
+        {
             printf("%s %d: timestep:%d receiver :%d/%d at %d,%d,%d has value U:%g V:%g\n", 
                 __FILE__, __LINE__, it, i, p.num_receivers, 
                 p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2],
@@ -422,7 +424,7 @@ void std_kernel_8space_2time( const int shape[3],
       }
     }
   }
-  printf("V:%g U:%g ROC2:%g lap:%g  coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
+  printf("\tV:%g U:%g ROC2:%g lap:%g  coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
           V(250,250,100), 
           U(250,250,100), 
           customroc,

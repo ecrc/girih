@@ -1,5 +1,5 @@
 
 CC=mpicc
 FC=mpif90
-CFLAGS = -g -O3
-LDFLAGS  -lm
+CFLAGS=-g -O3
+LDFLAGS=-lm
