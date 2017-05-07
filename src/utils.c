@@ -436,6 +436,7 @@ void init(Parameters *p) {
     break;
   }
 
+
   p->ln_domain = ((uint64_t) 1)* p->ldomain_shape[0] * p->ldomain_shape[1]* p->ldomain_shape[2];
   p->ln_stencils = ((uint64_t) 1)* p->lstencil_shape[0] * p->lstencil_shape[1] * p->lstencil_shape[2];
 

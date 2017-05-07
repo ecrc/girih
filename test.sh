@@ -2,12 +2,13 @@ make -j
 gs=501; nt=2000
 gs=501; nt=200
 gs=501; nt=10
-gs=96; nt=1 
+gs=96; nt=50 
 source=--disable-source-point 
 source=
 rm rcv.bin.bck
 mv rcv.bin rcv.bin.bck
 #DIAMOND
+gdb --args \
 ./build/mwd_kernel --n-tests 1 --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify 1 $source 
 #./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 0 --target-ts 0 --verify 1 $source 
 #FROM HATEM

@@ -1,4 +1,5 @@
 #include "driver.h"
+#include <stdlib.h> //@KADIR for exit();
 
 int main(int argc, char** argv)
 {
@@ -46,8 +47,11 @@ int main(int argc, char** argv)
   mpi_topology_init(&p);
   //  MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
+  p.in_auto_tuning = 1; //@KADIR disabled autotuning for now TODO
+  printf("%s %d\tKADIR: ENABLE AUTO TUNING\n", __FILE__, __LINE__);
   // initialize time-stepper specific requirements
   init(&p);
+
 
   // Verify the time stepper kernel if required
   if (p.verify !=0) {

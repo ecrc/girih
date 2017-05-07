@@ -31,6 +31,7 @@ MPI_Request wait_req_send_l[2], wait_req_recv_l[2], wait_req_send_r[2], wait_req
 
 // deprecated but can be useful for debugging
 void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   int t;
   // use all the threads in the initialization of the time stepper
 //  int swp_tgs = p->stencil_ctx.thread_group_size;
@@ -52,6 +53,7 @@ void intra_diamond_trapzd_comp(Parameters *p, int yb, int ye){
 
 }
 void intra_diamond_inv_trapzd_comp(Parameters *p, int yb, int ye){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   int t=0;
   int t_dim = p->t_dim;
   // use all the threads in the initialization of the time stepper
@@ -78,6 +80,7 @@ void intra_diamond_inv_trapzd_comp(Parameters *p, int yb, int ye){
 //  p->stencil_ctx.thread_group_size = swp_tgs;
 }
 void intra_diamond_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   int t;
 
 //printf("Main b_inc:%d e_inc:%d\n", b_inc, e_inc);
@@ -111,10 +114,12 @@ void intra_diamond_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc){
 
 // SEND TO LEFT
 static inline void intra_diamond_strided_send_left(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   ierr = MPI_Isend(p->U1, 1, p->hu[1].send_hb, p->t.down, 0, p->t.cart_comm, &(wait_req_send_l[0])); CHKERR(ierr);
   ierr = MPI_Isend(p->U2, 1, p->hv[1].send_hb, p->t.down, 0, p->t.cart_comm, &(wait_req_send_l[1])); CHKERR(ierr);
 }
 static inline void intra_diamond_concat_send_left(Parameters *p, real_t *send_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   // concatenate the halo data then communicate contiguous data
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
@@ -133,6 +138,7 @@ static inline void intra_diamond_concat_send_left(Parameters *p, real_t *send_bu
   ierr = MPI_Isend(send_buf, 2*h_size, MPI_real_t, p->t.down , 0, p->t.cart_comm, &(wait_req_send_l[0])); CHKERR(ierr);
 }
 static inline void intra_diamond_send_left(Parameters *p, real_t *send_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   if(p->halo_concat == 0){
     intra_diamond_strided_send_left(p);
   } else{
@@ -141,6 +147,7 @@ static inline void intra_diamond_send_left(Parameters *p, real_t *send_buf){
   }
 }
 static inline void intra_diamond_wait_send_left(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   MPI_Status wait_stat[2];
   MPI_Status wait_stat1;
   if(p->halo_concat == 0){
@@ -153,10 +160,12 @@ static inline void intra_diamond_wait_send_left(Parameters *p){
 
 // SEND TO RIGHT
 static inline void intra_diamond_strided_send_right(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   ierr = MPI_Isend(p->U1, 1, p->hu[1].send_he, p->t.up, 0, p->t.cart_comm, &(wait_req_send_r[0])); CHKERR(ierr);
   ierr = MPI_Isend(p->U2, 1, p->hv[1].send_he, p->t.up, 0, p->t.cart_comm, &(wait_req_send_r[1])); CHKERR(ierr);
 }
 static inline void intra_diamond_concat_send_right(Parameters *p, real_t *send_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   // concatenate the halo data then communicate contiguous data
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
@@ -175,6 +184,7 @@ static inline void intra_diamond_concat_send_right(Parameters *p, real_t *send_b
   ierr = MPI_Isend(send_buf, 2*h_size, MPI_real_t, p->t.up , 0, p->t.cart_comm, &(wait_req_send_r[0])); CHKERR(ierr);
 }
 static inline void intra_diamond_send_right(Parameters *p, real_t *send_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   if(p->halo_concat == 0){
     intra_diamond_strided_send_right(p);
   } else{
@@ -182,6 +192,7 @@ static inline void intra_diamond_send_right(Parameters *p, real_t *send_buf){
  }
 }
 static inline void intra_diamond_wait_send_right(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   MPI_Status wait_stat[2];
   MPI_Status wait_stat1;
   if(p->halo_concat == 0){
@@ -194,10 +205,12 @@ static inline void intra_diamond_wait_send_right(Parameters *p){
 
 // RECV FROM LEFT
 static inline void intra_diamond_strided_recv_left(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   ierr = MPI_Irecv(p->U1, 1, p->hu[1].recv_hb, p->t.down, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_l[0])); CHKERR(ierr);
   ierr = MPI_Irecv(p->U2, 1, p->hv[1].recv_hb, p->t.down, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_l[1])); CHKERR(ierr);
 }
 static inline void intra_diamond_recv_left(Parameters *p, real_t *recv_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   if(p->halo_concat == 0){
     intra_diamond_strided_recv_left(p);
   } else{
@@ -206,6 +219,7 @@ static inline void intra_diamond_recv_left(Parameters *p, real_t *recv_buf){
  }
 }
 static inline void intra_diamond_concat_wait_recv_left(Parameters *p, real_t *recv_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
   int *offs;
@@ -224,6 +238,7 @@ static inline void intra_diamond_concat_wait_recv_left(Parameters *p, real_t *re
   }
 }
 static inline void intra_diamond_wait_recv_left(Parameters *p, real_t *recv_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   MPI_Status wait_stat[2];
   MPI_Status wait_stat1;
   if(p->halo_concat == 0){
@@ -236,10 +251,12 @@ static inline void intra_diamond_wait_recv_left(Parameters *p, real_t *recv_buf)
 
 // RECV FROM RIGHT
 static inline void intra_diamond_strided_recv_right(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   ierr = MPI_Irecv(p->U1, 1, p->hu[1].recv_he, p->t.up, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_r[0])); CHKERR(ierr);
   ierr = MPI_Irecv(p->U2, 1, p->hv[1].recv_he, p->t.up, MPI_ANY_TAG, p->t.cart_comm, &(wait_req_recv_r[1])); CHKERR(ierr);
 }
 static inline void intra_diamond_recv_right(Parameters *p, real_t *recv_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   if(p->halo_concat == 0){
     intra_diamond_strided_recv_right(p);
   } else{
@@ -248,6 +265,7 @@ static inline void intra_diamond_recv_right(Parameters *p, real_t *recv_buf){
   }
 }
 static inline void intra_diamond_concat_wait_recv_right(Parameters *p, real_t *recv_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   // assuming same halo size for both U and V buffers
   int h_size =  p->hu[1].size;
   int *offs;
@@ -266,6 +284,7 @@ static inline void intra_diamond_concat_wait_recv_right(Parameters *p, real_t *r
   }
 }
 static inline void intra_diamond_wait_recv_right(Parameters *p, real_t *recv_buf){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   MPI_Status wait_stat[2];
   if(p->halo_concat == 0){
     ierr = MPI_Waitall(2, wait_req_recv_r, wait_stat); CHKERR(ierr); // receive wait
@@ -279,6 +298,7 @@ static inline void intra_diamond_wait_recv_right(Parameters *p, real_t *recv_buf
 #define T_POS_L(y) (st.t_pos[(((y)+(y_len_l))%(y_len_l))])
 #define T_POS_R(y) (st.t_pos[(((y)+(y_len_r))%(y_len_r))])
 static inline void update_state(int y_coord, Parameters *p){
+  //@KADIR EXECUTED IN DIAMOND
   int sh;
   st.t_pos[y_coord]++; // advance the current tile in time
 
@@ -380,6 +400,7 @@ static inline void update_state(int y_coord, Parameters *p){
 
 
 static inline void intra_diamond_comm(Parameters *p, int y_coord, int t_coord){
+  //@KADIR EXECUTED IN DIAMOND
   // Start exchanging computed halo data
   if(p->t.shape[1] > 1){
     if( (y_coord == y_len_r-1) && (t_coord%2 == 0) ) { // right most diamond
@@ -408,6 +429,7 @@ static inline void intra_diamond_comm(Parameters *p, int y_coord, int t_coord){
 
 
 void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tb, int te, int tid){
+  //@KADIR1 EXECUTED IN DIAMOND
   int t, z, zb, ze;
   int yb, ye;
   int time_len = te-tb;
@@ -483,6 +505,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
   p->stencil_ctx.t_wf_epilogue[tid] += MPI_Wtime() - t3;
 }
 void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tb, int te, int tid){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   int t, z, zb, ze;
   int yb, ye;
   int time_len = te-tb;
@@ -559,6 +582,7 @@ void intra_diamond_mwd_comp_solar(Parameters *p, int yb_r, int ye_r, int b_inc, 
 
 
 static inline void intra_diamond_get_info_std(Parameters *p, int y_coord, int tid, int t_coord, int *yb, int *ye, int *b_inc, int *e_inc){
+  //@KADIR EXECUTED IN DIAMOND
     double diam_size;
   if( (p->is_last == 1) && (y_coord == y_len_l-1) && (t_coord%2 == 0) ){ // right most process & left-half diamond
     // left half computations
@@ -590,6 +614,7 @@ static inline void intra_diamond_get_info_std(Parameters *p, int y_coord, int ti
   p->stencil_ctx.wf_num_resolved_diamonds[tid] += diam_size;
 }
 void intra_diamond_mwd_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc, int tb, int te, int tid){
+  //@KADIR2 EXECUTED IN DIAMOND
   if(p->stencil.type == REGULAR){
     intra_diamond_mwd_comp_std(p, yb, ye, b_inc, e_inc, tb, te, tid);
   }else if(p->stencil.type == SOLAR) {
@@ -601,6 +626,7 @@ void intra_diamond_mwd_comp(Parameters *p, int yb, int ye, int b_inc, int e_inc,
 
 
 static inline void intra_diamond_get_info_solar(Parameters *p, int y_coord, int tid, int t_coord, int *yb, int *ye, int *b_inc, int *e_inc){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
     double diam_size;
   if( (p->is_last == 1) && (y_coord == y_len_l-1) && (t_coord%2 == 0) ){ // right most process & left-half diamond
     // left half computations
@@ -632,6 +658,7 @@ static inline void intra_diamond_get_info_solar(Parameters *p, int y_coord, int 
   p->stencil_ctx.wf_num_resolved_diamonds[tid] += diam_size;
 }
 static inline void intra_diamond_comp_using_location(Parameters *p, int y_coord, int tid, int t_coord){
+  //@KADIR EXECUTED IN DIAMOND
  int yb, ye, b_inc, e_inc;
  if(p->stencil.type == REGULAR){
     intra_diamond_get_info_std(p, y_coord, tid, t_coord, &yb, &ye, &b_inc, &e_inc);
@@ -644,6 +671,7 @@ static inline void intra_diamond_comp_using_location(Parameters *p, int y_coord,
 
 
 static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
+  //@KADIR EXECUTED IN DIAMOND
   int t_coord = st.t_pos[y_coord];
   double t1, t2;
 
@@ -657,6 +685,7 @@ static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
 
 
 void dynamic_intra_diamond_main_loop(Parameters *p){
+  //@KADIR EXECUTED IN DIAMOND
   int not_complete, th_y_coord, i;
   uint64_t il;
   int num_thread_groups = get_ntg(*p);
@@ -744,6 +773,8 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 
 
 void dynamic_intra_diamond_prologue_std(Parameters *p){
+  //@KADIR3.1
+  //@KADIR EXECUTED IN DIAMOND
   // compute all the trapezoids
   int i, yb, ye;
   int ntg = get_ntg(*p);
@@ -773,6 +804,7 @@ void dynamic_intra_diamond_prologue_std(Parameters *p){
   }
 }
 void dynamic_intra_diamond_prologue_solar(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   // The only difference compared to std approach is ye-1 and te+1
   // compute all the trapezoids
   int i, yb, ye;
@@ -803,6 +835,7 @@ void dynamic_intra_diamond_prologue_solar(Parameters *p){
   }
 }
 void dynamic_intra_diamond_prologue(Parameters *p){
+  //@KADIR4.1
   if(p->stencil.type == REGULAR){
     dynamic_intra_diamond_prologue_std(p);
   } else if(p->stencil.type == SOLAR){
@@ -812,6 +845,7 @@ void dynamic_intra_diamond_prologue(Parameters *p){
 
 
 void dynamic_intra_diamond_epilogue_std(Parameters *p){
+  //@KADIR3 EXECUTED IN DIAMOND
   int yb, ye, i;
   int ntg = get_ntg(*p);
 #pragma omp parallel num_threads(ntg) PROC_BIND(spread)
@@ -834,6 +868,7 @@ void dynamic_intra_diamond_epilogue_std(Parameters *p){
   }
 }
 void dynamic_intra_diamond_epilogue_solar(Parameters *p){
+  printf("%s %d %s MESSAGE TO FIND OUT WHETHER THIS LINE IS CALLED DURING DIAMOND\n", __FILE__, __LINE__, __func__); //@KADIR
   int yb, ye, i;
   int ntg = get_ntg(*p);
 #pragma omp parallel num_threads(ntg) PROC_BIND(spread)
@@ -856,6 +891,7 @@ void dynamic_intra_diamond_epilogue_solar(Parameters *p){
   }
 }
 void dynamic_intra_diamond_epilogue(Parameters *p){
+  //@KADIR4 EXECUTED IN DIAMOND
   if(p->stencil.type == REGULAR){
     dynamic_intra_diamond_epilogue_std(p);
   } else if(p->stencil.type == SOLAR){
@@ -865,6 +901,7 @@ void dynamic_intra_diamond_epilogue(Parameters *p){
 
 
 void dynamic_intra_diamond_ts(Parameters *p) {
+  //@KADIR5 EXECUTED IN DIAMOND. TSList[2] points to this function
 
   int t_dim = p->t_dim;
   diam_width = (t_dim+1) * 2 *p->stencil.r;
@@ -928,19 +965,19 @@ void dynamic_intra_diamond_ts(Parameters *p) {
 
   //printf("%s %d\tXdiamond\n", __FILE__, __LINE__);
   // Prologue
-  // HATEM TODO HERE @KADIR: EXECUTED
+  // HATEM TODO HERE @KADIR: EXECUTED. HAS STENCIL COMPUTATION
   t1 = MPI_Wtime();
   if(p->in_auto_tuning == 0)
     dynamic_intra_diamond_prologue(p);
   t2 = MPI_Wtime();
 
   // main loop
-  // HATEM TODO HERE
+  // HATEM TODO HERE. @KADIR: IT SEEMS THAT THERE IS NO STENCIL COMPUTATION
   dynamic_intra_diamond_main_loop(p);
   t3 = MPI_Wtime();
 
   // Epilogue
-  // HATEM TODO HERE
+  // HATEM TODO HERE @KADIR: EXECUTED. HAS STENCIL COMPUTATION
   if(p->in_auto_tuning == 0)
     dynamic_intra_diamond_epilogue(p);
   t4 = MPI_Wtime();

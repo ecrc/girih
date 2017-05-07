@@ -5,6 +5,7 @@
 #include "mpi.h"
 #include "verification.h"
 #include <assert.h> //@KADIR
+#include <execinfo.h> //@KADIR for finding out function name
 
 void verify(Parameters *p){
 
@@ -286,7 +287,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   printf("reference kernel: time step: ");
   for(it=0; it<p.nt; it+=2){
     printf("\nts:%d. ", it);
-    // @HATEM:TODO @KADIR:TODO TODO ASK: read/write u/v? What is the correct combination?
+    // @HATEM:TODO @KADIR
     //first call
     std_kernel(domain_shape, coef, u, v, roc2);
     
