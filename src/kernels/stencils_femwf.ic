@@ -88,11 +88,13 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
       kt = zi;
       for(t=tb; t< te; t++){ // Diamond blocking in time
+        real_t* output_buffer = NULL;  //@KADIR
         if(t%2 == 0){ //swap pointers
           u = v_r; v = u_r;
         } else{
           u = u_r; v = v_r;
         }
+        output_buffer = u;      //@KADIR
         //printf("%s %s %d: tid:%d t:%d tb:%d te:%d\n", __FILE__, __func__, __LINE__, tid, t, tb, te); //@KADIR
         for(k=kt; k<kt+nwf; k++){
           if( ((k-NHALO)/th_nwf)%th_z == tid_z ) {
@@ -102,10 +104,30 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     #pragma simd
               for(i=ib; i<ie; i++) {
                 FUNC_BODY()
+        //SOURCE
+        if( (gp->source_point_enabled==1) 
+            && (gp->lsource_pt[0] == i ) //@KADIR
+            && (gp->lsource_pt[1] == j ) //@KADIR 
+            && (gp->lsource_pt[2] == zi) //@KADIR 
+          ) 
+        {
+            output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))] += gp->src_exc_coef[t];//@KADIR
+        //@KADIR ADD SOURCE TODO 
+        printf("%d/%d gs:%d "
+               "nl:%d l0:%d l1:%d "
+               "(%d,%d,%d) "
+               "DIAdia\tts:%d(%d-%d) x(%d-%d)\ty(%d-%d)\tz(%d-%d)\n",
+               omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
+               omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
+               i, j, zi,
+               t, tb, te, ib, ie, yb, ye, zb, ze
+              );
+        }
               }
             }
           }
         }
+
 
         // Update block size in Y
         if(t< t_dim){ // lower half of the diamond

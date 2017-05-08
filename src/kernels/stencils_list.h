@@ -1,3 +1,5 @@
+
+extern Parameters *gp; //@KADIR global parameter
 #include "stencils_spt_blk.ic"
 #include "stencils_spt_blk_stat_sched.ic"
 #include "stencils_1wf.ic"

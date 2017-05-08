@@ -8,6 +8,7 @@
 #define ST_BUSY (0)
 #define ST_NOT_BUSY (1)
 
+Parameters *gp; //@KADIR global parameter within a node
 extern int get_ntg(Parameters);
 extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
 
@@ -399,7 +400,7 @@ db_t = MPI_Wtime();
 
 
 static inline void intra_diamond_comm(Parameters *p, int y_coord, int t_coord){
-    //@KADIR EXECUTED IN DIAMOND
+    //@KADIR EXECUTED IN DIAMOND. I THINK ONLY COMMUNICATION, NO COMPUTATION
     // Start exchanging computed halo data
     if(p->t.shape[1] > 1){
         if( (y_coord == y_len_r-1) && (t_coord%2 == 0) ) { // right most diamond
@@ -462,7 +463,6 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
           ) 
         {
             output_buffer[((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]))] += p->src_exc_coef[t];//@KADIR
-        }
         //PRINT
         unsigned long int idxU = ((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]));
         printf("DIAsptB\tts:%d(%d-%d) idxU:%lu valU:%g src_exc_coef:%g "                //@KADIR
@@ -472,6 +472,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
                 p->coef[0], p->coef[1], p->coef[2], p->coef[3], p->coef[4],
                 p->stencil.r, p->lstencil_shape[0]+p->stencil.r, yb, ye, zb, ze
               );
+        }
 
 
         if(t< p->t_dim){ // inverted trapezoid (or lower half of the diamond)
@@ -491,6 +492,9 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     ye = ye_r;
     zb = (te-tb)*p->stencil.r;
     ze = p->ldomain_shape[2]-p->stencil.r;
+    printf("%d/%d ts:%d(%d,%d) %d %s CALLING DIAdia\n", omp_get_thread_num(), omp_get_num_threads(), 
+            t, tb, te-1,
+            __LINE__, __FILE__);
     p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
             p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, tb, te, p->stencil_ctx, tid);
     t3 = MPI_Wtime();
@@ -527,7 +531,6 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
           ) 
         {
             output_buffer[((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]))] += p->src_exc_coef[t];//@KADIR
-        }
         //PRINT
         unsigned long int idxU = ((1ULL)*((p->lsource_pt[2])*(p->ldomain_shape[1])+( p->lsource_pt[1]))*(p->ldomain_shape[0])+(p->lsource_pt[0]));
         printf("DIAsptE\tts:%d(%d-%d) idxU:%lu valU:%g src_exc_coef:%g "                //@KADIR
@@ -537,6 +540,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
                 p->coef[0], p->coef[1], p->coef[2], p->coef[3], p->coef[4],
                 p->stencil.r, p->lstencil_shape[0]+p->stencil.r, yb, ye, zb, ze
               );
+        }
     }
 
     p->stencil_ctx.t_wf_prologue[tid] += t2-t1;
@@ -697,7 +701,7 @@ static inline void intra_diamond_get_info_solar(Parameters *p, int y_coord, int 
     p->stencil_ctx.wf_num_resolved_diamonds[tid] += diam_size;
 }
 static inline void intra_diamond_comp_using_location(Parameters *p, int y_coord, int tid, int t_coord){
-    //@KADIR EXECUTED IN DIAMOND
+    //@KADIR3.3 EXECUTED IN DIAMOND
     int yb, ye, b_inc, e_inc;
     if(p->stencil.type == REGULAR){
         intra_diamond_get_info_std(p, y_coord, tid, t_coord, &yb, &ye, &b_inc, &e_inc);
@@ -710,7 +714,7 @@ static inline void intra_diamond_comp_using_location(Parameters *p, int y_coord,
 
 
 static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
-    //@KADIR EXECUTED IN DIAMOND
+    //@KADIR4.3.1 EXECUTED IN DIAMOND
     int t_coord = st.t_pos[y_coord];
     double t1, t2;
 
@@ -724,7 +728,7 @@ static inline void intra_diamond_resolve(Parameters *p, int y_coord, int tid){
 
 
 void dynamic_intra_diamond_main_loop(Parameters *p){
-    //@KADIR EXECUTED IN DIAMOND
+    //@KADIR4.3.2 EXECUTED IN DIAMOND
     int not_complete, th_y_coord, i;
     uint64_t il;
     int num_thread_groups = get_ntg(*p);
@@ -754,6 +758,9 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 
 #pragma omp parallel num_threads(num_thread_groups) shared(head, tail) private(tid) PROC_BIND(spread)
     {
+        printf("%d\tDIAMOND %d/%d\n", 
+                __LINE__,
+                omp_get_thread_num(), omp_get_num_threads());
         //    // initlaize the likwid markers according to the openmp nested parallelism
         //    if(p->in_auto_tuning == 0) {
         //      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
@@ -828,9 +835,12 @@ void dynamic_intra_diamond_prologue_std(Parameters *p){
 
 #pragma omp for schedule(dynamic) private(i,yb,ye)
         for(i=0; i<y_len_l; i++){
+            /*printf("%d\ti:%d y_len_l:%d p->stencil.r:%d diam_width:%d\n", __LINE__, i, y_len_l, p->stencil.r, diam_width); //@KADIR*/
             yb = p->stencil.r + i*diam_width;
             ye = yb + diam_width;
+            printf("%d pro started\n", __LINE__);
             intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, p->t_dim, p->t_dim*2+1, tid);
+            printf("%d pro ended\n", __LINE__);
         }
     }
     // Send the trapezoid results to the left
@@ -900,9 +910,12 @@ void dynamic_intra_diamond_epilogue_std(Parameters *p){
 
 #pragma omp for schedule(dynamic) private(i,yb,ye)
         for(i=0; i<y_len_l; i++){
+            /*printf("%d\ti:%d y_len_l:%d yb_r:%d ye_r:%d diam_width:%d\n", __LINE__, i, y_len_l, yb_r, ye_r, diam_width); //@KADIR*/
             yb = yb_r + i*diam_width;
             ye = ye_r + i*diam_width;
+            printf("%d epi started\n", __LINE__);
             intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, p->t_dim+1, tid);
+            printf("%d epi ended\n", __LINE__);
         }
     }
 }
@@ -1007,25 +1020,30 @@ void dynamic_intra_diamond_ts(Parameters *p) {
         for(i = 0; i < 5; i++){  //@KADIR FIXME 5 must be a variable
             p->coef[i] *= 10;    //@KADIR
         }                        //@KADIR
+        gp = p;                  //@KADIR global parameter within a node
     }                            //@KADIR
     //printf("%s %d\tXdiamond\n", __FILE__, __LINE__);
     // Prologue
     // HATEM TODO HERE @KADIR: EXECUTED. HAS STENCIL COMPUTATION
     t1 = MPI_Wtime();
+    printf("PROLOGUE STARTING\n"); //@KADIR
     if(p->in_auto_tuning == 0)
         dynamic_intra_diamond_prologue(p);
     t2 = MPI_Wtime();
+    printf("PROLOGUE ENDED\n"); //@KADIR
 
     // main loop
-    // HATEM TODO HERE. @KADIR: IT SEEMS THAT THERE IS NO STENCIL COMPUTATION
+    // HATEM TODO HERE. @KADIR: EXECUTED. HAS STENCIL COMPUTATION
     dynamic_intra_diamond_main_loop(p);
     t3 = MPI_Wtime();
 
     // Epilogue
     // HATEM TODO HERE @KADIR: EXECUTED. HAS STENCIL COMPUTATION
+    printf("EPILOGUE STARTING\n"); //@KADIR
     if(p->in_auto_tuning == 0)
         dynamic_intra_diamond_epilogue(p);
     t4 = MPI_Wtime();
+    printf("EPILOGUE ENDED\n"); //@KADIR
 
 
     // stop the markers of the experiment
