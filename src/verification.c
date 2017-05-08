@@ -295,7 +295,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     if( (p.source_point_enabled==1) ) {
         //SOURCE
         U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it];//@KADIR
-        printf("REF\tts:%d idxU:-- valU:%g src_exc_coef:%g\n", it, idx, U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]), p.src_exc_coef[it]);
+        printf("REF\tts:%d idxU:-- valU:%g src_exc_coef:%g coef:%g %g %g %g %g\n", it, idx, U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]), p.src_exc_coef[it], coef[0], coef[1], coef[2], coef[3], coef[4]);
 
         /*printf("%s %d: timestep:%d+1 source :%d at %d,%d,%d has value %g, contribution:%g and %g. ds2:%d ds1:%d ds0:%d index:%d\n", */
                 /*__FILE__, __LINE__, it,  */
@@ -332,7 +332,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
         real_t val = V(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]);
         fwrite( &val, sizeof(real_t), 1, fp);
 
-        if(1 || fabs(val) > 0.0) 
+        if(0 && (1 || fabs(val) > 0.0)) 
         {
             printf("%s %d: timestep:%d receiver :%d/%d at %d,%d,%d has value U:%g V:%g\n", 
                 __FILE__, __LINE__, it, i, p.num_receivers, 
