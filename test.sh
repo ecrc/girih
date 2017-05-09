@@ -2,7 +2,7 @@ make -j
 gs=501; nt=2000
 gs=501; nt=200
 gs=501; nt=10
-gs=96; nt=4 
+gs=96; nt=6 
 source=--disable-source-point 
 source=
 rm rcv.bin.bck
