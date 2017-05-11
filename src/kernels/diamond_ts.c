@@ -9,7 +9,7 @@
 #define ST_NOT_BUSY (1)
 
 Parameters *gp; //@KADIR global parameter within a node
-real_t recv_rec[1000][9]; //@KADIR array for receiver recording
+real_t recv_rec[5000][9]; //@KADIR array for receiver recording
 size_t irecv_rec[9]; //@KADIR index into the recv_rec
 extern int get_ntg(Parameters);
 extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
@@ -494,9 +494,9 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     ye = ye_r;
     zb = (te-tb)*p->stencil.r;
     ze = p->ldomain_shape[2]-p->stencil.r;
-    printf("%d/%d ts:?(%d,%d) %d %s CALLING DIAdia\n", omp_get_thread_num(), omp_get_num_threads(), 
-             tb, te-1,
-            __LINE__, __FILE__);
+    /*printf("%d/%d ts:?(%d,%d) %d %s CALLING DIAdia\n", omp_get_thread_num(), omp_get_num_threads(), */
+             /*tb, te-1,*/
+            /*__LINE__, __FILE__);*/
     p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
             p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, tb, te, p->stencil_ctx, tid);
     t3 = MPI_Wtime();
