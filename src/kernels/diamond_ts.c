@@ -9,6 +9,8 @@
 #define ST_NOT_BUSY (1)
 
 Parameters *gp; //@KADIR global parameter within a node
+real_t recv_rec[1000][9]; //@KADIR array for receiver recording
+size_t irecv_rec[9]; //@KADIR index into the recv_rec
 extern int get_ntg(Parameters);
 extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
 
@@ -492,8 +494,8 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     ye = ye_r;
     zb = (te-tb)*p->stencil.r;
     ze = p->ldomain_shape[2]-p->stencil.r;
-    printf("%d/%d ts:%d(%d,%d) %d %s CALLING DIAdia\n", omp_get_thread_num(), omp_get_num_threads(), 
-            t, tb, te-1,
+    printf("%d/%d ts:?(%d,%d) %d %s CALLING DIAdia\n", omp_get_thread_num(), omp_get_num_threads(), 
+             tb, te-1,
             __LINE__, __FILE__);
     p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
             p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, tb, te, p->stencil_ctx, tid);
@@ -1021,6 +1023,10 @@ void dynamic_intra_diamond_ts(Parameters *p) {
             p->coef[i] *= 10;    //@KADIR
         }                        //@KADIR
         gp = p;                  //@KADIR global parameter within a node
+        p->num_receivers = NUM_RECEIVERS; // p->num_receivers is overwritten somewhere before. WHY???
+        for(i = 0; i < p->num_receivers; i++){
+            irecv_rec[i] = 0;
+        }
     }                            //@KADIR
     //printf("%s %d\tXdiamond\n", __FILE__, __LINE__);
     // Prologue
@@ -1056,6 +1062,26 @@ void dynamic_intra_diamond_ts(Parameters *p) {
             }
         }
     }
+    FILE* fp = NULL;
+    {
+#pragma omp barrier
+        int i,j;
+        int nr = p->num_receivers; // number of receivers
+        int maxts = 0;
+        for(i = 0; i < nr; i++){
+            if(irecv_rec[i] > maxts)
+                maxts = irecv_rec[i];
+            printf("its %d %lu\n", i, irecv_rec[i]);
+        }
+        printf("maxts %d\n", maxts);
+        char buf[32];
+        sprintf(buf, "rcv-dia-%d.bin", maxts);
+        fp = fopen(buf, "w");
+        size_t nmemb = maxts * p->num_receivers;
+        fwrite(fp, sizeof(real_t), nmemb, fp);
+        fclose(fp);
+    }
+
 
     p->prof.ts_main += (t3-t2);
     p->prof.ts_others += (t2-t1) + (t4-t3);
