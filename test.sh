@@ -2,19 +2,20 @@ make -j
 gs=501; nt=2000
 gs=501; nt=200
 gs=512; nt=2101
-gs=512; nt=1
+gs=512; nt=1; verify=0
+gs=512; nt=2101; verify=0
 #gs=96; nt=4 
 source=--disable-source-point 
 source=
 rm rcv.bin.bck
 mv rcv.bin rcv.bin.bck
 rm rcv-dia-*.bin
-#export OMP_NUM_THREADS=36 #shihab
+export OMP_NUM_THREADS=36 #shihab
 #export OMP_NUM_THREADS=1 #debug
-export OMP_NUM_THREADS=12 #uwork
+#export OMP_NUM_THREADS=12 #uwork
 #DIAMOND
 #gdb --ex run --args \
-./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify 1 $source  --npx 1 --npy 1 --npz 1 --thread-group-size 6 --thx 1 --thy 2 --thz 3 --threads 36
+./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify $source  --npx 1 --npy 1 --npz 1 --thread-group-size 6 --thx 1 --thy 2 --thz 3 --threads 36
 #SPATIAL
 #./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 0 --target-ts 0 --verify 1 $source 
 #FROM HATEM

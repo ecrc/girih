@@ -119,6 +119,8 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                       yb, ye, 
                       zb, ze
                     );
+              int source_visited = 0;
+              int receiver_visited = 0;
     #pragma simd
               for(i=ib; i<ie; i++) {
                   FUNC_BODY();
@@ -126,7 +128,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                   /*if(i == 30 && j == 30 && zi < 100+nwf && zi > 100-nwf)*/
                   /*printf("(%d,%d,%d) nwf:%d\n", i, j, zi, nwf);*/
                   if(printed == 0){
-                      printf("%d/%d gs:%d "
+                      if(0)printf("%d/%d gs:%d "
                               "nl:%d l0:%d l1:%d "
                               "(%d,%d,%d) "
                               "DIAdia\tts:%d(%d-%d) x(%d-%d)\ty(%d-%d)\tz(%d-%d) nr:%d " 
@@ -162,18 +164,23 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                   }
                   //SOURCE
                   if( (gp->source_point_enabled==1) 
+                          /*&& source_visited == 0*/
                           && (gp->lsource_pt[0] == i ) //@KADIR
                           && (gp->lsource_pt[1] == j ) //@KADIR 
-                          && (gp->lsource_pt[2] == zi) //@KADIR 
+                          && (gp->lsource_pt[2] < zi+nwf) //@KADIR 
+                          && (gp->lsource_pt[2] > zi-nwf) //@KADIR 
                     ) 
                   {
-                      printf("%d SRC\n", __LINE__);
+                      source_visited = 1;
+                      if(0)printf("%d SRC\n", __LINE__);
                       output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))] += gp->src_exc_coef[t];//@KADIR
                       //@KADIR ADD SOURCE TODO 
 
                   }
 
+                  /*if(receiver_visited == 0)*/
                   {
+                      receiver_visited = 1;
                       int ir;
                       for(ir = 0; ir < gp->num_receivers; ir++) {
                           //printf("%s %d: (\t%d,\t%d,\t%d\t)\tnr:%d(%d,%d,%d)\n", __FILE__, __LINE__, i, j, zi, gp->num_receivers, gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2]);
@@ -183,7 +190,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                                   && (gp->receiver_pt[ir][2] > zi-nwf)
                                   ) //@KADIR 
                           {
-                              printf("%d/%d gd:%d #l:%d s0:%d s1:%d:\t%d RECV %d at (%d,%d,%d). current point:(%d,%d,%d)\n", 
+                              if(0)printf("%d/%d gd:%d #l:%d s0:%d s1:%d:\t%d RECV %d at (%d,%d,%d). current point:(%d,%d,%d)\n", 
                                       omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
                                       omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
                                       __LINE__, ir, 

@@ -23,7 +23,7 @@ void verify(Parameters *p){
   printf("%s %d: Calling %s\n", __FILE__, __LINE__, TSList[p->target_ts].name);
   TSList[p->target_ts].func(p); 
 
-  exit(0); //@KADIR FIXME
+  //exit(0); //@KADIR FIXME
 
   // aggregate all subdomains into rank zero to compare with the serial results
   real_t * restrict aggr_domain = NULL;
