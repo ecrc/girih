@@ -1024,6 +1024,7 @@ void dynamic_intra_diamond_ts(Parameters *p) {
         }                        //@KADIR
         gp = p;                  //@KADIR global parameter within a node
         p->num_receivers = NUM_RECEIVERS; // p->num_receivers is overwritten somewhere before. WHY???
+        set_custom_receivers(p); //@KADIR
         for(i = 0; i < p->num_receivers; i++){
             irecv_rec[i] = 0;
         }
