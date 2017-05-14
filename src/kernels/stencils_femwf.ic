@@ -1,5 +1,7 @@
 extern real_t recv_rec[1000][9]; //@KADIR array for receiver recording
 extern size_t irecv_rec[9]; //@KADIR index into the recv_rec
+#include <math.h>
+#include <omp.h>
 void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
@@ -78,6 +80,8 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
     th_nwf = nwf/th_z;
 
+    int printed = 0; //@KADIR
+
     //printf("[%02d, %02d] b_inc:%d e_inc:%d tb:%d te:%d yb_r0:%d ye_r0:%d yb_r:%d ye_r:%d nwf:%d th_nwf:%d num_wf:%d th_z:%d\n", gtid, tid, b_inc, e_inc, tb, te, yb_r0, ye_r0, yb_r, ye_r, nwf, th_nwf, num_wf, th_z);
     for(zi=zb; zi<ze; zi+=nwf) { // wavefront loop (Z direction)
 
@@ -103,41 +107,89 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
             for(j=yb; j<ye; j++) {
               ux = &(u[1ULL*k*nnxy + j*nnx]);
               vx = &(v[1ULL*k*nnxy + j*nnx]);
+              if(0)printf("%d/%d gs:%d "
+                      "nl:%d l0:%d l1:%d "
+                      "(%d,%d,%d) "
+                      "DIAdia\tts:%d(%d-%d) x(%d-%d)\ty(%d-%d)\tz(%d-%d)\n",
+                      omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
+                      omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
+                      i, j, zi,
+                      t, tb, te, 
+                      ib, ie, 
+                      yb, ye, 
+                      zb, ze
+                    );
     #pragma simd
               for(i=ib; i<ie; i++) {
                   FUNC_BODY();
 
+                  /*if(i == 30 && j == 30 && zi < 100+nwf && zi > 100-nwf)*/
+                  /*printf("(%d,%d,%d) nwf:%d\n", i, j, zi, nwf);*/
+                  if(printed == 0){
+                      printf("%d/%d gs:%d "
+                              "nl:%d l0:%d l1:%d "
+                              "(%d,%d,%d) "
+                              "DIAdia\tts:%d(%d-%d) x(%d-%d)\ty(%d-%d)\tz(%d-%d) nr:%d " 
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "(%d,%d,%d)"
+                              "\n",
+                              omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
+                              omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
+                              i, j, zi,
+                              t, tb, te, 
+                              ib, ie, 
+                              yb, ye, 
+                              zb, ze,
+                              gp->num_receivers, 
+                              gp->receiver_pt[0][0], gp->receiver_pt[0][1], gp->receiver_pt[0][2],
+                              gp->receiver_pt[1][0], gp->receiver_pt[1][1], gp->receiver_pt[1][2],
+                              gp->receiver_pt[2][0], gp->receiver_pt[2][1], gp->receiver_pt[2][2],
+                              gp->receiver_pt[3][0], gp->receiver_pt[3][1], gp->receiver_pt[3][2],
+                              gp->receiver_pt[4][0], gp->receiver_pt[4][1], gp->receiver_pt[4][2],
+                              gp->receiver_pt[5][0], gp->receiver_pt[5][1], gp->receiver_pt[5][2],
+                              gp->receiver_pt[6][0], gp->receiver_pt[6][1], gp->receiver_pt[6][2],
+                              gp->receiver_pt[7][0], gp->receiver_pt[7][1], gp->receiver_pt[7][2],
+                              gp->receiver_pt[8][0], gp->receiver_pt[8][1], gp->receiver_pt[8][2]
+                            );
+                      printed = 1;
+                  }
                   //SOURCE
-                  /*printf("S      %d %d %d\n", gp->lsource_pt[0], gp->lsource_pt[1], gp->lsource_pt[2]);*/
                   if( (gp->source_point_enabled==1) 
                           && (gp->lsource_pt[0] == i ) //@KADIR
                           && (gp->lsource_pt[1] == j ) //@KADIR 
                           && (gp->lsource_pt[2] == zi) //@KADIR 
                     ) 
                   {
+                      printf("%d SRC\n", __LINE__);
                       output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))] += gp->src_exc_coef[t];//@KADIR
                       //@KADIR ADD SOURCE TODO 
-                      if(0)printf("%d/%d gs:%d "
-                              "nl:%d l0:%d l1:%d "
-                              "(%d,%d,%d) "
-                              "DIAdia\tts:%d(%d-%d) x(%d-%d)\ty(%d-%d)\tz(%d-%d)\n",
-                              omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
-                              omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
-                              i, j, zi,
-                              t, tb, te, ib, ie, yb, ye, zb, ze
-                              );
 
                   }
 
                   {
                       int ir;
                       for(ir = 0; ir < gp->num_receivers; ir++) {
-                          printf("%d   %d %d %d  %d %d %d\n", i, j, zi, gp->num_receivers, gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2]);
+                          //printf("%s %d: (\t%d,\t%d,\t%d\t)\tnr:%d(%d,%d,%d)\n", __FILE__, __LINE__, i, j, zi, gp->num_receivers, gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2]);
                           if( (gp->receiver_pt[ir][0] == i ) //@KADIR
                                   && (gp->receiver_pt[ir][1] == j ) //@KADIR 
-                                  && (gp->receiver_pt[ir][2] == zi) ) //@KADIR 
+                                  && (gp->receiver_pt[ir][2] < zi+nwf)
+                                  && (gp->receiver_pt[ir][2] > zi-nwf)
+                                  ) //@KADIR 
                           {
-                              printf("%d\n", __LINE__);
+                              printf("%d/%d gd:%d #l:%d s0:%d s1:%d:\t%d RECV %d at (%d,%d,%d). current point:(%d,%d,%d)\n", 
+                                      omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
+                                      omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
+                                      __LINE__, ir, 
+                                      gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2],
+                                      i, j, zi
+                                      );
                               real_t val = output_buffer[((1ULL)*((gp->receiver_pt[ir][2])*(gp->ldomain_shape[1])+( gp->receiver_pt[ir][1]))*(gp->ldomain_shape[0])+(gp->receiver_pt[ir][0]))];
                               size_t timestep = irecv_rec[ir];
                               recv_rec[timestep][ir] = val;
