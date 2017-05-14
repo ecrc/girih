@@ -9,7 +9,7 @@
 #define ST_NOT_BUSY (1)
 
 Parameters *gp; //@KADIR global parameter within a node
-real_t recv_rec[5000][9]; //@KADIR array for receiver recording
+real_t recv_rec[10000][9]; //@KADIR array for receiver recording
 size_t irecv_rec[9]; //@KADIR index into the recv_rec
 extern int get_ntg(Parameters);
 extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);

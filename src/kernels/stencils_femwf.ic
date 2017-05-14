@@ -1,4 +1,4 @@
-extern real_t recv_rec[1000][9]; //@KADIR array for receiver recording
+extern real_t recv_rec[10000][9]; //@KADIR array for receiver recording
 extern size_t irecv_rec[9]; //@KADIR index into the recv_rec
 #include <math.h>
 #include <omp.h>
