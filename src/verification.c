@@ -397,8 +397,8 @@ void std_kernel_8space_2time( const int shape[3],
     for(j=4; j<nny-4; j++) {
       for(i=4; i<nnx-4; i++) {
 
-          if(i==10 && j==10 && k==10)
-          printf("\n%d\n",i);
+          //if(i==10 && j==10 && k==10) //@KADIR FIXME
+          //printf("\n%d\n",i);
 //#pragma simd
         lap=3.*coef[0]*V(i,j,k)
            +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ))
