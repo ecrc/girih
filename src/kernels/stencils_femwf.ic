@@ -1,5 +1,5 @@
-extern real_t recv_rec[10000][9]; //@KADIR array for receiver recording
-extern size_t irecv_rec[9]; //@KADIR index into the recv_rec
+extern real_t* recv_rec; //@KADIR array for receiver recording
+extern size_t* irecv_rec; //@KADIR index into the recv_rec
 #include <math.h>
 #include <omp.h>
 void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
@@ -8,7 +8,9 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
       //@KADIR TODO ADD SOURCE AND RECEIVERS
       //printf("%s %d %s\tSource for diamond\n", __FILE__, __LINE__, __func__);
 
-#pragma omp parallel shared(shape, stencil_ctx, roc2, coef, mtid, tb, te, t_dim, NHALO) \
+#pragma omp parallel shared(shape, stencil_ctx, roc2, coef, mtid, tb, te, t_dim, NHALO, \
+        recv_rec, irecv_rec\
+        ) \
         firstprivate(u, v, b_inc, e_inc) \
         num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
@@ -167,8 +169,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                           /*&& source_visited == 0*/
                           && (gp->lsource_pt[0] == i ) //@KADIR
                           && (gp->lsource_pt[1] == j ) //@KADIR 
-                          && (gp->lsource_pt[2] < zi+nwf) //@KADIR 
-                          && (gp->lsource_pt[2] > zi-nwf) //@KADIR 
+                          && (gp->lsource_pt[2] == k ) //@KADIR 
                     ) 
                   {
                       source_visited = 1;
@@ -186,8 +187,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                           //printf("%s %d: (\t%d,\t%d,\t%d\t)\tnr:%d(%d,%d,%d)\n", __FILE__, __LINE__, i, j, zi, gp->num_receivers, gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2]);
                           if( (gp->receiver_pt[ir][0] == i ) //@KADIR
                                   && (gp->receiver_pt[ir][1] == j ) //@KADIR 
-                                  && (gp->receiver_pt[ir][2] < zi+nwf)
-                                  && (gp->receiver_pt[ir][2] > zi-nwf)
+                                  && (gp->receiver_pt[ir][2] == k)
                                   ) //@KADIR 
                           {
                               if(0)printf("%d/%d gd:%d #l:%d s0:%d s1:%d:\t%d RECV %d at (%d,%d,%d). current point:(%d,%d,%d)\n", 
@@ -195,17 +195,17 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                                       omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
                                       __LINE__, ir, 
                                       gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2],
-                                      i, j, zi
+                                      i, j, k
                                       );
                               real_t val = output_buffer[((1ULL)*((gp->receiver_pt[ir][2])*(gp->ldomain_shape[1])+( gp->receiver_pt[ir][1]))*(gp->ldomain_shape[0])+(gp->receiver_pt[ir][0]))];
                               size_t timestep = irecv_rec[ir];
-                              recv_rec[timestep][ir] = val;
+                              recv_rec[timestep*gp->num_receivers+ir] = val;
                               irecv_rec[ir]++;
 
-                              if(( fabs(val) > 0.0)) 
+                              if(( fabs(val) > 1e-7)) 
                               {
                                   printf("%s %d: receiver :%d/%d at %d,%d,%d has value %g\n", 
-                                          __FILE__, __LINE__, i, gp->num_receivers, 
+                                          __FILE__, __LINE__, ir, gp->num_receivers, 
                                           gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2], val
                                         );
                               }

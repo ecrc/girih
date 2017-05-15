@@ -9,8 +9,8 @@
 #define ST_NOT_BUSY (1)
 
 Parameters *gp; //@KADIR global parameter within a node
-real_t recv_rec[10000][9]; //@KADIR array for receiver recording
-size_t irecv_rec[9]; //@KADIR index into the recv_rec
+real_t* recv_rec; //@KADIR array for receiver recording
+size_t* irecv_rec; //@KADIR index into the recv_rec
 extern int get_ntg(Parameters);
 extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
 
@@ -1024,6 +1024,9 @@ void dynamic_intra_diamond_ts(Parameters *p) {
         }                        //@KADIR
         gp = p;                  //@KADIR global parameter within a node
         p->num_receivers = NUM_RECEIVERS; // p->num_receivers is overwritten somewhere before. WHY???
+        irecv_rec = malloc(sizeof(size_t)*p->num_receivers);
+        size_t nmemb = sizeof(real_t)*p->num_receivers*20000;
+        recv_rec = malloc(nmemb);
         set_custom_receivers(p); //@KADIR
         for(i = 0; i < p->num_receivers; i++){
             irecv_rec[i] = 0;
