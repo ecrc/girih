@@ -1,7 +1,7 @@
 make -j  
 #gs=512; nt=8;    verify=1; num_threads=12;  tgs=6
 gs=512; nt=2101; verify=0; num_threads=18; tgs=6
-gs=512; nt=2101; verify=0; num_threads=12; tgs=6
+#gs=512; nt=2101; verify=0; num_threads=12; tgs=6
 #gs=512; nt=10; verify=1; num_threads=12; tgs=6
 #gs=96;  nt=2101;    verify=1; num_threads=12;  tgs=6
 source=--disable-source-point 

@@ -1080,12 +1080,12 @@ void dynamic_intra_diamond_ts(Parameters *p) {
                 maxts = irecv_rec[i];
             printf("its %d %lu\n", i, irecv_rec[i]);
         }
-        printf("maxts %lu\n", maxts);
         char buf[32];
         sprintf(buf, "rcv-dia-%lu.bin", maxts);
         fp = fopen(buf, "w");
         size_t nmemb = maxts * p->num_receivers;
-        size_t written = fwrite(fp, sizeof(real_t), nmemb, fp);
+        printf("maxts:%lu nmemb:%lu\n", maxts, nmemb);
+        size_t written = fwrite(recv_rec, sizeof(real_t), nmemb, fp);
         printf("array size=%lu written=%lu\n", nmemb, written);
         assert(nmemb == written);
         fclose(fp);
