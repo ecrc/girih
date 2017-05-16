@@ -254,7 +254,7 @@ void set_centered_source(Parameters *p) {
   p->source_pt[1] = (p->stencil_shape[1]+2*p->stencil.r)/2 -1;
   p->source_pt[2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
 }
-int small_domain = 0; //@KADIR
+int small_domain = 1; //@KADIR
 void set_custom_source(Parameters *p) {//@KADIR source coordinates are taken from exawave.xml
     if(small_domain == 1){ 
         p->source_pt[0] = 20;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;

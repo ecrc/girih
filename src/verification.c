@@ -316,6 +316,14 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
       for(i=0; i<p.num_receivers; i++) {
         real_t val = U(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]);
         fwrite( &val, sizeof(real_t), 1, fp);
+        if(( fabs(val) > 1e-7)) 
+        {
+            printf("%d\tREF\treceiver :%d/%d at %d,%d,%d has value %g\n", 
+                    it,
+                    i, p.num_receivers, 
+                    p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2], val
+                  );
+        }
       }
     }
 
@@ -344,6 +352,14 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
                 U(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2]),
                 V(p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2])
                 );
+        }
+        if(( fabs(val) > 1e-7)) 
+        {
+            printf("%d\tREF\treceiver :%d/%d at %d,%d,%d has value %g\n", 
+                    it+1,
+                    i, p.num_receivers, 
+                    p.receiver_pt[i][0], p.receiver_pt[i][1], p.receiver_pt[i][2], val
+                  );
         }
       }
     }
@@ -931,7 +947,7 @@ void compare_results_std(real_t *restrict u, real_t *restrict target_domain, int
       }
     }
   }
-  if ( (diff_l1 > 1e-7) || (diff_l1*0 != 0) || (diff_l1 != diff_l1) ){
+  if ( (diff_l1 > 1e-5) || (diff_l1*0 != 0) || (diff_l1 != diff_l1) ){
     printf("Max snapshot abs. err.:%e  L1 norm:%e\n", max_error, diff_l1);
     fprintf(stderr,"BROKEN KERNEL detected at %s\n", __func__);
 

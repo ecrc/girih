@@ -4,6 +4,7 @@
 #include <math.h>
 #include "mpi.h"
 #include "data_structures.h"
+#include <assert.h> //@KADIR
 
 #define ST_BUSY (0)
 #define ST_NOT_BUSY (1)
@@ -1084,7 +1085,9 @@ void dynamic_intra_diamond_ts(Parameters *p) {
         sprintf(buf, "rcv-dia-%lu.bin", maxts);
         fp = fopen(buf, "w");
         size_t nmemb = maxts * p->num_receivers;
-        fwrite(fp, sizeof(real_t), nmemb, fp);
+        size_t written = fwrite(fp, sizeof(real_t), nmemb, fp);
+        printf("array size=%lu written=%lu\n", nmemb, written);
+        assert(nmemb == written);
         fclose(fp);
     }
 

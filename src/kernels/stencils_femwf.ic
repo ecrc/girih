@@ -228,10 +228,11 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                               recv_rec[timestep*gp->num_receivers+ir] = val;
                               irecv_rec[ir]++;
 
-                              if(0 && ( fabs(val) > 1e-7)) 
+                              if(( fabs(val) > 1e-7)) 
                               {
-                                  printf("%s %d: receiver :%d/%d at %d,%d,%d has value %g\n", 
-                                          __FILE__, __LINE__, ir, gp->num_receivers, 
+                                  printf("%lu\tDIA\treceiver :%d/%d at %d,%d,%d has value %g\n", 
+                                          irecv_rec[ir]-1,
+                                          ir, gp->num_receivers, 
                                           gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2], val
                                         );
                               }
