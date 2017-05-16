@@ -1073,15 +1073,15 @@ void dynamic_intra_diamond_ts(Parameters *p) {
 //#pragma omp barrier
         int i,j;
         int nr = p->num_receivers; // number of receivers
-        int maxts = 0;
+        size_t maxts = 0;
         for(i = 0; i < nr; i++){
             if(irecv_rec[i] > maxts)
                 maxts = irecv_rec[i];
             printf("its %d %lu\n", i, irecv_rec[i]);
         }
-        printf("maxts %d\n", maxts);
+        printf("maxts %lu\n", maxts);
         char buf[32];
-        sprintf(buf, "rcv-dia-%d.bin", maxts);
+        sprintf(buf, "rcv-dia-%lu.bin", maxts);
         fp = fopen(buf, "w");
         size_t nmemb = maxts * p->num_receivers;
         fwrite(fp, sizeof(real_t), nmemb, fp);
