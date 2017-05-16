@@ -10,9 +10,10 @@ source=
 rm rcv.bin.bck
 mv rcv.bin rcv.bin.bck
 rm rcv-dia-*.bin
+num_threads=12 #almaha
 #DIAMOND
 #gdb --ex run --args \
-./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify $source  --npx 1 --npy 1 --npz 1 --thread-group-size 6 --thx 1 --thy 2 --thz 3 --threads 36 --n-tests 1
+./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify $source  --npx 1 --npy 1 --npz 1 --thread-group-size 6 --thx 1 --thy 2 --thz 3 --threads $num_threads --n-tests 1
 #SPATIAL
 #./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 0 --target-ts 0 --verify 1 $source 
 #FROM HATEM
