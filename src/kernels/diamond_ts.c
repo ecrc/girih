@@ -11,6 +11,7 @@
 Parameters *gp; //@KADIR global parameter within a node
 real_t* recv_rec; //@KADIR array for receiver recording
 size_t* irecv_rec; //@KADIR index into the recv_rec
+size_t isrc_exc; //@KADIR number of source excitations performed so far
 extern int get_ntg(Parameters);
 extern void sub_array_copy_tg(const real_t * restrict src_buf, real_t * restrict dst_buf, int *src_size, int *dst_size, int *cpy_size, int *src_offs, int *dst_offs, int);
 
@@ -1024,6 +1025,7 @@ void dynamic_intra_diamond_ts(Parameters *p) {
         }                        //@KADIR
         gp = p;                  //@KADIR global parameter within a node
         p->num_receivers = NUM_RECEIVERS; // p->num_receivers is overwritten somewhere before. WHY???
+        isrc_exc = 0;
         irecv_rec = malloc(sizeof(size_t)*p->num_receivers);
         size_t nmemb = sizeof(real_t)*p->num_receivers*20000;
         recv_rec = malloc(nmemb);
@@ -1068,7 +1070,7 @@ void dynamic_intra_diamond_ts(Parameters *p) {
     }
     FILE* fp = NULL;
     {
-#pragma omp barrier
+//#pragma omp barrier
         int i,j;
         int nr = p->num_receivers; // number of receivers
         int maxts = 0;

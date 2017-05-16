@@ -1,19 +1,20 @@
 make -j  
-gs=501; nt=2000
-gs=501; nt=200
-gs=512; nt=2101
-gs=512; nt=1; verify=0
-gs=512; nt=2101; verify=0
-#gs=96; nt=4 
+gs=512; nt=8;    verify=1; num_threads=12;  tgs=6
+#gs=512; nt=2101; verify=0; num_threads=12; tgs=6
+#gs=96;  nt=4;    verify=1; num_threads=12;  tgs=6
+#gs=128;  nt=4;    verify=1; num_threads=1;  tgs=1
 source=--disable-source-point 
 source=
 rm rcv.bin.bck
 mv rcv.bin rcv.bin.bck
 rm rcv-dia-*.bin
-num_threads=12 #almaha
+export $OMP_NUM_THREADS=$num_threads
 #DIAMOND
 #gdb --ex run --args \
-./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify $source  --npx 1 --npy 1 --npz 1 --thread-group-size 6 --thx 1 --thy 2 --thz 3 --threads $num_threads --n-tests 1
+cmd="./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify $source  --npx 1 --npy 1 --npz 1 --thread-group-size $tgs --thx 1 --thy 2 --thz 3 --threads $num_threads --n-tests 1"
+echo $cmd
+$cmd
+
 #SPATIAL
 #./build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 0 --target-ts 0 --verify 1 $source 
 #FROM HATEM

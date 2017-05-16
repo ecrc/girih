@@ -1,12 +1,13 @@
 extern real_t* recv_rec; //@KADIR array for receiver recording
 extern size_t* irecv_rec; //@KADIR index into the recv_rec
+extern size_t isrc_exc; //@KADIR number of source excitations performed so far
 #include <math.h>
 #include <omp.h>
 void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
       //@KADIR TODO ADD SOURCE AND RECEIVERS
-      //printf("%s %d %s\tSource for diamond\n", __FILE__, __LINE__, __func__);
+      if(0)printf("%s %d %s\tDiamond kernel stencil_ctx.thread_group_size:%d\n", __FILE__, __LINE__, __func__,stencil_ctx.thread_group_size);
 
 #pragma omp parallel shared(shape, stencil_ctx, roc2, coef, mtid, tb, te, t_dim, NHALO, \
         recv_rec, irecv_rec\
@@ -17,6 +18,11 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
     int tgs, nwf, th_nwf, tid, gtid, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, err; 
     double t_start;
 
+    if(0)printf("nested:%d thread:%d/%d tgs:%d #l:%d p0tid:%d p1tid:%d\n",
+                      omp_get_nested(),
+                      omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
+                      omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1)
+                      );
     const int nny =shape[1];
     const int nnx =shape[0];
     const unsigned long nnxy = 1UL * nnx * nny;
@@ -105,14 +111,34 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         output_buffer = u;      //@KADIR
         //printf("%s %s %d: tid:%d t:%d tb:%d te:%d\n", __FILE__, __func__, __LINE__, tid, t, tb, te); //@KADIR
         for(k=kt; k<kt+nwf; k++){
+          //printf("(%d,%d,%d) v:%d tid_z:%d ?:%d\n", i, j, k, ((k-NHALO)/th_nwf)%th_z, tid_z, ((k-NHALO)/th_nwf)%th_z == tid_z);
+          //SOURCE
+          if(0)if( (gp->source_point_enabled==1) 
+                  && (gp->lsource_pt[0] >= ib ) //@KADIR
+                  && (gp->lsource_pt[0] <  ie ) //@KADIR
+                  && (gp->lsource_pt[1] == j ) //@KADIR 
+                  && (gp->lsource_pt[2] == k ) //@KADIR 
+            ) 
+          {
+              if(0)printf("%d SRC\n", __LINE__);
+              output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))] += gp->src_exc_coef[isrc_exc];//@KADIR
+              printf("DIA\tts:%d idxU:-- valU:%.4f src_exc_coef:%.4f coef:%g %g %g %g %g\ti(%d-%d) %d/%d\n", isrc_exc,  output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))],  gp->src_exc_coef[isrc_exc], coef[0], coef[1], coef[2], coef[3], coef[4],
+              ib, ie, omp_get_thread_num(), omp_get_num_threads()
+              );
+              isrc_exc++;
+              //@KADIR ADD SOURCE TODO 
+
+          }
+
           if( ((k-NHALO)/th_nwf)%th_z == tid_z ) {
             for(j=yb; j<ye; j++) {
               ux = &(u[1ULL*k*nnxy + j*nnx]);
               vx = &(v[1ULL*k*nnxy + j*nnx]);
-              if(0)printf("%d/%d gs:%d "
+              if(0)printf("nested?%d %d/%d gs:%d "
                       "nl:%d l0:%d l1:%d "
                       "(%d,%d,%d) "
                       "DIAdia\tts:%d(%d-%d) x(%d-%d)\ty(%d-%d)\tz(%d-%d)\n",
+                      omp_get_nested(),
                       omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
                       omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
                       i, j, zi,
@@ -121,14 +147,28 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                       yb, ye, 
                       zb, ze
                     );
-              int source_visited = 0;
               int receiver_visited = 0;
     #pragma simd
               for(i=ib; i<ie; i++) {
                   FUNC_BODY();
+                  if( (gp->source_point_enabled==1) 
+                          && (gp->lsource_pt[0] == i ) //@KADIR
+                          && (gp->lsource_pt[1] == j ) //@KADIR 
+                          && (gp->lsource_pt[2] == k ) //@KADIR 
+                    ) 
+                  {
+                      if(0)printf("%d SRC\n", __LINE__);
+                      output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))] += gp->src_exc_coef[isrc_exc];//@KADIR
+                      if(0)printf("DIA\tts:%d idxU:-- valU:%.4f src_exc_coef:%.4f coef:%g %g %g %g %g\ti(%d-%d) %d/%d\n", isrc_exc,  output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))],  gp->src_exc_coef[isrc_exc], coef[0], coef[1], coef[2], coef[3], coef[4],
+                              ib, ie, omp_get_thread_num(), omp_get_num_threads()
+                            );
+                      isrc_exc++;
+                      //@KADIR ADD SOURCE TODO 
+
+                  }
 
                   /*if(i == 30 && j == 30 && zi < 100+nwf && zi > 100-nwf)*/
-                  /*printf("(%d,%d,%d) nwf:%d\n", i, j, zi, nwf);*/
+                  //printf("    (%d,%d,%d)\n", i, j, k);
                   if(printed == 0){
                       if(0)printf("%d/%d gs:%d "
                               "nl:%d l0:%d l1:%d "
@@ -146,7 +186,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                               "\n",
                               omp_get_thread_num(), omp_get_num_threads(), stencil_ctx.thread_group_size,
                               omp_get_level(), omp_get_ancestor_thread_num(0), omp_get_ancestor_thread_num(1),
-                              i, j, zi,
+                              i, j, k,
                               t, tb, te, 
                               ib, ie, 
                               yb, ye, 
@@ -163,20 +203,6 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
                               gp->receiver_pt[8][0], gp->receiver_pt[8][1], gp->receiver_pt[8][2]
                             );
                       printed = 1;
-                  }
-                  //SOURCE
-                  if( (gp->source_point_enabled==1) 
-                          /*&& source_visited == 0*/
-                          && (gp->lsource_pt[0] == i ) //@KADIR
-                          && (gp->lsource_pt[1] == j ) //@KADIR 
-                          && (gp->lsource_pt[2] == k ) //@KADIR 
-                    ) 
-                  {
-                      source_visited = 1;
-                      if(0)printf("%d SRC\n", __LINE__);
-                      output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))] += gp->src_exc_coef[t];//@KADIR
-                      //@KADIR ADD SOURCE TODO 
-
                   }
 
                   /*if(receiver_visited == 0)*/

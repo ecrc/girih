@@ -254,38 +254,39 @@ void set_centered_source(Parameters *p) {
   p->source_pt[1] = (p->stencil_shape[1]+2*p->stencil.r)/2 -1;
   p->source_pt[2] = (p->stencil_shape[2]+2*p->stencil.r)/2 -1;
 }
+int small_domain = 0; //@KADIR
 void set_custom_source(Parameters *p) {//@KADIR source coordinates are taken from exawave.xml
-if(0){
-  p->source_pt[0] = 20;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-  p->source_pt[1] = 20;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-  p->source_pt[2] = 20;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
-  fprintf(stderr, "%s %d: Correct source.\n", __FILE__, __LINE__);
-} else {
-  p->source_pt[0] = 250;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-  p->source_pt[1] = 250;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-  p->source_pt[2] = 100;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
-}
-  printf("%s %d:Source point :%d,%d,%d r:%d\n",
-          __FILE__, __LINE__, 
-          p->stencil_shape[0], 
-          p->stencil_shape[1], 
-          p->stencil_shape[2], 
-          p->stencil.r);
+    if(small_domain == 1){ 
+        p->source_pt[0] = 20;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+        p->source_pt[1] = 20;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+        p->source_pt[2] = 20;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+        fprintf(stderr, "%s %d: Correct source.\n", __FILE__, __LINE__);
+    } else {
+        p->source_pt[0] = 250;//5000;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+        p->source_pt[1] = 250;//5000;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+        p->source_pt[2] = 100;//2000;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+    }
+    printf("%s %d:Source point :%d,%d,%d\n",
+            __FILE__, __LINE__, 
+            p->source_pt[0], 
+            p->source_pt[1], 
+            p->source_pt[2] 
+            );
 }
 void set_custom_receivers(Parameters *p) {//@KADIR receiver coordinates are taken from exawave.xml
-  int i;
-  for(i=0; i<p->num_receivers; i++) {
-      if(0){
-    p->receiver_pt[i][0] = 30;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][1] = (i)*5;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][2] = 100;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
-    fprintf(stderr, "%s %d: Correct receiver.\n", __FILE__, __LINE__);
-      } else {
-    p->receiver_pt[i][0] = 250;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][1] = (i+1)*50;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
-    p->receiver_pt[i][2] = 400;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1 
-      }
-  }
+    int i;
+    for(i=0; i<p->num_receivers; i++) {
+        if(small_domain == 1){ 
+            p->receiver_pt[i][0] = 20;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+            p->receiver_pt[i][1] = (i)*5;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+            p->receiver_pt[i][2] = 20;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1;
+            fprintf(stderr, "%s %d: Correct receiver.\n", __FILE__, __LINE__);
+        } else {
+            p->receiver_pt[i][0] = 250;//(p->stencil_shape[0]+2*p->stencil.r)/2 -1;
+            p->receiver_pt[i][1] = (i+1)*50;//(p->stencil_shape[1]+2*p->stencil.r)/2 -1;
+            p->receiver_pt[i][2] = 400;//(p->stencil_shape[2]+2*p->stencil.r)/2 -1 
+        }
+    }
 }
 
 void set_kernels(Parameters *p){

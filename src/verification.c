@@ -286,9 +286,9 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
   if( (p.source_point_enabled==1) ) {//@KADIR
       fp = fopen("rcv.bin", "w");
   }
-  printf("reference kernel: time step: ");
+  printf("reference kernel: time step:\n");
   for(it=0; it<p.nt; it+=2){
-    printf("\nts:%d. ", it);
+    //printf("\nts:%d. ", it);
     // @HATEM:TODO @KADIR
     //first call  std_kernel_8space_2time
     std_kernel(domain_shape, coef, u, v, roc2);
@@ -297,7 +297,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     if( (p.source_point_enabled==1) ) {
         //SOURCE
         U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it];//@KADIR
-        printf("REF\tts:%d idxU:-- valU:%g src_exc_coef:%g coef:%g %g %g %g %g\n", it,  U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]), p.src_exc_coef[it], coef[0], coef[1], coef[2], coef[3], coef[4]);
+        if(0)printf("REF\tts:%d idxU:-- valU:%.4f src_exc_coef:%.4f coef:%g %g %g %g %g\n", it,  U(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]), p.src_exc_coef[it], coef[0], coef[1], coef[2], coef[3], coef[4]);
 
         /*printf("%s %d: timestep:%d+1 source :%d at %d,%d,%d has value %g, contribution:%g and %g. ds2:%d ds1:%d ds0:%d index:%d\n", */
                 /*__FILE__, __LINE__, it,  */
@@ -314,7 +314,8 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     if( (p.source_point_enabled==1) ) {//@KADIR
       int i;
       for(i=0; i<p.num_receivers; i++) {
-        fwrite( &U(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]), sizeof(real_t), 1, fp);
+        real_t val = U(p.receiver_pt[i][0],p.receiver_pt[i][1],p.receiver_pt[i][2]);
+        fwrite( &val, sizeof(real_t), 1, fp);
       }
     }
 
@@ -326,6 +327,7 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
     if( (p.source_point_enabled==1) ) {
      //   v[_TR_(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2])] += p.src_exc_coef[it+1];//@KADIR
        V(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]) += p.src_exc_coef[it+1];//@KADIR
+        if(0)printf("REF\tts:%d idxV:-- valV:%.4f src_exc_coef:%.4f coef:%g %g %g %g %g\n", it,  V(p.lsource_pt[0],p.lsource_pt[1],p.lsource_pt[2]), p.src_exc_coef[it+1], coef[0], coef[1], coef[2], coef[3], coef[4]);
     }
     // Extract solutions from receiver coordinates
     if( (p.source_point_enabled==1) ) {//@KADIR
@@ -428,7 +430,7 @@ void std_kernel_8space_2time( const int shape[3],
       }
     }
   }
-  printf("\tV:%g U:%g ROC2:%g lap:%g  coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
+  if(0)printf("\tV:%g U:%g ROC2:%g lap:%g  coef[0]:%g coef[1]:%g coef[2]:%g coef[3]:%g coef[4]:%g\n",
           V(250,250,100), 
           U(250,250,100), 
           customroc,
@@ -929,7 +931,7 @@ void compare_results_std(real_t *restrict u, real_t *restrict target_domain, int
       }
     }
   }
-  if ( (diff_l1 > 0.0) || (diff_l1*0 != 0) || (diff_l1 != diff_l1) ){
+  if ( (diff_l1 > 1e-7) || (diff_l1*0 != 0) || (diff_l1 != diff_l1) ){
     printf("Max snapshot abs. err.:%e  L1 norm:%e\n", max_error, diff_l1);
     fprintf(stderr,"BROKEN KERNEL detected at %s\n", __func__);
 
