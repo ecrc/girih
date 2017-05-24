@@ -762,9 +762,7 @@ void dynamic_intra_diamond_main_loop(Parameters *p){
 
 #pragma omp parallel num_threads(num_thread_groups) shared(head, tail) private(tid) PROC_BIND(spread)
     {
-        printf("%d\tDIAMOND %d/%d\n", 
-                __LINE__,
-                omp_get_thread_num(), omp_get_num_threads());
+        //TODO printf("%d\tDIAMOND %d/%d\n", __LINE__, omp_get_thread_num(), omp_get_num_threads());
         //    // initlaize the likwid markers according to the openmp nested parallelism
         //    if(p->in_auto_tuning == 0) {
         //      #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
@@ -842,9 +840,9 @@ void dynamic_intra_diamond_prologue_std(Parameters *p){
             /*printf("%d\ti:%d y_len_l:%d p->stencil.r:%d diam_width:%d\n", __LINE__, i, y_len_l, p->stencil.r, diam_width); //@KADIR*/
             yb = p->stencil.r + i*diam_width;
             ye = yb + diam_width;
-            printf("%d pro started\n", __LINE__);
+            //TODO printf("%d pro started\n", __LINE__);
             intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, p->t_dim, p->t_dim*2+1, tid);
-            printf("%d pro ended\n", __LINE__);
+            //TODO printf("%d pro ended\n", __LINE__);
         }
     }
     // Send the trapezoid results to the left
@@ -917,9 +915,9 @@ void dynamic_intra_diamond_epilogue_std(Parameters *p){
             /*printf("%d\ti:%d y_len_l:%d yb_r:%d ye_r:%d diam_width:%d\n", __LINE__, i, y_len_l, yb_r, ye_r, diam_width); //@KADIR*/
             yb = yb_r + i*diam_width;
             ye = ye_r + i*diam_width;
-            printf("%d epi started\n", __LINE__);
+            //TODO printf("%d epi started\n", __LINE__);
             intra_diamond_mwd_comp(p, yb, ye, b_inc, e_inc, 0, p->t_dim+1, tid);
-            printf("%d epi ended\n", __LINE__);
+            //TODO printf("%d epi ended\n", __LINE__);
         }
     }
 }
@@ -1039,11 +1037,11 @@ void dynamic_intra_diamond_ts(Parameters *p) {
     // Prologue
     // HATEM TODO HERE @KADIR: EXECUTED. HAS STENCIL COMPUTATION
     t1 = MPI_Wtime();
-    printf("PROLOGUE STARTING\n"); //@KADIR
+    //TODO printf("PROLOGUE STARTING\n"); //@KADIR
     if(p->in_auto_tuning == 0)
         dynamic_intra_diamond_prologue(p);
     t2 = MPI_Wtime();
-    printf("PROLOGUE ENDED\n"); //@KADIR
+    //TODO printf("PROLOGUE ENDED\n"); //@KADIR
 
     // main loop
     // HATEM TODO HERE. @KADIR: EXECUTED. HAS STENCIL COMPUTATION
@@ -1052,11 +1050,11 @@ void dynamic_intra_diamond_ts(Parameters *p) {
 
     // Epilogue
     // HATEM TODO HERE @KADIR: EXECUTED. HAS STENCIL COMPUTATION
-    printf("EPILOGUE STARTING\n"); //@KADIR
+    //TODO printf("EPILOGUE STARTING\n"); //@KADIR
     if(p->in_auto_tuning == 0)
         dynamic_intra_diamond_epilogue(p);
     t4 = MPI_Wtime();
-    printf("EPILOGUE ENDED\n"); //@KADIR
+    //TODO printf("EPILOGUE ENDED\n"); //@KADIR
 
 
     // stop the markers of the experiment
@@ -1078,15 +1076,15 @@ void dynamic_intra_diamond_ts(Parameters *p) {
         for(i = 0; i < nr; i++){
             if(irecv_rec[i] > maxts)
                 maxts = irecv_rec[i];
-            printf("its %d %lu\n", i, irecv_rec[i]);
+            //TODO printf("its %d %lu\n", i, irecv_rec[i]);
         }
         char buf[32];
         sprintf(buf, "rcv-dia-%lu.bin", maxts);
         fp = fopen(buf, "w");
         size_t nmemb = maxts * p->num_receivers;
-        printf("maxts:%lu nmemb:%lu\n", maxts, nmemb);
+        //TODO printf("maxts:%lu nmemb:%lu\n", maxts, nmemb);
         size_t written = fwrite(recv_rec, sizeof(real_t), nmemb, fp);
-        printf("array size=%lu written=%lu\n", nmemb, written);
+        //TODO printf("array size=%lu written=%lu\n", nmemb, written);
         assert(nmemb == written);
         fclose(fp);
     }
