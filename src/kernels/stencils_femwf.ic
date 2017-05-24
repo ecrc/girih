@@ -153,6 +153,53 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
 
               }
             }
+            
+
+                  if( (gp->source_point_enabled==1) 
+                          && (gp->lsource_pt[0] >= ib ) //@KADIR
+                          && (gp->lsource_pt[0] <  ie ) //@KADIR
+                          && (gp->lsource_pt[1] >= yb ) //@KADIR 
+                          && (gp->lsource_pt[1] <  ye ) //@KADIR 
+                          && (gp->lsource_pt[2] == k ) //@KADIR 
+                    ) 
+                  {
+                      output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))] += gp->src_exc_coef[isrc_exc];//@KADIR
+                      if(0)printf("DIA\tts:%d idxU:-- valU:%.4f src_exc_coef:%.4f coef:%g %g %g %g %g\ti(%d-%d) %d/%d\n", isrc_exc,  output_buffer[((1ULL)*((gp->lsource_pt[2])*(gp->ldomain_shape[1])+( gp->lsource_pt[1]))*(gp->ldomain_shape[0])+(gp->lsource_pt[0]))],  gp->src_exc_coef[isrc_exc], coef[0], coef[1], coef[2], coef[3], coef[4],
+                              ib, ie, omp_get_thread_num(), omp_get_num_threads()
+                            );
+                      isrc_exc++;
+                  }
+                  {
+                      int ir;
+                      for(ir = 0; ir < gp->num_receivers; ir++) {
+                          if(    
+                                     (gp->receiver_pt[ir][0] >= ib ) //@KADIR
+                                  && (gp->receiver_pt[ir][0] <  ie ) //@KADIR
+                                  && (gp->receiver_pt[ir][1] >= yb ) //@KADIR 
+                                  && (gp->receiver_pt[ir][1] <  ye ) //@KADIR 
+                                  && (gp->receiver_pt[ir][2] == k )
+                                  ) //@KADIR 
+                          {
+                              real_t val = output_buffer[((1ULL)*((gp->receiver_pt[ir][2])*(gp->ldomain_shape[1])+( gp->receiver_pt[ir][1]))*(gp->ldomain_shape[0])+(gp->receiver_pt[ir][0]))];
+                              size_t timestep = irecv_rec[ir];
+                              recv_rec[timestep*gp->num_receivers+ir] = val;
+                              irecv_rec[ir]++;
+
+                              if(0 && ( fabs(val) > 1e-7)) 
+                              {
+                                  printf("%lu\tDIA\treceiver :%d/%d at %d,%d,%d has value %g\n", 
+                                          irecv_rec[ir]-1,
+                                          ir, gp->num_receivers, 
+                                          gp->receiver_pt[ir][0], gp->receiver_pt[ir][1], gp->receiver_pt[ir][2], val
+                                        );
+                              }
+                          }
+                      }
+                  }
+
+
+
+
           }
         }
 
