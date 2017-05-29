@@ -40,7 +40,7 @@ ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + 16.*(3.*coef[0]*vx[i] \
 +coef[4]*(vx[+4*nnxy+i]+vx[-4*nnxy+i]) )/400.; \
 }
 #define FUNC_BODY() { \
-ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + .04*(3.*coef[0]*vx[i] \
+ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + ((real_t).04)*(((real_t)3.)*coef[0]*vx[i] \
 +coef[1]*(vx[i+1]+vx[i-1]) \
 +coef[1]*(vx[i+nnx]+vx[i-nnx]) \
 +coef[1]*(vx[+nnxy+i]+vx[-nnxy+i]) \

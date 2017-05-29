@@ -4,7 +4,7 @@
 #SBATCH --output=/project/k1137/akbudak/girih/out/%j.o
 #SBATCH --error=/project/k1137/akbudak/girih/out/%j.e
 #SBATCH --nodes=1
-#SBATCH --time=00:30:00
+#SBATCH --time=00:10:00
 
 module list
 module swap PrgEnv-cray PrgEnv-intel
