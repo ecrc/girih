@@ -1,7 +1,6 @@
 include conf/make.conf
 
 KERNEL=mwd_kernel
-VCFLAGS += -g -O3 -openmp
 BUILD_DIR=build
 
 KERNELS_SRC = $(wildcard src/kernels/*.c)
@@ -49,7 +48,7 @@ ${BUILD_DIR}/utils.o: src/utils.c
 	${CC} ${CFLAGS} -o $@ -c $<
 
 ${BUILD_DIR}/verification.o: src/verification.c 
-	${CC} ${VCFLAGS} -o $@ -c $<
+	${CC} ${CFLAGS} -o $@ -c $<
 
 ${BUILD_DIR}/mpi_utils.o: src/mpi_utils.c 
 	${CC} ${CFLAGS} -o $@ -c $<
