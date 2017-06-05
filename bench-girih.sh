@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --account=k1137
 #SBATCH --job-name=girih
-#SBATCH --output=/project/k1137/akbudak/girih/out/%j.o
-#SBATCH --error=/project/k1137/akbudak/girih/out/%j.e
+#SBATCH --output=/project/k1137/akbudak/girih/out/%j
+#SBATCH --error=/project/k1137/akbudak/girih/out/%j
 #SBATCH --nodes=1
-#SBATCH --time=00:10:00
+#SBATCH --time=12:00:00
 
 module list
 module swap PrgEnv-cray PrgEnv-intel
@@ -33,12 +33,18 @@ module list
 #OMP_NUM_THREADS=32 srun --ntasks=2 --cpus-per-task=16 --hint=nomultithread --ntasks-per-node=2 ./build/mwd_kernel --npx 1 --npy 2 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 4
 #export OMP_NUM_THREADS=32
 
+dir=/lustre/project/k1137/akbudak/girih
 gs=501; nt=2101;  #exawave
-gs=512; nt=506; num_threads="8 16 32";verify=0   #eage paper
+gs=512; nt=506; num_threads="1 2 4 8 12 16 20 24 28 32";verify=0;ntests=2   #eage paper
 for nthread in $num_threads;do
     export OMP_NUM_THREADS=$nthread
     #DIAMOND
-    srun  --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx $gs --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
+    sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 " 
+    cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --n-tests $ntests  --threads $nthread "
+    echo $sruncmd $cmd
+    $sruncmd $cmd
+    #DIAMOND
+    #srun  --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx $gs --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
 done
 exit 0
 srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
