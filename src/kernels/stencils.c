@@ -40,6 +40,22 @@ ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + 16.*(3.*coef[0]*vx[i] \
 +coef[4]*(vx[+4*nnxy+i]+vx[-4*nnxy+i]) )/400.; \
 }
 #define FUNC_BODY() { \
+ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + (ROC2(i,j,k))*(((real_t)3.)*coef[0]*vx[i] \
++coef[1]*(vx[i+1]+vx[i-1]) \
++coef[1]*(vx[i+nnx]+vx[i-nnx]) \
++coef[1]*(vx[+nnxy+i]+vx[-nnxy+i]) \
++coef[2]*(vx[i+2]+vx[i-2]) \
++coef[2]*(vx[i+2*nnx]+vx[i-2*nnx]) \
++coef[2]*(vx[+2*nnxy+i]+vx[-2*nnxy+i]) \
++coef[3]*(vx[i+3]+vx[i-3]) \
++coef[3]*(vx[i+3*nnx]+vx[i-3*nnx]) \
++coef[3]*(vx[+3*nnxy+i]+vx[-3*nnxy+i]) \
++coef[4]*(vx[i+4]+vx[i-4]) \
++coef[4]*(vx[i+4*nnx]+vx[i-4*nnx]) \
++coef[4]*(vx[+4*nnxy+i]+vx[-4*nnxy+i]) ); \
+}
+
+#define FUNC_BODY_DR() { \
 ux[i] = ((real_t) (2.0))*vx[i] - ux[i] + ((real_t).04)*(((real_t)3.)*coef[0]*vx[i] \
 +coef[1]*(vx[i+1]+vx[i-1]) \
 +coef[1]*(vx[i+nnx]+vx[i-nnx]) \

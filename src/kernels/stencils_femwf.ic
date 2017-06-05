@@ -110,7 +110,7 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
               vx = &(v[1ULL*k*nnxy + j*nnx]);
     #pragma simd
               for(i=ib; i<ie; i++) {
-                  FUNC_BODY();
+                  FUNC_BODY_DR();
 /*
                   if( (gp->source_point_enabled==1) 
                           && (gp->lsource_pt[0] == i ) //@KADIR

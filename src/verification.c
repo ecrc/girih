@@ -250,6 +250,11 @@ void verify_serial_generic(real_t * target_domain, Parameters p) {
         }
       }
 #endif //@KADIR: Disabled so that initial conditions are all zero
+      //@KADIR Set roc2 to 16=dt^2 c^2
+      for(i=0; i<n_domain;i++){
+        if(p.stencil.time_order == 2)
+          roc2[i]= ((real_t)16.0);
+      }
       break;
   
     case SOLAR:
@@ -440,7 +445,7 @@ void std_kernel_8space_2time( const int shape[3],
         /*printf("%d %d %d: V:%g U:%g ROC2:%g lap:%g ROC2:%g\n", */
                 /*k, j, i, V(i,j,k), U(i,j,k), ROC2(i,j,k), lap, */
                /*ROC2(i,j,k) );//@KADIR*/
-        U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + customroc*lap/400.;   //@KADIR
+        U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) +  ROC2(i,j,k)*lap/400.;   //@KADIR
         //U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap; //@KADIR
 #endif
       }
