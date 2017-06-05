@@ -698,7 +698,7 @@ void domain_data_fill_std(Parameters * p){
     p->U2[i] = 0.0;
 
     if(p->stencil.time_order == 2)
-      p->U3[i] = 0.0;
+      p->U3[i] = (real_t)16.; //@KADIR roc2
   }
 #ifdef __KADIR__DISABLED__ //@KADIR: Disabled so that initial conditions are all zero
   xb = 0;
