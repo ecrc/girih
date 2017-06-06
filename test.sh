@@ -1,7 +1,7 @@
 make -j  
 #gs=512;  nt=8;    verify=1; num_threads=32;  tgs=4   ntests=1; thz=2
-gs=512;  nt=8;    verify=1; num_threads=12;  tgs=4   ntests=1; thz=2
-#gs=512; nt=2101; verify=0; num_threads=18;  tgs=6;  ntests=1; thz=3        #wave
+gs=512;  nt=8;    verify=1; num_threads=12;  tgs=4   ntests=1; thz=2      #develop&verify
+#gs=512; nt=2101; verify=0; num_threads=12;  tgs=6;  ntests=1; thz=3        #wave
 #gs=512; nt=500;  verify=0; num_threads="4 8 16 32"; tgs=4; ntests=2; thz=2 #eage paper
 #gs=512; nt=500;  verify=0; num_threads="1 2 4 8 12 16 20 24 28 32"; tgs=N/A; ntests=2; thz=N/A #eage paper
 
