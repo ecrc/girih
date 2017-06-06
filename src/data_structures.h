@@ -177,6 +177,7 @@ typedef struct{
   int num_wf; // number of wavefront updats per iteration
   // wavefront profiling
   double *t_wf_comm, *t_wait, *t_wf_prologue, *t_wf_main, *t_wf_epilogue, *wf_num_resolved_diamonds, *t_group_wait;
+  real_t idx2, idy2, idz2, idxyz2_sum; //@KADIR 1/dx^2 1/dy^2 1/dz^2
 
 }stencil_CTX;
 

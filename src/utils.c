@@ -692,6 +692,11 @@ void domain_data_fill_std(Parameters * p){
   uint64_t i,j,k, gi, gj, gk;
   real_t r;
   int xb, xe, yb, ye, zb, ze;
+  p->stencil_ctx.idx2 = ((real_t)1.)/((real_t)400.);
+  p->stencil_ctx.idy2 = ((real_t)1.)/((real_t)400.);
+  p->stencil_ctx.idz2 = ((real_t)1.)/((real_t)400.);
+  p->stencil_ctx.idxyz2_sum = p->stencil_ctx.idx2 + p->stencil_ctx.idy2 + p->stencil_ctx.idz2; 
+
   #pragma omp parallel for
   for(i=0; i<p->ln_domain;i++){
     p->U1[i] = 0.0;

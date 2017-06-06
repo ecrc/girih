@@ -7,7 +7,9 @@
 #include <assert.h> //@KADIR
 #include <execinfo.h> //@KADIR for finding out function name
 
+Parameters* vgp; //@KADIR
 void verify(Parameters *p){
+  vgp = p; //@KADIR
 
   verification_printing(*p);
   mpi_halo_init(p);
@@ -425,19 +427,32 @@ void std_kernel_8space_2time( const int shape[3],
           //if(i==10 && j==10 && k==10) //@KADIR FIXME
           //printf("\n%d\n",i);
 //#pragma simd
-        lap=3.*coef[0]*V(i,j,k)
-           +coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ))
-           +coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  ))
-           +coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1))
+        /*lap=3.*coef[0]*V(i,j,k)*/
+           /*+coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ))*/
+           /*+coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  ))*/
+           /*+coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1))*/
+           /*+coef[2]*(V(i+2,j  ,k  )+V(i-2,j  ,k  ))*/
+           /*+coef[2]*(V(i  ,j+2,k  )+V(i  ,j-2,k  ))*/
+           /*+coef[2]*(V(i  ,j  ,k+2)+V(i  ,j  ,k-2))*/
+           /*+coef[3]*(V(i+3,j  ,k  )+V(i-3,j  ,k  ))*/
+           /*+coef[3]*(V(i  ,j+3,k  )+V(i  ,j-3,k  ))*/
+           /*+coef[3]*(V(i  ,j  ,k+3)+V(i  ,j  ,k-3))*/
+           /*+coef[4]*(V(i+4,j  ,k  )+V(i-4,j  ,k  ))*/
+           /*+coef[4]*(V(i  ,j+4,k  )+V(i  ,j-4,k  ))*/
+           /*+coef[4]*(V(i  ,j  ,k+4)+V(i  ,j  ,k-4));*/
+        lap=coef[0]*V(i,j,k)*vgp->stencil_ctx.idxyz2_sum
+           +(coef[1]*(V(i+1,j  ,k  )+V(i-1,j  ,k  ))
            +coef[2]*(V(i+2,j  ,k  )+V(i-2,j  ,k  ))
-           +coef[2]*(V(i  ,j+2,k  )+V(i  ,j-2,k  ))
-           +coef[2]*(V(i  ,j  ,k+2)+V(i  ,j  ,k-2))
            +coef[3]*(V(i+3,j  ,k  )+V(i-3,j  ,k  ))
+           +coef[4]*(V(i+4,j  ,k  )+V(i-4,j  ,k  )))*vgp->stencil_ctx.idx2
+           +(coef[1]*(V(i  ,j+1,k  )+V(i  ,j-1,k  ))
+           +coef[2]*(V(i  ,j+2,k  )+V(i  ,j-2,k  ))
            +coef[3]*(V(i  ,j+3,k  )+V(i  ,j-3,k  ))
+           +coef[4]*(V(i  ,j+4,k  )+V(i  ,j-4,k  )))*vgp->stencil_ctx.idy2
+           +(coef[1]*(V(i  ,j  ,k+1)+V(i  ,j  ,k-1))
+           +coef[2]*(V(i  ,j  ,k+2)+V(i  ,j  ,k-2))
            +coef[3]*(V(i  ,j  ,k+3)+V(i  ,j  ,k-3))
-           +coef[4]*(V(i+4,j  ,k  )+V(i-4,j  ,k  ))
-           +coef[4]*(V(i  ,j+4,k  )+V(i  ,j-4,k  ))
-           +coef[4]*(V(i  ,j  ,k+4)+V(i  ,j  ,k-4));
+           +coef[4]*(V(i  ,j  ,k+4)+V(i  ,j  ,k-4)))*vgp->stencil_ctx.idz2;
 
 #if DP
         //U(i,j,k) = 2. *V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap; Disabled @KADIR
@@ -445,7 +460,7 @@ void std_kernel_8space_2time( const int shape[3],
         /*printf("%d %d %d: V:%g U:%g ROC2:%g lap:%g ROC2:%g\n", */
                 /*k, j, i, V(i,j,k), U(i,j,k), ROC2(i,j,k), lap, */
                /*ROC2(i,j,k) );//@KADIR*/
-        U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) +  ROC2(i,j,k)*lap/400.;   //@KADIR
+        U(i,j,k) = ((real_t)2.)*V(i,j,k) - U(i,j,k) +  ROC2(i,j,k)*lap;   //@KADIR
         //U(i,j,k) = 2.f*V(i,j,k) - U(i,j,k) + ROC2(i,j,k)*lap; //@KADIR
 #endif
       }
