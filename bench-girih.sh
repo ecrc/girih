@@ -34,15 +34,22 @@ module list
 #export OMP_NUM_THREADS=32
 
 dir=/lustre/project/k1137/akbudak/girih
+#dir=/lustre/project/k1137/akbudak/ogirih  #FIXME
 gs=501; nt=2101;  #exawave
 gs=512; nt=506; num_threads="1 2 4 8 12 16 20 24 28 32";verify=0;ntests=2   #eage paper
-for nthread in $num_threads;do
+gs=512; nt=506; num_threads="20 24 28 32";verify=0;ntests=2   #eage paper
+nexp=22
+num_threads=(1 2 4 8 8 16 16 16 20 20 24 24 24 24 24  28 28 28 28 32 32 32 32)
+tgss=(       1 2 2 2 4 2  4  8  2  4  2  4  6  8  12  2  4  7  14 2  4  8  16)
+for i in `seq 0 $nexp`;do
+    nthread=${num_threads[i]}
+    tgs=${tgss[i]}
     export OMP_NUM_THREADS=$nthread
     #DIAMOND
     sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 " 
-    cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --n-tests $ntests  --threads $nthread "
+    cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs "
     echo $sruncmd $cmd
-    $sruncmd $cmd
+    $sruncmd $cmd 
     #DIAMOND
     #srun  --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx $gs --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
 done
