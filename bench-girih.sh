@@ -6,47 +6,50 @@
 #SBATCH --nodes=1
 #SBATCH --time=12:00:00
 
-module list
-module swap PrgEnv-cray PrgEnv-intel
-module list
-#module load boost/1.58
+hn=`hostname`
+echo $hn
+sha=0
+if [[ "$hn" == nid0* ]]; then 
+    echo shaheen; 
+    sha=1
+fi
+if [ $sha -eq 1 ]; then
+    module list
+    module swap PrgEnv-cray PrgEnv-intel
+    module list
+    dir=/lustre/project/k1137/akbudak/girih
+    #dir=/lustre/project/k1137/akbudak/ogirih  #FIXME
+    sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 " 
+else
+    dir=/home/akbudak/girih
+    sruncmd=""
+fi
 
-#export LD_LIBRARY_PATH=/scratch/x_etiennv":"$LD_LIBRARY_PATH
 
-#export KMP_AFFINITY=scatter,1,0,granularity=fine 
-
-#export OMP_NUM_THREADS=16
-#srun -o 0 --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=3
-#2 --ntasks-per-socket=16 --ntasks-per-core=1 --cpu_bind=cores /project/k1137/sof
-#t/bin/gptexe2 --xml=modelling.xml --cbx=14 --cby=2 --nt_user=10 
-
-#cd /scratch/x_tonelltl/runs/prod1
-
-#srun -o 0 --ntasks=256 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=32 --ntasks-per-socket=16 --ntasks-per-core=1 --cpu_bind=cores /scratch/x_etiennv/gptexe2 --xml=modelling.xml --cbx=14 --cby=2  --tmax=24
-
-#srun -o 0 --ntasks=256 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=32 --ntasks-per-socket=16 --ntasks-per-core=1\
-# --cpu_bind=cores /scratch/x_etiennv/gptexe2 --xml=modelling.xml --cbx=14 --cby=2
-
-#OMP_NUM_THREADS=32 srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --nx 512 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2
-# --thread-group-size 8
-#OMP_NUM_THREADS=32 srun --ntasks=2 --cpus-per-task=16 --ntasks-per-node=2 ./build/mwd_kernel --npx 1 --npy 2 --npz 1 --nx 512 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2
-#OMP_NUM_THREADS=32 srun --ntasks=2 --cpus-per-task=16 --hint=nomultithread --ntasks-per-node=2 ./build/mwd_kernel --npx 1 --npy 2 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 4
-#export OMP_NUM_THREADS=32
-
-dir=/lustre/project/k1137/akbudak/girih
-#dir=/lustre/project/k1137/akbudak/ogirih  #FIXME
-gs=501; nt=2101;  #exawave
-gs=512; nt=506; num_threads="1 2 4 8 12 16 20 24 28 32";verify=0;ntests=2   #eage paper
-gs=512; nt=506; num_threads="20 24 28 32";verify=0;ntests=2   #eage paper
+gs=512; nt=2101;verify=0;ntests=1  #exawave
+#gs=512; nt=506; num_threads="1 2 4 8 12 16 20 24 28 32";verify=0;ntests=2   #eage paper
+#gs=512; nt=506; num_threads="20 24 28 32";verify=0;ntests=2   #eage paper
 nexp=22
+#shaheen     0 1 2 3 4 5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
 num_threads=(1 2 4 8 8 16 16 16 20 20 24 24 24 24 24  28 28 28 28 32 32 32 32)
 tgss=(       1 2 2 2 4 2  4  8  2  4  2  4  6  8  12  2  4  7  14 2  4  8  16)
-for i in `seq 0 $nexp`;do
+
+nexp=17
+#shihab      0  1  2  3  4  5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
+num_threads=(1  3  3  6  6  9  9  18 18 18 18 36 36 36  36 36 36 36            )
+tgss=(       1  1  3  2  3  1  3  2  3  6  9  2  3  4   6  9  12 18            )
+
+nexp=20
+#jasmine     0  1  2  3  4  5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
+num_threads=(1  4  6  6  8  8  12 12 12 16 16 16 20  20 20 20 24 24 24 24 24            )
+tgss=(       1  2  2  3  2  4  3  4  6  2  4  8  2   4  5  10 2  4  6  8  12            )
+#for i in `seq 0 $nexp`;do
+for i in 20;do
     nthread=${num_threads[i]}
     tgs=${tgss[i]}
     export OMP_NUM_THREADS=$nthread
     #DIAMOND
-    sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 " 
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 --thc 1"
     cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs "
     echo $sruncmd $cmd
     $sruncmd $cmd 
