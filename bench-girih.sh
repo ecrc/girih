@@ -43,7 +43,7 @@ nexp=20
 #jasmine     0  1  2  3  4  5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
 num_threads=(1  4  6  6  8  8  12 12 12 16 16 16 20  20 20 20 24 24 24 24 24            )
 tgss=(       1  2  2  3  2  4  3  4  6  2  4  8  2   4  5  10 2  4  6  8  12            )
-for i in `seq 0 $nexp`;do
+for i in `seq 1 $nexp`;do
 #for i in 20;do
     nthread=${num_threads[i]}
     tgs=${tgss[i]}
