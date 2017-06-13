@@ -1009,10 +1009,10 @@ void dynamic_intra_diamond_ts(Parameters *p) {
     if(p->in_auto_tuning == 0) {
 #pragma omp parallel num_threads(num_thread_groups) PROC_BIND(spread)
         {
-            printf("outer: %d\tmax: %d\tnum_threads_groups: %d\tstencil_ctx.use_manual_cpu_bind: %d\n", omp_get_num_threads(), omp_get_max_threads(), num_thread_groups, p->stencil_ctx.use_manual_cpu_bind);
+            //printf("outer: %d\tmax: %d\tnum_threads_groups: %d\tstencil_ctx.use_manual_cpu_bind: %d\n", omp_get_num_threads(), omp_get_max_threads(), num_thread_groups, p->stencil_ctx.use_manual_cpu_bind); //@KADIR
 #pragma omp parallel num_threads(p->stencil_ctx.thread_group_size) PROC_BIND(master)
             {
-                printf("inner: %d\tmax: %d\ttgs: %d\n", omp_get_num_threads(), omp_get_max_threads(), p->stencil_ctx.thread_group_size);
+                //printf("inner: %d\tmax: %d\ttgs: %d\n", omp_get_num_threads(), omp_get_max_threads(), p->stencil_ctx.thread_group_size);//@KADIR
                 LIKWID_MARKER_THREADINIT;
                 MARKER_START("calc");
             }
