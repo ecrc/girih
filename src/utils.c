@@ -37,6 +37,8 @@ void param_default(Parameters *p) {
   p->n_tests = 3;
   p->nt = 100;
   p->verify = 0;
+  p->notuning = 0; //@KADIR
+  p->call_combined_function = 0;//@KADIR
   p->source=NULL;
   p->verbose = 1;
   p->debug = 0;
@@ -611,6 +613,8 @@ void copy_params_struct(Parameters a, Parameters * b) {
   b->n_tests = a.n_tests;
   b->nt = a.nt;
   b->verify = a.verify;
+  b->notuning = a.notuning; //@KADIR
+  b->call_combined_function = a.call_combined_function; //@KADIR
   b->num_threads = a.num_threads;
   b->array_padding = a.array_padding;
   b->mwd_type = a.mwd_type;
@@ -1330,6 +1334,8 @@ void parse_args (int argc, char** argv, Parameters * p)
         {"target-kernel", 1, 0, 0},
         {"n-tests", 1, 0, 0},
         {"verify", 1, 0, 0},
+        {"notuning", 0, 0, 0},
+        {"call_combined_function", 0, 0, 0},
         {"list", 0, 0, 0},
         {"help", 0, 0, 0},
         {"npx", 1, 0, 0},
@@ -1376,6 +1382,8 @@ void parse_args (int argc, char** argv, Parameters * p)
       else if(strcmp(long_options[option_index].name, "target-kernel") == 0) p->target_kernel = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "n-tests") == 0) p->n_tests = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "verify") == 0) p->verify = atoi(optarg)!=0;
+      else if(strcmp(long_options[option_index].name, "notuning") == 0) p->notuning =1;//@KADIR
+      else if(strcmp(long_options[option_index].name, "call_combined_function") == 0) p->call_combined_function =1;//@KADIR
       else if(strcmp(long_options[option_index].name, "debug") == 0) p->debug = atoi(optarg)!=0;
       else if(strcmp(long_options[option_index].name, "t-dim") == 0) p->t_dim = atoi(optarg);
       else if(strcmp(long_options[option_index].name, "z-mpi-contig") == 0) p->h[2].is_contiguous = atoi(optarg)!=0;

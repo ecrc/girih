@@ -236,6 +236,9 @@ typedef struct{
   int num_receivers;
   int receiver_pt[NUM_RECEIVERS][3];
 
+  int notuning; //@KADIR returns early from autuning functions
+  int call_combined_function; //@KADIR calls Kadir's function that does everything
+
 //  int stencil_radius, is_constant_coefficient;
 //  enum Stencil_Types stencil_type;
 

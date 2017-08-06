@@ -981,9 +981,9 @@ void compare_results_std(real_t *restrict u, real_t *restrict target_domain, int
 
     for (k=0; k<n_domain; k++) ref_l1 += fabs(u[k]);
     if(ref_l1 < 1e-6) printf("##WARNING: The L1 norm of the solution domain is too small (%e). This verification is not sufficient to discover errors\n", ref_l1);
-    print_3Darray("error_snapshot", snapshot_error, nnx, nny, nnz, NHALO); //@KADIR
-    print_3Darray("reference_snapshot", u , nnx, nny, nnz, NHALO);         //@KADIR
-    print_3Darray("target_snapshot"   , target_domain, nx, ny, nz, 0);     //@KADIR
+    /*print_3Darray("error_snapshot", snapshot_error, nnx, nny, nnz, NHALO); //@KADIR*/
+    /*print_3Darray("reference_snapshot", u , nnx, nny, nnz, NHALO);         //@KADIR*/
+    /*print_3Darray("target_snapshot"   , target_domain, nx, ny, nz, 0);     //@KADIR*/
 
   }
 

@@ -47,7 +47,7 @@ int main(int argc, char** argv)
   mpi_topology_init(&p);
   //  MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
-  printf("%s %d\tKADIR: ENABLE AUTO TUNING\n", __FILE__, __LINE__);
+  //printf("%s %d\tKADIR: ENABLE AUTO TUNING\n", __FILE__, __LINE__);
   // initialize time-stepper specific requirements
   init(&p);
 
