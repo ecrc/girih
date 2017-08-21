@@ -440,7 +440,8 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     double t1, t2, t3;
 
 
-    printf("stat:%p mwd:%p\n",p->stencil.stat_sched_func, p->stencil.mwd_func);
+    //TODO@KADIR printf("stat:%p mwd:%p\n",p->stencil.stat_sched_func, p->stencil.mwd_func);
+    
     //printf("%s %d\tXXdiamond\n", __FILE__, __LINE__);
     // wavefront prologue
     // HATEM TODO HERE @KADIR: EXECUTED
