@@ -14,6 +14,8 @@ void TEMPLATE(femwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r
         firstprivate(u, v, b_inc, e_inc) \
         num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {
+//    KA_SHOW(FUNC_NAME);
+//    printf("%p\n",  TEMPLATE(femwd, FUNC_NAME));
     int tgs, nwf, th_nwf, tid, gtid, zi, yb, ye, ib, ie, kt, t, k, j, i, q, r, err; 
     double t_start;
 

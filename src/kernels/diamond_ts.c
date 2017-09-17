@@ -440,7 +440,12 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     double t1, t2, t3;
 
 
-    printf("stat:%p mwd:%p\n",p->stencil.stat_sched_func, p->stencil.mwd_func);
+    /*printf("stat:%p "  //stencils_spt_blk_stat_sched.ic*/
+            /*"mwd:%p "  //stencils_femwf.ic*/
+            /*"\n",*/
+            /*p->stencil.stat_sched_func, */
+            /*p->stencil.mwd_func*/
+            /*);*/
     //printf("%s %d\tXXdiamond\n", __FILE__, __LINE__);
     // wavefront prologue
     // HATEM TODO HERE @KADIR: EXECUTED
@@ -500,6 +505,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     /*printf("%d/%d ts:?(%d,%d) %d %s CALLING DIAdia\n", omp_get_thread_num(), omp_get_num_threads(), */
              /*tb, te-1,*/
             /*__LINE__, __FILE__);*/
+    //printf("t_dim:%d\n", p->t_dim);exit(0);
     p->stencil.mwd_func(p->ldomain_shape, p->stencil.r, yb, zb,
             p->lstencil_shape[0]+p->stencil.r, ye, ze, p->coef, p->U1, p->U2, p->U3, p->t_dim, b_inc, e_inc, p->stencil.r, tb, te, p->stencil_ctx, tid);
     t3 = MPI_Wtime();
