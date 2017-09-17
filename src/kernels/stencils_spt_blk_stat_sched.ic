@@ -24,7 +24,7 @@ void TEMPLATE(stat_sched,FUNC_NAME) KERNEL_SIG{
           vx = (real_t *restrict) &(v[1ULL*k*nnxy + j*nnx]);
 #pragma simd
           for(i=xb; i<xe; i++) {
-            FUNC_BODY()
+            FUNC_BODY_DR()
           }
         }
       }
