@@ -431,6 +431,8 @@ static inline void intra_diamond_comm(Parameters *p, int y_coord, int t_coord){
     }
 }
 
+#define KA_MACRO_PRINT(a) printf("%s = %d;\n", #a, a);
+#define KA_MACRO_PRINT_LU(a) printf("%s = %lu;\n", #a, a);
 
 void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, int e_inc, int tb, int te, int tid){
     //@KADIR1 EXECUTED IN DIAMOND
@@ -446,6 +448,66 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
             /*p->stencil.stat_sched_func, */
             /*p->stencil.mwd_func*/
             /*);*/
+#pragma omp single
+{
+    printf("---------------------------------\n");
+    //print_param(*p);
+
+	
+	KA_MACRO_PRINT(p->target_kernel)
+	KA_MACRO_PRINT(p->stencil.nd)
+	KA_MACRO_PRINT(p->stencil.time_order)
+	KA_MACRO_PRINT(p->stencil.shape)
+	KA_MACRO_PRINT(p->stencil.coeff)
+	KA_MACRO_PRINT(p->stencil.type)
+	KA_MACRO_PRINT(p->array_padding)
+	KA_MACRO_PRINT(p->mwd_type)
+	KA_MACRO_PRINT(p->use_omp_stat_sched)
+	KA_MACRO_PRINT(p->verbose)
+	KA_MACRO_PRINT(p->debug)
+	KA_MACRO_PRINT(p->mpi_rank)
+	KA_MACRO_PRINT(p->has_source)
+	KA_MACRO_PRINT(p->wavefront)
+	KA_MACRO_PRINT_LU(p->idiamond_pro_epi_logue_updates)
+	KA_MACRO_PRINT(p->is_last)
+	KA_MACRO_PRINT(p->in_auto_tuning)
+	KA_MACRO_PRINT(p->stencil_ctx.setsize)
+	KA_MACRO_PRINT(p->stencil_ctx.bs_y)
+	//KA_MACRO_PRINT(p->stencil_ctx.bind_masks)
+	KA_MACRO_PRINT(p->stencil_ctx.thread_group_size)
+	KA_MACRO_PRINT(p->stencil_ctx.use_manual_cpu_bind)
+	KA_MACRO_PRINT(p->ldomain_shape[0])
+	KA_MACRO_PRINT(p->ldomain_shape[1])
+	KA_MACRO_PRINT(p->ldomain_shape[2])
+	KA_MACRO_PRINT(p->gb[0])
+	KA_MACRO_PRINT(p->gb[1])
+	KA_MACRO_PRINT(p->gb[2])
+	KA_MACRO_PRINT(p->ge[0])
+	KA_MACRO_PRINT(p->ge[1])
+	KA_MACRO_PRINT(p->ge[2])
+	KA_MACRO_PRINT(p->h[0].is_contiguous)
+	KA_MACRO_PRINT(p->h[1].is_contiguous)
+	KA_MACRO_PRINT(p->h[2].is_contiguous)
+	KA_MACRO_PRINT(p->h[0].size)
+	KA_MACRO_PRINT(p->h[1].size)
+	KA_MACRO_PRINT(p->h[2].size)
+	KA_MACRO_PRINT(p->t.right)
+	KA_MACRO_PRINT(p->t.left)
+	KA_MACRO_PRINT(p->t.up)
+	KA_MACRO_PRINT(p->t.down)
+	KA_MACRO_PRINT(p->t.front)
+	KA_MACRO_PRINT(p->t.back)
+	KA_MACRO_PRINT(p->t.is_periodic[0])
+	KA_MACRO_PRINT(p->t.is_periodic[1])
+	KA_MACRO_PRINT(p->t.is_periodic[2])
+	KA_MACRO_PRINT(p->t.rank_coords[0])
+	KA_MACRO_PRINT(p->t.rank_coords[1])
+	KA_MACRO_PRINT(p->t.rank_coords[2])
+//	KA_MACRO_PRINT(p->t.cart_comm)
+	KA_MACRO_PRINT_LU(p->wf_blk_size)
+    printf("---------------------------------\n");
+}
+exit(0);
     //printf("%s %d\tXXdiamond\n", __FILE__, __LINE__);
     // wavefront prologue
     // HATEM TODO HERE @KADIR: EXECUTED
