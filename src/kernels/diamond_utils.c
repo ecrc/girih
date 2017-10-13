@@ -886,10 +886,9 @@ void intra_diamond_info_init(Parameters *p){
 //  printf("t_dim:%d  diam_width:%lu  diam_concurrency:%d  num_thread_groups:%d\n", p->t_dim,  diam_width, diam_concurrency, num_thread_groups);
 
   if(num_thread_groups > diam_concurrency){
-    if(p->mpi_rank ==0)
-      printf("###ERROR: the number of thread groups exceed the available concurrency. Consider using %d thread groups or less\n", ((diam_concurrency>1)?diam_concurrency-1:1));
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+      if(p->mpi_rank ==0) printf("###ERROR: the number of thread groups exceed the available concurrency. Consider using %d thread groups or less\n", ((diam_concurrency>1)?diam_concurrency-1:1));
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     }
 
@@ -903,29 +902,26 @@ void intra_diamond_info_init(Parameters *p){
   // check thread group size validity
   if(p->stencil_ctx.thread_group_size != p->stencil_ctx.th_x * p->stencil_ctx.th_y*
                                          p->stencil_ctx.th_z * p->stencil_ctx.th_c){
-     if(p->mpi_rank ==0)
-      fprintf(stderr, "###ERROR: Thread group size must be consistent with parallelizm in all dimensions\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+     if(p->mpi_rank ==0) fprintf(stderr, "###ERROR: Thread group size must be consistent with parallelizm in all dimensions\n");
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     
   }
 
   // check number of threads along x-axis vailidity
   if(p->stencil_ctx.th_x > p->lstencil_shape[0]){
-     if(p->mpi_rank ==0)
-      fprintf(stderr, "###ERROR: no sufficient concurrency along the x-axis\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+     if(p->mpi_rank ==0) fprintf(stderr, "###ERROR: no sufficient concurrency along the x-axis\n");
+//      MPI_Barrier(MPI_COMM_WORLD);
+//      MPI_Finalize();
       exit(1);
     
   }
   // check if thread group sizes are equal
   if(p->num_threads%p->stencil_ctx.thread_group_size != 0){
-    if(p->mpi_rank ==0)
-      fprintf(stderr, "###ERROR: threads number must be multiples of thread group size\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+    if(p->mpi_rank ==0) fprintf(stderr, "###ERROR: threads number must be multiples of thread group size\n");
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     
   }
@@ -935,16 +931,16 @@ void intra_diamond_info_init(Parameters *p){
     min_z = (p->t_dim*2)*p->stencil.r+1;
     if(p->stencil_shape[2] < min_z){
       if(p->mpi_rank ==0) fprintf(stderr,"ERROR: The single core wavefront requires a minimum size of %d at the Z direction in the current configurations\n", min_z);
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     }
   }
 
   if( (p->stencil_ctx.num_wf%p->stencil_ctx.th_z != 0) && (p->stencil_ctx.thread_group_size != 1) ){
     if(p->mpi_rank ==0) fprintf(stderr,"ERROR: num_wavefronts must be multiples of thread groups size\n");
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
+    //MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Finalize();
     exit(1);
   }
 
@@ -952,8 +948,8 @@ void intra_diamond_info_init(Parameters *p){
   if(p->mwd_type == 3){ // relaxed synchronization
     if(p->stencil_ctx.num_wf/p->stencil_ctx.thread_group_size < p->stencil.r){
       if(p->mpi_rank ==0) fprintf(stderr,"ERROR: number of frontlines per thread must be greater or equal to the stencil radius in the relaxed synchronization implementation\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     }
   }
@@ -972,8 +968,8 @@ void intra_diamond_info_init(Parameters *p){
       if(p->stencil_shape[2] < min_z){
         if(p->mpi_rank ==0) fprintf(stderr,"ERROR: The multi-core wavefront requires a minimum size of %d at the Z direction in the current configurations\n", min_z);
 
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Finalize();
+        //MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Finalize();
         exit(1);
       }
     }
@@ -1004,20 +1000,20 @@ void intra_diamond_info_init(Parameters *p){
     }
     if(p->t_dim < 1){
       if(p->mpi_rank == 0) fprintf(stderr,"ERROR: Diamond method does not support unrolling in time less than 1\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     }
     if(p->t_dim%2 == 0){
       fprintf(stderr,"ERROR: diamond method does not supports even time unrolling\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     }
     if( ( p->t.shape[0]>1 ) || (p->t.shape[2]>1) ){
       fprintf(stderr,"ERROR: Intra-diamond method supports domain decomposition across the Y direction only\n");
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Finalize();
+      //MPI_Barrier(MPI_COMM_WORLD);
+      //MPI_Finalize();
       exit(1);
     }
 
@@ -1067,15 +1063,15 @@ void intra_diamond_info_init(Parameters *p){
   if (p->lstencil_shape[1] < p->stencil.r*(t_dim+1)*2){
     fprintf(stderr,"ERROR: Intra-diamond method requires the sub-domain size to fit at least one diamond: %d elements in Y [stencil_radius*2*(time_unrolls+1)]. Given %d elements\n"
         ,p->stencil.r*(t_dim+1)*2, p->lstencil_shape[1]);
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
+    //MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Finalize();
     exit(1);
   }
   if (floor(p->lstencil_shape[1] / (p->stencil.r*(t_dim+1)*2.0)) != p->lstencil_shape[1] / (p->stencil.r*(t_dim+1)*2.0)){
     if (p->mpi_rank ==0) fprintf(stderr,"ERROR: Intra-diamond method requires the sub-domain size to be multiples of the diamond width: %d elements [stencil_radius*2*(time_unrolls+1)]\n"
         ,p->stencil.r*(t_dim+1)*2);
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
+    //MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Finalize();
     exit(1);
   }
 }
