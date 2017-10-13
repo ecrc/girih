@@ -885,8 +885,8 @@ void intra_diamond_info_init(Parameters *p){
 
 //  printf("t_dim:%d  diam_width:%lu  diam_concurrency:%d  num_thread_groups:%d\n", p->t_dim,  diam_width, diam_concurrency, num_thread_groups);
 
-  if(num_thread_groups > diam_concurrency)
-    if(p->mpi_rank ==0){
+  if(num_thread_groups > diam_concurrency){
+    if(p->mpi_rank ==0)
       printf("###ERROR: the number of thread groups exceed the available concurrency. Consider using %d thread groups or less\n", ((diam_concurrency>1)?diam_concurrency-1:1));
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
@@ -903,31 +903,31 @@ void intra_diamond_info_init(Parameters *p){
   // check thread group size validity
   if(p->stencil_ctx.thread_group_size != p->stencil_ctx.th_x * p->stencil_ctx.th_y*
                                          p->stencil_ctx.th_z * p->stencil_ctx.th_c){
-     if(p->mpi_rank ==0){
+     if(p->mpi_rank ==0)
       fprintf(stderr, "###ERROR: Thread group size must be consistent with parallelizm in all dimensions\n");
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);
-    }
+    
   }
 
   // check number of threads along x-axis vailidity
   if(p->stencil_ctx.th_x > p->lstencil_shape[0]){
-     if(p->mpi_rank ==0){
+     if(p->mpi_rank ==0)
       fprintf(stderr, "###ERROR: no sufficient concurrency along the x-axis\n");
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);
-    }
+    
   }
   // check if thread group sizes are equal
   if(p->num_threads%p->stencil_ctx.thread_group_size != 0){
-    if(p->mpi_rank ==0){
+    if(p->mpi_rank ==0)
       fprintf(stderr, "###ERROR: threads number must be multiples of thread group size\n");
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(1);
-    }
+    
   }
 
   // Check for size validity in the direction of the wavefront
