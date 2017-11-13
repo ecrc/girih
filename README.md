@@ -1,9 +1,5 @@
-Girih 
+GIRIH
 ============
-
-This is a pre-alpha release. Contact me if you have issues or questions at tareq.m.malas at gmail.com
-
-(Inspired from http://en.wikipedia.org/wiki/Girih)
 
 #### Introduction
 This tool serves as a test harness for different optimization techniques to
@@ -45,8 +41,11 @@ argument --list.
 #### Examples
 ##### Run 7-point constant-coefficient stencil using a grid of size 512^3 and 500 time steps, using the relaxed-synchronzation wavefront MWD algorithm (Auto-tuning may take time, given that no tile size nor thread group size are selected)
 
-export OMP_NUM_THREADS=12; ./build_dp/mwd_kernel --nx 512 --ny 512 --nz 512 
-         --nt 500 --target-kernel 1 --mwd-type 2 --target-ts 2
+```sh
+export OMP_NUM_THREADS=12
+./build_dp/mwd_kernel --nx 512 --ny 512 --nz 512 --nt 500 \ 
+                      --target-kernel 1 --mwd-type 2 --target-ts 2
+```
 
 #### Performance output summaries
 Manual timing routines (using MPI_Wtime) are used to collect the time spent in:
@@ -70,28 +69,54 @@ results.
 
 #### Helpful scripts
 Several Python scripts (available under scripts/) are used to run experiments 
-for performance measurements and verification regression tests. 
-  verification/run_verification.py 0 1 2
+for performance measurements and verification regression tests.
+- `verification/run_verification.py 0 1 2`: 
        Runs a regression test over the standard and MWD implementations. It 
        runs a combination of topology sizes and domain sizes and other 
        parameters with verification 
 
-  verification/run_short_verification_0to1.py
-       Runs a short version of the regression test over the naive and halo-first 
+- `verification/run_short_verification_0to1.py`:
+       Runs a short version of the regression test over the naive and halo-first
        implementations
 
-  verification/run_short_verification_intra_diamond.py
+- `verification/run_short_verification_intra_diamond.py`:
        Runs a short version of the regression test over the MWD implementations
 
-  parse.py exper-file-1 exper-file-2 ...exper-file-n
+- `parse.py exper-file-1 exper-file-2 ...exper-file-n`:
        This script takes multiple files, each contains the output of individual
        experiment. The parsed results are written in CSV format in summary.csv
 
-  Experiment submission scripts
+- Experiment submission scripts: 
         Most of the remaining scripts are used to run experiments at systems 
         with job scheduler (for example, Shaheen at KAUST). These scripts should 
 	be executed from the root directory of the project
 
 
+#### Current research
+*  Matrix power kernels
+*  Overlapping domain decomposition 
+*  GPU hardware accelerators:
+*  OpenACC / CUDA 
+*  Out-of-core algorithms
+*  Dynamic runtime systems
+*  Extension to CFD applications
 
-For questions and inquiries please contact tareq.m.malas@gmail.com
+
+#### References
+1. Multi-Dimensional Intra-Tile Parallelization for Memory-Starved Stencil Computations,
+T. Malas, G. Hager, H. Ltaief, and D. Keyes,
+*ACM Transactions on Parallel Computing*, 2017.
+2. T. Malas, J. Hornich, G. Hager, H. Ltaief, C. Pflaum, and D. Keyes, Optimization of an
+Electromagnetics Code with Multicore Mavefront Diamond Blocking and Multi-Dimensional Intratile
+Parallelization, *IEEE International Parallel and Distributed Processing Conference*, 2016.
+3. Multicore-Optimized Wavefront Diamond Blocking for Optimizing Stencil Updates,
+T. Malas, G. Hager, H. Ltaief, H. Stengel, G. Wellein, and D. Keyes,
+*SIAM Journal on Scientific Computing*, 37:4, C439-C464, 2015.
+4. T. Malas, G. Hager, H. Ltaief, and D. Keyes, Towards Fast Reverse Time Migration Kernels
+using Multi-threaded Wavefront Diamond Tiling, *2nd EAGE Workshop on High Performance
+Computing for Upstream*, arXiv:1410.5561, 2015.
+
+#### Help
+Please feel free to create an issue on Github for any questions and inquiries.
+
+![Handout](docs/GIRIH-handout-sc17.png)

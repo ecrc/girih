@@ -1,3 +1,21 @@
+/** 
+ * @copyright (c) 2014- King Abdullah University of Science and
+ *                      Technology (KAUST). All rights reserved.
+ **/
+ 
+
+/**
+ * @file src/performance.c 
+
+ * GIRIH is a high performance stencil framework using wavefront 
+ * 	diamond tiling.
+ * GIRIH is provided by KAUST.
+ *
+ * @version 1.0.0
+ * @author Tareq Malas
+ * @date 2017-11-13
+ **/
+
 #include "performance.h"
 
 // from GNU.org

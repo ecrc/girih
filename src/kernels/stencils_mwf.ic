@@ -1,3 +1,21 @@
+/** 
+ * @copyright (c) 2014- King Abdullah University of Science and
+ *                      Technology (KAUST). All rights reserved.
+ **/
+ 
+
+/**
+ * @file src/kernels/stencils_mwf.ic 
+
+ * GIRIH is a high performance stencil framework using wavefront 
+ * 	diamond tiling.
+ * GIRIH is provided by KAUST.
+ *
+ * @version 1.0.0
+ * @author Tareq Malas
+ * @date 2017-11-13
+ **/
+
 void TEMPLATE(mwd,FUNC_NAME)( const int shape[3], const int xb, const int yb_r0, const int zb, const int xe, const int ye_r0, const int ze,
     const real_t * restrict coef, real_t * restrict u,
     real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {

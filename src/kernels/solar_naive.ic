@@ -1,3 +1,21 @@
+/** 
+ * @copyright (c) 2014- King Abdullah University of Science and
+ *                      Technology (KAUST). All rights reserved.
+ **/
+ 
+
+/**
+ * @file src/kernels/solar_naive.ic 
+
+ * GIRIH is a high performance stencil framework using wavefront 
+ * 	diamond tiling.
+ * GIRIH is provided by KAUST.
+ *
+ * @version 1.0.0
+ * @author Tareq Malas
+ * @date 2017-11-13
+ **/
+
 
 static inline void solar_h_field_kernel_naive( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
     const real_t * restrict coef, real_t * restrict u, stencil_CTX stencil_ctx) {
