@@ -4,6 +4,7 @@ make -j
 gs=512;  nt=8;    verify=1; num_threads=12;  tgs=4   ntests=1; thz=2      #develop&verify uwork
 #gs=512; nt=2101; verify=0; num_threads=12;  tgs=6;  ntests=1; thz=3        #wave
 #gs=512; nt=500;  verify=0; num_threads="4 8 16 32"; tgs=4; ntests=2; thz=2 #eage paper
+gs=512; nt=500;  verify=0; num_threads="32"; tgs=4; ntests=2; thz=2 #eage paper
 #gs=512; nt=500;  verify=0; num_threads="1 2 4 8 12 16 20 24 28 32"; tgs=N/A; ntests=2; thz=N/A #eage paper
 
 #gs=512; nt=2101; verify=0; num_threads=12; tgs=6
@@ -25,6 +26,7 @@ for nthread in $num_threads;do
     #cmd=$dir"/build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify $source  --npx 1 --npy 1 --npz 1   --n-tests $ntests  --threads $nthread "
 
     call_combined_function="--call_combined_function"
+    call_combined_function=""
     #DIAMOND 
     #   RUN
     #cmd=$dir"/build/mwd_kernel --nx $gs  --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2  $source  --npx 1 --npy 1 --npz 1 --thread-group-size $tgs --thx 1 --thy 2 --thz $thz  --n-tests $ntests --threads $nthread $call_combined_function"

@@ -448,6 +448,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
             /*p->stencil.stat_sched_func, */
             /*p->stencil.mwd_func*/
             /*);*/
+if(p->in_auto_tuning == 0){
 #pragma omp single
 {
     printf("---------------------------------\n");
@@ -508,6 +509,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
     printf("---------------------------------\n");
 }
 exit(0);
+}
     //printf("%s %d\tXXdiamond\n", __FILE__, __LINE__);
     // wavefront prologue
     // HATEM TODO HERE @KADIR: EXECUTED
