@@ -25,11 +25,15 @@ if [ $sha -eq 1 ]; then
 else
     dir=/home/akbudak/girih
     sruncmd=""
+    if [[ "$hn" == "uwork" ]]; then
+        dir=/home/kadir/girih
+    fi
 fi
 
 
 gs=512; nt=2101;verify=0;ntests=1  #exawave
 gs=512; nt=506;verify=0;ntests=1  #exawave
+gs=80; nt=250;verify=1;ntests=1  #debug
 #gs=512; nt=506; num_threads="1 2 4 8 12 16 20 24 28 32";verify=0;ntests=1   #eage paper
 #gs=512; nt=506; num_threads="20 24 28 32";verify=0;ntests=2   #eage paper
 #shaheen     0 1 2 3 4 5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
@@ -47,7 +51,7 @@ nexp=22
 #tgss=(       1  2  2  3  2  4  3  4  6  2  4  8  2   4  5  10 2  4  6  8  12            )
 #nexp=20
 #for i in `seq 1 $nexp`;do
-for i in 20;do
+for i in 4;do
     nthread=${num_threads[i]}
     tgs=${tgss[i]}
     export OMP_NUM_THREADS=$nthread
