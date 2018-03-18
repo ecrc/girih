@@ -4,14 +4,15 @@
 #SBATCH --output=/project/k1137/akbudak/girih/out/%j
 #SBATCH --error=/project/k1137/akbudak/girih/out/%j
 #SBATCH --nodes=1
-##SBATCH --time=12:00:00
-#SBATCH --time=00:05:00 #TODO
-#SBATCH --partition=debug
+#SBATCH --time=12:00:00
+##SBATCH --time=00:05:00 #TODO
+##SBATCH --time=00:20:00 #TODO
+##SBATCH --partition=debug
 
 hn=`hostname`
 echo $hn
 sha=0
-if [[ "$hn" == nid0* ]]; then 
+if [[ "$hn" == nid0* ]] || [[  "$hn" == gateway* ]]; then 
     echo shaheen; 
     sha=1
 fi
@@ -21,7 +22,9 @@ if [ $sha -eq 1 ]; then
     module list
     dir=/lustre/project/k1137/akbudak/girih
     #dir=/lustre/project/k1137/akbudak/ogirih  #FIXME
-    sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 " # -vvvvvvv " 
+    #sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 numactl --interleave all  " # -vvvvvvv " 
+    sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1  " # -vvvvvvv " 
+    #not good sruncmd="numactl --interleave all srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1  " # -vvvvvvv " 
 else
     dir=/home/akbudak/girih
     sruncmd=""
@@ -33,12 +36,13 @@ fi
 
 gs=512; nt=2101;verify=0;ntests=1  #exawave
 gs=512; nt=506;verify=0;ntests=1  #exawave
-gs=80; nt=250;verify=1;ntests=1  #debug
+gs=512; nt=1994;verify=0;ntests=1  #exawave
+#gs=80; nt=250;verify=1;ntests=1  #debug
 #gs=512; nt=506; num_threads="1 2 4 8 12 16 20 24 28 32";verify=0;ntests=1   #eage paper
 #gs=512; nt=506; num_threads="20 24 28 32";verify=0;ntests=2   #eage paper
-#shaheen     0 1 2 3 4 5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
-num_threads=(1 2 4 8 8 16 16 16 20 20 24 24 24 24 24  28 28 28 28 32 32 32 32)
-tgss=(       1 2 2 2 4 2  4  8  2  4  2  4  6  8  12  2  4  7  14 2  4  8  16)
+#shaheen     0 1 2 3 4 5 6  7  8  9  10 11 12 13 14 15  16 17 18 19 20 21 22 23 24
+num_threads=(1 2 4 4 8 8 12 16 16 16 20 20 24 24 24 24 24  28 28 28 28 32 32 32 32)
+tgss=(       1 2 2 4 2 4 4  2  4  8  2  4  2  4  6  8  12  2  4  7  14 2  4  8  16)
 nexp=22
 
 #shihab      0  1  2  3  4  5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
@@ -51,14 +55,22 @@ nexp=22
 #tgss=(       1  2  2  3  2  4  3  4  6  2  4  8  2   4  5  10 2  4  6  8  12            )
 #nexp=20
 #for i in `seq 1 $nexp`;do
-for i in 4;do
+#for i in 3 5 6 8 11 13 18 20 22; do
+for i in 22; do
     nthread=${num_threads[i]}
     tgs=${tgss[i]}
     export OMP_NUM_THREADS=$nthread
     #export KMP_AFFINITY=verbose
     call_combined_function="--call_combined_function"
+    #call_combined_function=""
     #DIAMOND
-    cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 --thc 1 $call_combined_function"
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 $call_combined_function"
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 $call_combined_function"
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 1 --thz 4 --thc 1 --t-dim 3 $call_combined_function"
+    cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 --thc 1 --t-dim 3 $call_combined_function"
+    #THE BEST ON SHAHEEN
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 --thc 1 $call_combined_function"
+
     #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs "
     echo $sruncmd $cmd;$sruncmd $cmd 
 
