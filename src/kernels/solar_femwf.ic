@@ -1,6 +1,6 @@
-void femwd_solar( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
-    const real_t * restrict coef, real_t * restrict u,
-    real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
+void femwd_solar(  int shape[3],  int xb,  int yb_r,  int zb,  int xe,  int ye_r,  int ze,
+     real_t * restrict coef, real_t * restrict u,
+    real_t * restrict v,  real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, int tb, int te, stencil_CTX stencil_ctx, int mtid) {
 
 #pragma omp parallel default(none) shared(stencil_ctx, shape, roc2, coef, mtid, xb, xe, zb, ze, yb_r, ye_r, tb, te, t_dim, b_inc, e_inc, NHALO, u) num_threads(stencil_ctx.thread_group_size) PROC_BIND(master)
   {

@@ -449,7 +449,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
             /*p->stencil.mwd_func*/
             /*);*/
     if(p->in_auto_tuning == 0){
-        if(1){
+        if(0){
 #pragma omp single
             {
                 printf("%s %d ---------------------------------\n", __FILE__, __LINE__);
@@ -457,6 +457,7 @@ void intra_diamond_mwd_comp_std(Parameters *p, int yb_r, int ye_r, int b_inc, in
 
 
                 KA_MACRO_PRINT(p->target_kernel)
+                    KA_MACRO_PRINT(p->t_dim)
                     KA_MACRO_PRINT(p->stencil.nd)
                     KA_MACRO_PRINT(p->stencil.time_order)
                     KA_MACRO_PRINT(p->stencil.shape)

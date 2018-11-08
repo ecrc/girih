@@ -1,9 +1,9 @@
 #include "data_structures.h"
 
 // ISO stencils spatial blocking
-void iso_ref_split( const int shape[3], const int xb, const int yb, const int zb, const int xe, const int ye, const int ze,
-    const real_t * restrict coef, real_t * restrict u,
-    const real_t * restrict v, const real_t * restrict roc2, stencil_CTX stencil_ctx) {
+void iso_ref_split(  int shape[3],  int xb,  int yb,  int zb,  int xe,  int ye,  int ze,
+     real_t * restrict coef, real_t * restrict u,
+     real_t * restrict v,  real_t * restrict roc2, stencil_CTX stencil_ctx) {
   printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
   int j,k, jb, je;
 
@@ -30,9 +30,9 @@ void iso_ref_split( const int shape[3], const int xb, const int yb, const int zb
 
 
 // 1WD kernel
-void swd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
-    const real_t * restrict coef, real_t * restrict u,
-    real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid){
+void swd_iso_ref_split(  int shape[3],  int xb,  int yb_r,  int zb,  int xe,  int ye_r,  int ze,
+     real_t * restrict coef, real_t * restrict u,
+    real_t * restrict v,  real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid){
 
   printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
   int i, j, k, t, yb, ye, zi, kt, ib, ie, ib_r, ie_r, bs_x;
@@ -101,9 +101,9 @@ void swd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const 
 }
 
 
-void mwd_iso_ref_split( const int shape[3], const int xb, const int yb_r, const int zb, const int xe, const int ye_r, const int ze,
-    const real_t * restrict coef, real_t * restrict u,
-    real_t * restrict v, const real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
+void mwd_iso_ref_split(  int shape[3],  int xb,  int yb_r,  int zb,  int xe,  int ye_r,  int ze,
+     real_t * restrict coef, real_t * restrict u,
+    real_t * restrict v,  real_t * restrict roc2, int t_dim, int b_inc, int e_inc, int NHALO, stencil_CTX stencil_ctx, int mtid) {
   printf("\n%s %s %d  %d\n", __FILE__, __func__, __LINE__, __COUNTER__);
 
   double t_start;
