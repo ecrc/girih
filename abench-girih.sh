@@ -21,8 +21,8 @@ fi
 sha=1
 if [ $sha -eq 1 ]; then
     module list
-    module load gcc/6.4.0                 
-    module load openmpi/3.0.0/gcc-6.4.0
+    #module load gcc/6.4.0; module load openmpi/3.0.0/gcc-6.4.0
+    module load intel/2016 openmpi/2.1.1/intel-2016
     module list
     dir=/home/akbudak/girih
     #dir=/lustre/project/k1137/akbudak/ogirih  #FIXME

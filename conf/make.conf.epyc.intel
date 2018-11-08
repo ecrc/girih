@@ -1,0 +1,4 @@
+
+CFLAGS = -O3 -qopenmp
+CC=mpicc
+FC=gfortran
