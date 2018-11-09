@@ -1,0 +1,111 @@
+#!/bin/bash
+#SBATCH --cpus-per-task=16
+#SBATCH --reservation CPU_EPYK
+#SBATCH --job-name=girih
+#SBATCH --output=/home/akbudak/girih/out/%j
+#SBATCH --error=/home/akbudak/girih/out/%j
+#SBATCH --nodes=1
+##SBATCH --time=00:05:00 #TODO
+##SBATCH --time=00:20:00 #TODO
+#SBATCH --time=03:00:00
+##SBATCH --time=12:00:00
+##SBATCH --partition=debug
+
+hn=`hostname`
+echo $hn
+sha=0
+if [[ "$hn" == nid0* ]] || [[  "$hn" == gateway* ]]; then 
+    echo shaheen; 
+    sha=1
+fi
+sha=1
+if [ $sha -eq 1 ]; then
+    module list
+    #module load gcc/6.4.0; module load openmpi/3.0.0/gcc-6.4.0
+    module load intel/2016 openmpi/2.1.1/intel-2016
+    module load intel/2018
+    module list
+    dir=/home/akbudak/girih
+    #dir=/lustre/project/k1137/akbudak/ogirih  #FIXME
+    #sruncmd="srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 numactl --interleave all  " # -vvvvvvv " 
+    sruncmd="srun --ntasks=1 --cpus-per-task=16 --hint=nomultithread --ntasks-per-node=1  " # -vvvvvvv " 
+    sruncmd="mpirun "
+    #not good sruncmd="numactl --interleave all srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1  " # -vvvvvvv " 
+else
+    dir=/home/akbudak/girih
+    sruncmd=""
+    if [[ "$hn" == "uwork" ]]; then
+        dir=/home/kadir/girih
+    fi
+fi
+
+
+gs=512; nt=2101;verify=0;ntests=1  #exawave
+gs=512; nt=506;verify=0;ntests=1  #exawave
+gs=512; nt=1994;verify=0;ntests=1  #exawave
+#gs=80; nt=250;verify=1;ntests=1  #debug
+#gs=512; nt=506; num_threads="1 2 4 8 12 16 20 24 28 32";verify=0;ntests=1   #eage paper
+#gs=512; nt=506; num_threads="20 24 28 32";verify=0;ntests=2   #eage paper
+#shaheen     0 1 2 3 4 5 6  7  8  9  10 11 12 13 14 15  16 17 18 19 20 21 22 23 24
+num_threads=(1 2 4 4 8 8 12 16 16 16 20 20 24 24 24 24 24  28 28 28 28 32 32 32 32)
+tgss=(       1 2 2 4 2 4 4  2  4  8  2  4  2  4  6  8  12  2  4  7  14 2  4  8  16)
+nexp=22
+
+#shihab      0  1  2  3  4  5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
+#num_threads=(1  3  3  6  6  9  9  18 18 18 18 36 36 36  36 36 36 36            )
+#tgss=(       1  1  3  2  3  1  3  2  3  6  9  2  3  4   6  9  12 18            )
+#nexp=17
+
+#jasmine     0  1  2  3  4  5  6  7  8  9  10 11 12 13 14  15 16 17 18 19 20 21 22
+#num_threads=(1  4  6  6  8  8  12 12 12 16 16 16 20  20 20 20 24 24 24 24 24            )
+#tgss=(       1  2  2  3  2  4  3  4  6  2  4  8  2   4  5  10 2  4  6  8  12            )
+#nexp=20
+#for i in `seq 1 $nexp`;do
+#for i in 3 5 6 8 11 13 18 20 22; do
+for i in 9 8 7 6 4 3 2 1 0; do
+    nthread=${num_threads[i]}
+    tgs=${tgss[i]}
+    export OMP_NUM_THREADS=$nthread
+    export KMP_AFFINITY=verbose
+    call_combined_function="--call_combined_function"
+    call_combined_function=""
+    #DIAMOND
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 $call_combined_function"
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 $call_combined_function"
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 1 --thz 4 --thc 1 --t-dim 3 $call_combined_function"
+
+    #SC18
+    #SPATIAL
+    cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 0 --target-kernel 0 --verify 0 --npx 1 --npz 1 --n-tests 2 --npy 1"
+    
+    #DIAMOND
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0  $call_combined_function"
+    
+    #THE BEST ON SHAHEEN
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 --thc 1 $call_combined_function"
+
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1 --threads $nthread  --n-tests $ntests --thread-group-size $tgs "
+    echo $sruncmd $cmd;$sruncmd $cmd 
+
+    #cmd=$dir"/build/mwd_kernel --nx $gs --ny $gs --nz $gs --nt $nt --mwd-type 1 --target-ts 2 --verify $verify --npx 1 --npy 1 --npz 1  --n-tests $ntests --thread-group-size $tgs --target-kernel 0   --thx 1 --thy 2 --thz 2 --thc 1"
+    #echo $sruncmd $cmd;$sruncmd $cmd 
+
+    #export KMP_AFFINITY=verbose,"granularity=fine,proclist=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31],explicit"
+    #echo $sruncmd $cmd;$sruncmd $cmd 
+
+    #export KMP_AFFINITY=verbose,"granularity=fine,proclist=[0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31],explicit"
+    #echo $sruncmd $cmd;$sruncmd $cmd 
+    
+    #export KMP_AFFINITY=verbose,"granularity=fine,proclist=[0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62],explicit"
+    #sruncmd="srun --ntasks=1 --cpus-per-task=64 --ntasks-per-node=1 " # -vvvvvvv " 
+    #echo $sruncmd $cmd;$sruncmd $cmd 
+
+    #DIAMOND
+    #srun  --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx $gs --ny $gs --nz $gs --nt $nt --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
+done
+exit 0
+srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
+srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
+srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
+srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 
+srun --ntasks=1 --cpus-per-task=32 --hint=nomultithread --ntasks-per-node=1 ./build/mwd_kernel --npx 1 --npy 1 --npz 1 --nx 513 --ny 512 --nz 512 --nt 506 --target-kernel 0 --mwd-type 1 --target-ts 2 --thread-group-size 8 --thx 1 --thy 1 --thz 8 

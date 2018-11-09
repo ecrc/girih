@@ -1,4 +1,6 @@
 
-CFLAGS = -O3 -qopenmp
-CC=mpicc
+#CFLAGS = -O3 -qopenmp -xCORE-AVX2
+#CFLAGS = -O3 -qopenmp -xHost
+CFLAGS = -O3 -qopenmp 
+CC=icc -I/sw/csa/openmpi/2.1.1/el7_intel2016/include -pthread -Wl,-rpath -Wl,/sw/csa/openmpi/2.1.1/el7_intel2016/lib -Wl,--enable-new-dtags -L/sw/csa/openmpi/2.1.1/el7_intel2016/lib -lmpi
 FC=gfortran
