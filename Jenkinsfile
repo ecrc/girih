@@ -19,6 +19,7 @@ module purge
 module load intel/2018
 make clean 
 make
+'''
     }
            }
                
@@ -29,6 +30,7 @@ export OMP_NUM_THREADS=64
 export OMP_PROC_BIND=true
 export OMP_PLACES=cores
 mpirun -np 1 ./build/mwd_kernel --npy 1 --nx 512 --ny 512 --nz 512 --nt 500 --target-kernel 0 --mwd-type 0 --target-ts 2 --verify 0  --threads 64 --thread-group-size 16
+'''
 }
     }
         }
