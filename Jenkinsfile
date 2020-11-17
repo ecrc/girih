@@ -27,6 +27,9 @@ make
         stage ('test') {
             steps {
             sh '''#!/bin/bash -el
+module purge
+module load intel/2018
+module load intelmpi/2018-update-1
 export OMP_NUM_THREADS=64
 export OMP_PROC_BIND=true
 export OMP_PLACES=cores
