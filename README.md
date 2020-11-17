@@ -119,4 +119,4 @@ Computing for Upstream*, arXiv:1410.5561, 2015.
 #### Help
 Please feel free to create an issue on Github for any questions and inquiries.
 
-![Handout](docs/GIRIH-handout-sc17.png)
+![Handout](docs/GIRIH-handout-sc20.png)
