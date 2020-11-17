@@ -17,6 +17,7 @@ pipeline {
                     # if any command exits with value other than 0 (zero)
 module purge
 module load intel/2018
+module load intelmpi/2018-update-1
 make clean 
 make
 '''
