@@ -21,7 +21,7 @@ ncores=$(( nsockets * ncorepersocket ))
 let nthread_per_group=$ncores/4           
 
 module purge
-module load intel/2018
+module load intel/2019
 module load intelmpi/2018-update-1
 make clean 
 make
@@ -34,7 +34,7 @@ make
             sh '''#!/bin/bash -el
 module purge
 module load intel/2018
-module load intelmpi/2018-update-1
+module load intel-mpi/2019.8.254/gcc-7.5.0-mmiar35  
 export OMP_NUM_THREADS=${ncores}
 export OMP_PROC_BIND=true
 export OMP_PLACES=cores
